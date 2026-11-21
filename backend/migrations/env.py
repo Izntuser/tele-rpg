@@ -14,7 +14,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=get_settings().database_url,
+        url=get_settings().database_url.get_secret_value(),
         target_metadata=target_metadata,
         literal_binds=True,
     )
@@ -30,7 +30,10 @@ def _do_run(connection: Connection) -> None:
 
 async def run_migrations_online() -> None:
     # config.attributes["database_url"] lets tests target a database explicitly.
-    url = context.config.attributes.get("database_url") or get_settings().database_url
+    url = (
+        context.config.attributes.get("database_url")
+        or get_settings().database_url.get_secret_value()
+    )
     engine = create_async_engine(url, poolclass=NullPool)
     try:
         async with engine.connect() as connection:

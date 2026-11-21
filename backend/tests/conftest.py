@@ -27,9 +27,12 @@ from sqlalchemy.pool import NullPool  # noqa: E402
 
 from app.core import clock  # noqa: E402
 from app.db.base import Base, load_models  # noqa: E402
-from app.db.session import get_session, make_sessionmaker  # noqa: E402
+from app.db.session import ISOLATION_LEVEL, get_session, make_sessionmaker  # noqa: E402
+from tests.db_guard import assert_disposable_db  # noqa: E402
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+# Tests TRUNCATE tables and downgrade to base: never let them touch a non-test database.
+assert_disposable_db(TEST_DATABASE_URL)
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 FROZEN_AT = datetime(2026, 1, 15, 12, 0, tzinfo=UTC)
 
@@ -37,6 +40,7 @@ load_models()
 
 
 def alembic_config(database_url: str = TEST_DATABASE_URL) -> Config:
+    assert_disposable_db(database_url)
     cfg = Config(str(BACKEND_DIR / "alembic.ini"))
     cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
     cfg.attributes["database_url"] = database_url
@@ -51,7 +55,9 @@ def _migrated_test_db() -> None:
 
 @pytest.fixture
 async def db_engine() -> AsyncIterator[AsyncEngine]:
-    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    engine = create_async_engine(
+        TEST_DATABASE_URL, poolclass=NullPool, isolation_level=ISOLATION_LEVEL
+    )
     try:
         yield engine
     finally:
@@ -77,6 +83,7 @@ async def session(db_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
 
 
 async def truncate_all(engine: AsyncEngine) -> None:
+    assert_disposable_db(engine.url)
     tables = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
@@ -88,12 +95,16 @@ async def independent_sessions() -> AsyncIterator[async_sessionmaker[AsyncSessio
     connection and really commits, so row locks and constraints race as in production.
     All tables are truncated at teardown. Do not combine with the ``session`` fixture in one
     test (its open outer transaction would block the TRUNCATE)."""
-    engine = create_async_engine(TEST_DATABASE_URL, pool_size=20, max_overflow=0)
+    engine = create_async_engine(
+        TEST_DATABASE_URL, pool_size=20, max_overflow=0, isolation_level=ISOLATION_LEVEL
+    )
     try:
         yield make_sessionmaker(engine)
     finally:
         await engine.dispose()
-        cleanup = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+        cleanup = create_async_engine(
+            TEST_DATABASE_URL, poolclass=NullPool, isolation_level=ISOLATION_LEVEL
+        )
         try:
             await truncate_all(cleanup)
         finally:

@@ -16,14 +16,19 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import get_settings
 
+# Pinned explicitly (it is also the Postgres default): the partnership_one_active_per_user trigger
+# and the row-lock patterns in services are only correct under READ COMMITTED. See DECISIONS.md.
+ISOLATION_LEVEL = "READ COMMITTED"
+
 
 @lru_cache
 def get_engine() -> AsyncEngine:
     settings = get_settings()
     return create_async_engine(
-        settings.database_url,
+        settings.database_url.get_secret_value(),
         pool_size=settings.db_pool_size,
         pool_pre_ping=True,
+        isolation_level=ISOLATION_LEVEL,
     )
 
 

@@ -19,6 +19,7 @@ from sqlalchemy.pool import NullPool
 from app.db.base import Base, pg_type_name
 from app.modules.common.enums import ALL_ENUMS
 from tests.conftest import TEST_DATABASE_URL, alembic_config
+from tests.db_guard import assert_disposable_db
 
 EXPECTED_TABLES = {
     "user",
@@ -66,6 +67,7 @@ EXPECTED_CHECKS = {
     "ck_reward_price_positive",
     "ck_reward_quantity_remaining_non_negative",
     "ck_reward_quantity_limit_positive",
+    "ck_reward_quantity_remaining_within_limit",
     "ck_reward_cooldown_days_non_negative",
     "ck_reward_purchase_price_paid_positive",
     "ck_reward_purchase_buyer_not_provider",
@@ -162,6 +164,7 @@ def trigger_function_exists() -> bool:
 
 
 def test_downgrade_base_then_upgrade_head_round_trips() -> None:
+    assert_disposable_db(TEST_DATABASE_URL)
     cfg = alembic_config()
     command.upgrade(cfg, "head")
     try:

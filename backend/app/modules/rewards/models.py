@@ -14,6 +14,9 @@ class Reward(Base):
         CheckConstraint("price > 0", name="price_positive"),
         CheckConstraint("quantity_remaining >= 0", name="quantity_remaining_non_negative"),
         CheckConstraint("quantity_limit > 0", name="quantity_limit_positive"),
+        CheckConstraint(
+            "quantity_remaining <= quantity_limit", name="quantity_remaining_within_limit"
+        ),
         CheckConstraint("cooldown_days >= 0", name="cooldown_days_non_negative"),
     )
 

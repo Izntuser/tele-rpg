@@ -29,7 +29,7 @@ async def test_healthz_db_down(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def test_uses_test_database() -> None:
-    assert get_settings().database_url.endswith("/telerpg_test")
+    assert get_settings().database_url.get_secret_value().endswith("/telerpg_test")
 
 
 async def test_spa_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

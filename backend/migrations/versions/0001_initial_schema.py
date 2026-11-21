@@ -685,6 +685,10 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "quantity_remaining >= 0", name=op.f("ck_reward_quantity_remaining_non_negative")
         ),
+        sa.CheckConstraint(
+            "quantity_remaining <= quantity_limit",
+            name=op.f("ck_reward_quantity_remaining_within_limit"),
+        ),
         sa.ForeignKeyConstraint(
             ["creator_id"], ["user.id"], name=op.f("fk_reward_creator_id_user")
         ),

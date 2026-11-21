@@ -169,6 +169,24 @@ async def test_reward_quantity_remaining_cannot_go_negative(session: AsyncSessio
     )
 
 
+async def test_reward_quantity_remaining_cannot_exceed_limit(session: AsyncSession) -> None:
+    a, _, p = await pair(session)
+    reward = await f.create_reward(session, p, a, quantity_limit=2)
+    await assert_rejected(
+        session,
+        update(Reward).where(Reward.id == reward.id).values(quantity_remaining=3),
+        "ck_reward_quantity_remaining_within_limit",
+    )
+    await assert_rejected(
+        session,
+        update(Reward).where(Reward.id == reward.id).values(quantity_limit=1),
+        "ck_reward_quantity_remaining_within_limit",
+    )
+    # Unlimited rewards (NULL limit and remaining) are unaffected.
+    unlimited = await f.create_reward(session, p, a)
+    assert unlimited.quantity_limit is None and unlimited.quantity_remaining is None
+
+
 async def test_reward_price_must_be_positive(session: AsyncSession) -> None:
     a, _, p = await pair(session)
     await assert_rejected(
