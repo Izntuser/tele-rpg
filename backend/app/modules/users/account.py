@@ -17,7 +17,7 @@ it) but scrubs it, so the account is gone in every way that matters:
 from typing import Any
 
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import ColumnElement, delete, or_, select, update
+from sqlalchemy import ColumnElement, case, delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -203,7 +203,16 @@ async def _scrub(session: AsyncSession, user: User) -> None:
     await session.execute(delete(SavedQuestTemplate).where(SavedQuestTemplate.owner_id == me))
     await session.execute(delete(LifeBalanceTarget).where(LifeBalanceTarget.user_id == me))
     await session.execute(delete(Notification).where(Notification.recipient_id == me))
-    await session.execute(delete(IdempotencyKey).where(IdempotencyKey.user_id == me))
+    # Stored Idempotency-Key responses (quest details) carry free text of both members, so the
+    # rows of everyone I was ever partnered with go too, not only mine (DECISIONS #16).
+    companions = select(
+        case((Partnership.user_a_id == me, Partnership.user_b_id), else_=Partnership.user_a_id)
+    ).where(or_(Partnership.user_a_id == me, Partnership.user_b_id == me))
+    await session.execute(
+        delete(IdempotencyKey).where(
+            or_(IdempotencyKey.user_id == me, IdempotencyKey.user_id.in_(companions))
+        )
+    )
     await session.execute(
         delete(JournalEvent).where(
             JournalEvent.user_id == me, JournalEvent.visibility == JournalVisibility.PRIVATE

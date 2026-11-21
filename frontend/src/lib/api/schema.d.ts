@@ -142,6 +142,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/economy/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Balance
+         * @description The wallet of my active partnership plus frozen wallets of ended ones.
+         */
+        get: operations["get_balance_api_economy_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/economy/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Transactions
+         * @description My ledger (all my wallets), newest first. Pass ``next_cursor`` for older rows.
+         */
+        get: operations["list_transactions_api_economy_transactions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -414,6 +454,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quests/{occurrence_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Quest
+         * @description Assignee: submit an active quest (comment and photo optional unless photo_required). An
+         *     auto-confirm quest is completed and paid out at once (``completion`` is set).
+         */
+        post: operations["submit_quest_api_quests__occurrence_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Quest
+         * @description Creator: confirm an in-review quest; Gold and XP from its accepted terms are awarded
+         *     exactly once.
+         */
+        post: operations["confirm_quest_api_quests__occurrence_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}/request-redo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Redo Quest
+         * @description Creator: send an in-review quest back to the player with a (required) reason.
+         */
+        post: operations["request_redo_quest_api_quests__occurrence_id__request_redo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest-templates": {
         parameters: {
             query?: never;
@@ -603,6 +705,12 @@ export interface components {
             /** Start Param */
             start_param: string | null;
         };
+        /** BalanceOut */
+        BalanceOut: {
+            active: components["schemas"]["WalletOut"] | null;
+            /** Frozen */
+            frozen: components["schemas"]["WalletOut"][];
+        };
         /** CharacterOut */
         CharacterOut: {
             /** Id */
@@ -729,10 +837,30 @@ export interface components {
             description: string | null;
             status: components["schemas"]["WishlistStatus"];
         };
-        /** ConfirmIn */
-        ConfirmIn: {
-            /** Confirm Text */
-            confirm_text: string;
+        /**
+         * CompletionOut
+         * @description What completing the occurrence awarded to its assignee (for the celebration).
+         */
+        CompletionOut: {
+            /** Gold */
+            gold: number;
+            /** Xp */
+            xp: number;
+            attribute: components["schemas"]["Attribute"];
+            /** Attribute Xp */
+            attribute_xp: number;
+            /** Total Xp */
+            total_xp: number;
+            /** Level Before */
+            level_before: number;
+            /** Level */
+            level: number;
+            /** Attribute Level Before */
+            attribute_level_before: number;
+            /** Attribute Level */
+            attribute_level: number;
+            /** Balance */
+            balance: number;
         };
         /**
          * ConfirmationMode
@@ -790,6 +918,11 @@ export interface components {
             attribute?: components["schemas"]["Attribute"] | null;
             status?: components["schemas"]["GoalStatus"] | null;
         };
+        /**
+         * GoldTransactionType
+         * @enum {string}
+         */
+        GoldTransactionType: "quest_reward" | "reward_purchase" | "reward_refund" | "adjustment";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -823,6 +956,13 @@ export interface components {
         InvitationTokenIn: {
             /** Token */
             token: string;
+        };
+        /** LedgerPage */
+        LedgerPage: {
+            /** Items */
+            items: components["schemas"]["TransactionOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /**
          * Locale
@@ -962,6 +1102,53 @@ export interface components {
              */
             expires_at: string;
         };
+        /**
+         * QuestActionResult
+         * @description Response of submit / confirm / request-redo. ``completion`` is set when this request
+         *     completed the occurrence (confirm, or submit of an auto-confirm quest).
+         */
+        QuestActionResult: {
+            /** Id */
+            id: number;
+            /** Template Id */
+            template_id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Assignee Id */
+            assignee_id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "player" | "gm";
+            status: components["schemas"]["QuestOccurrenceStatus"];
+            template_status: components["schemas"]["QuestTemplateStatus"];
+            recurrence: components["schemas"]["Recurrence"];
+            /**
+             * Scheduled Date
+             * Format: date
+             */
+            scheduled_date: string;
+            /** Due At */
+            due_at: string | null;
+            terms: components["schemas"]["QuestTerms"];
+            /** Accepted At */
+            accepted_at: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Cancelled By */
+            cancelled_by: number | null;
+            /** Decline Reason */
+            decline_reason: string | null;
+            /** Has Pending Revision */
+            has_pending_revision: boolean;
+            template: components["schemas"]["TemplateOut"];
+            /** Submissions */
+            submissions: components["schemas"]["SubmissionOut"][];
+            completion?: components["schemas"]["CompletionOut"] | null;
+        };
         /** QuestCreate */
         QuestCreate: {
             /** Title */
@@ -1052,6 +1239,14 @@ export interface components {
          * @enum {string}
          */
         Recurrence: "once" | "daily" | "weekly";
+        /**
+         * RedoIn
+         * @description Why the creator wants corrections: required, non-blank.
+         */
+        RedoIn: {
+            /** Reason */
+            reason: string;
+        };
         /** RevisionOut */
         RevisionOut: {
             /** Id */
@@ -1098,6 +1293,17 @@ export interface components {
          * @enum {string}
          */
         SubmissionReviewStatus: "pending" | "approved" | "redo";
+        /**
+         * SubmitIn
+         * @description The assignee's report. ``attachment_id`` must be a quest photo the assignee uploaded;
+         *     a ``photo_required`` quest needs one.
+         */
+        SubmitIn: {
+            /** Comment */
+            comment?: string | null;
+            /** Attachment Id */
+            attachment_id?: number | null;
+        };
         /** TelegramAuthIn */
         TelegramAuthIn: {
             /** Init Data */
@@ -1160,6 +1366,27 @@ export interface components {
              */
             created_at: string;
         };
+        /** TransactionOut */
+        TransactionOut: {
+            /** Id */
+            id: number;
+            /** Wallet Id */
+            wallet_id: number;
+            /** Partnership Id */
+            partnership_id: number;
+            type: components["schemas"]["GoldTransactionType"];
+            /** Amount */
+            amount: number;
+            /** Quest Occurrence Id */
+            quest_occurrence_id: number | null;
+            /** Purchase Id */
+            purchase_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** UserOut */
         UserOut: {
             /** Id */
@@ -1190,6 +1417,19 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WalletOut */
+        WalletOut: {
+            /** Wallet Id */
+            wallet_id: number;
+            /** Partnership Id */
+            partnership_id: number;
+            /** Balance */
+            balance: number;
+            /** Frozen */
+            frozen: boolean;
+            /** Ended At */
+            ended_at: string | null;
         };
         /** WishlistItemCreate */
         WishlistItemCreate: {
@@ -1227,6 +1467,19 @@ export interface components {
          * @enum {string}
          */
         WishlistStatus: "open" | "offered" | "archived";
+        /** ConfirmIn */
+        app__modules__partnerships__schemas__ConfirmIn: {
+            /** Confirm Text */
+            confirm_text: string;
+        };
+        /**
+         * ConfirmIn
+         * @description Optional positive feedback from the creator.
+         */
+        app__modules__quests__schemas__ConfirmIn: {
+            /** Feedback */
+            feedback?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1289,7 +1542,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ConfirmIn"];
+                "application/json": components["schemas"]["app__modules__partnerships__schemas__ConfirmIn"];
             };
         };
         responses: {
@@ -1437,6 +1690,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OnboardingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_balance_api_economy_balance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceOut"];
+                };
+            };
+        };
+    };
+    list_transactions_api_economy_transactions_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
                 };
             };
             /** @description Validation Error */
@@ -1731,7 +2036,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ConfirmIn"];
+                "application/json": components["schemas"]["app__modules__partnerships__schemas__ConfirmIn"];
             };
         };
         responses: {
@@ -1969,6 +2274,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_quest_api_quests__occurrence_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Retry-safe key (1-128 visible ASCII chars); a repeat with the same key replays the first response for 24h. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SubmitIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestActionResult"];
+                };
+            };
+            /** @description Invalid body, attachment, or a reused Idempotency-Key */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    confirm_quest_api_quests__occurrence_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Retry-safe key (1-128 visible ASCII chars); a repeat with the same key replays the first response for 24h. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["app__modules__quests__schemas__ConfirmIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestActionResult"];
+                };
+            };
+            /** @description Invalid body or a reused Idempotency-Key */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    request_redo_quest_api_quests__occurrence_id__request_redo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedoIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestActionResult"];
                 };
             };
             /** @description Validation Error */

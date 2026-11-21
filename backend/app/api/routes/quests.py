@@ -9,19 +9,26 @@ cancelled. Neither path ever takes a user or partnership id: the caller is the o
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import idempotency
 from app.core.deps import CurrentUser, SessionDep, SettingsDep
 from app.modules.common.enums import QuestOccurrenceStatus, QuestTemplateStatus, Recurrence
 from app.modules.common.validation import IdPath
-from app.modules.quests import service
+from app.modules.quests import completion, service
 from app.modules.quests.schemas import (
+    ConfirmIn,
     DeclineIn,
     OccurrenceDetail,
     OccurrenceOut,
+    QuestActionResult,
     QuestCreate,
     QuestCreated,
     QuestUpdate,
+    RedoIn,
     Role,
+    SubmitIn,
     TemplateDetail,
     TemplateOut,
 )
@@ -38,7 +45,16 @@ _ERRORS: dict[type[service.QuestError], tuple[int, str]] = {
         status.HTTP_422_UNPROCESSABLE_CONTENT,
         "Only one-time quests can have a deadline",
     ),
+    service.InvalidAttachmentError: (
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "attachment_id must be a quest photo you uploaded",
+    ),
+    service.PhotoRequiredError: (
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "This quest requires a photo",
+    ),
 }
+KEY_REUSED_DETAIL = "Idempotency-Key was already used for a different request"
 
 Limit = Annotated[int, Query(ge=1, le=service.LIST_LIMIT_MAX)]
 
@@ -141,6 +157,89 @@ async def cancel_quest(
         await service.cancel(session, user, occurrence_id=occurrence_id)
         return await service.get_occurrence(session, user, occurrence_id)
     except service.QuestError as exc:
+        raise _http(exc) from None
+
+
+# --- completion ------------------------------------------------------------------------------
+
+
+async def _claim(
+    session: AsyncSession, user_id: int, key: str | None, endpoint: str, body: SubmitIn | ConfirmIn
+) -> idempotency.Claim | idempotency.Replay | None:
+    if key is None:
+        return None
+    try:
+        return await idempotency.claim(
+            session,
+            user_id=user_id,
+            key=key,
+            endpoint=endpoint,
+            request_hash=idempotency.fingerprint(body.model_dump(mode="json")),
+        )
+    except idempotency.IdempotencyKeyReusedError:
+        await session.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, KEY_REUSED_DETAIL) from None
+
+
+@router.post(
+    "/quests/{occurrence_id}/submit",
+    response_model=QuestActionResult,
+    responses={422: {"description": "Invalid body, attachment, or a reused Idempotency-Key"}},
+)
+async def submit_quest(
+    occurrence_id: IdPath,
+    user: CurrentUser,
+    session: SessionDep,
+    idempotency_key: idempotency.IdempotencyKeyHeader = None,
+    body: SubmitIn | None = None,
+) -> QuestActionResult | JSONResponse:
+    """Assignee: submit an active quest (comment and photo optional unless photo_required). An
+    auto-confirm quest is completed and paid out at once (``completion`` is set)."""
+    data = body or SubmitIn()
+    claim = await _claim(session, user.id, idempotency_key, f"quests/{occurrence_id}/submit", data)
+    if isinstance(claim, idempotency.Replay):
+        return claim.response()
+    try:
+        return await completion.submit(session, user, occurrence_id, data, idempotency=claim)
+    except service.QuestError as exc:
+        await session.rollback()
+        raise _http(exc) from None
+
+
+@router.post(
+    "/quests/{occurrence_id}/confirm",
+    response_model=QuestActionResult,
+    responses={422: {"description": "Invalid body or a reused Idempotency-Key"}},
+)
+async def confirm_quest(
+    occurrence_id: IdPath,
+    user: CurrentUser,
+    session: SessionDep,
+    idempotency_key: idempotency.IdempotencyKeyHeader = None,
+    body: ConfirmIn | None = None,
+) -> QuestActionResult | JSONResponse:
+    """Creator: confirm an in-review quest; Gold and XP from its accepted terms are awarded
+    exactly once."""
+    data = body or ConfirmIn()
+    claim = await _claim(session, user.id, idempotency_key, f"quests/{occurrence_id}/confirm", data)
+    if isinstance(claim, idempotency.Replay):
+        return claim.response()
+    try:
+        return await completion.confirm(session, user, occurrence_id, data, idempotency=claim)
+    except service.QuestError as exc:
+        await session.rollback()
+        raise _http(exc) from None
+
+
+@router.post("/quests/{occurrence_id}/request-redo", response_model=QuestActionResult)
+async def request_redo_quest(
+    occurrence_id: IdPath, body: RedoIn, user: CurrentUser, session: SessionDep
+) -> QuestActionResult:
+    """Creator: send an in-review quest back to the player with a (required) reason."""
+    try:
+        return await completion.request_redo(session, user, occurrence_id, body)
+    except service.QuestError as exc:
+        await session.rollback()
         raise _http(exc) from None
 
 

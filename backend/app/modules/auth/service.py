@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -55,7 +55,7 @@ def safe_photo_url(url: str | None) -> str | None:
 
 
 async def upsert_user(session: AsyncSession, tg: TelegramUser) -> User:
-    """Insert or refresh the user keyed by ``tg_user_id`` (NOT NULL unique).
+    """Insert or refresh the user keyed by ``tg_user_id`` (unique among live, positive ids).
 
     Telegram-owned fields (username, display name, photo) are refreshed on every login;
     ``locale`` is only set on first login so a later in-app choice is kept.
@@ -69,6 +69,9 @@ async def upsert_user(session: AsyncSession, tg: TelegramUser) -> User:
     base = insert(User).values(**values, locale=locale_for(tg.language_code))
     upsert = base.on_conflict_do_update(
         index_elements=[User.tg_user_id],
+        # The partial unique index (migration 0005); a literal, not a bind parameter, so a
+        # generic prepared plan can still infer the arbiter index.
+        index_where=text("tg_user_id > 0"),
         set_={
             **{k: base.excluded[k] for k in values if k != "tg_user_id"},
             "updated_at": clock.now(),
