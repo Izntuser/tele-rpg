@@ -18,7 +18,6 @@
 - anyone with a local DB from 603d5ff should rebuild it (downgrade base && upgrade head) to get ck_reward_quantity_remaining_within_limit.
 - core/config.py: custom-error-type fallback drops ctx and downgrades a mixed error list entirely; cosmetic.
 - prod: login rate limit keys on request.client.host; run uvicorn with --proxy-headers and --forwarded-allow-ips limited to Railway's proxy range (never '*', which lets any client spoof X-Forwarded-For and dodge the limit), or all users share one 30/min login bucket.
-- features/auth strings (AuthGate, UserGreeting) are hard-coded English; move them to i18n in S04.
 - /auth/telegram creates only the user row; /auth/me returns character=null until S05 onboarding creates the character (+6 attribute rows).
 - InsecureKeyLengthWarning in pytest: DEV_JWT_SECRET (and .env.example JWT_SECRET) is 24 bytes; consider a >=32-byte dev default.
 - auth: consider a shorter login max_age for initData than 24h to narrow the replay window.
@@ -26,3 +25,4 @@
 - core/ratelimit.py: prune is O(n) once past 10k keys, and in-memory limits multiply with more uvicorn workers (ARCHITECTURE assumes one worker).
 - Prod frontend build must not set NODE_ENV=development or VITE_MOCK_INIT_DATA (mock initData gate relies on import.meta.env.DEV).
 - Add a CI/smoke check that builds the frontend and greps the bundle to prove mock initData is stripped (unit tests only prove runtime behaviour).
+- BottomSheet/ConfirmSheet: add a focus trap and restore focus on close; consider the shadcn Dialog primitive.

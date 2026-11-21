@@ -1,0 +1,81 @@
+{
+  "app": { "title": "Modern Life RPG" },
+  "auth": {
+    "signingIn": "Вхід…",
+    "openFromTelegram": "Відкрийте цей застосунок із Telegram, щоб грати.",
+    "retry": "Спробувати ще раз",
+    "rejected": "Telegram відхилив вхід. Будь ласка, відкрийте застосунок із Telegram знову.",
+    "deleted": "Цей обліковий запис видалено.",
+    "rateLimited": "Забагато спроб. Зачекайте трохи й спробуйте ще раз.",
+    "failed": "Не вдалося увійти. Перевірте з'єднання й спробуйте ще раз.",
+    "greeting": "Привіт, {{name}}"
+  },
+  "nav": {
+    "label": "Головна навігація",
+    "home": "Головна",
+    "quests": "Квести",
+    "shop": "Крамниця",
+    "stats": "Статистика",
+    "companion": "Напарник"
+  },
+  "pages": {
+    "placeholder": "Незабаром",
+    "home": "Заглушка головної",
+    "onboarding": "Знайомство",
+    "invite": "Прийняти запрошення",
+    "quests": "Квести",
+    "questNew": "Новий квест",
+    "questDetail": "Квест",
+    "shop": "Крамниця",
+    "inventory": "Інвентар",
+    "shopManage": "Керування крамницею",
+    "stats": "Статистика",
+    "journal": "Щоденник пригод",
+    "companion": "Напарник",
+    "goals": "Мої цілі",
+    "wishlist": "Мої бажання",
+    "notifications": "Сповіщення",
+    "settings": "Налаштування"
+  },
+  "ui": {
+    "close": "Закрити",
+    "cancel": "Скасувати",
+    "confirm": "Підтвердити",
+    "typeToConfirm": "Введіть \"{{text}}\" для підтвердження",
+    "empty": "Тут поки нічого немає"
+  },
+  "game": {
+    "level": "Рівень {{level}}",
+    "xp": "{{current}} / {{max}} XP",
+    "gold": "{{amount}} золота",
+    "continue": "Далі",
+    "attribute": {
+      "physical": "Фізичний",
+      "intellectual": "Інтелектуальний",
+      "discipline": "Дисципліна",
+      "social": "Соціальний",
+      "creativity": "Творчість",
+      "wellbeing": "Добробут"
+    },
+    "difficulty": {
+      "easy": "Легко",
+      "normal": "Звичайно",
+      "hard": "Складно",
+      "epic": "Епічно"
+    },
+    "status": {
+      "offered": "Запропоновано",
+      "active": "Активний",
+      "submitted": "Надіслано",
+      "completed": "Виконано",
+      "declined": "Відхилено",
+      "cancelled": "Скасовано",
+      "expired": "Прострочено"
+    },
+    "celebration": {
+      "levelUp": "Новий рівень!",
+      "questComplete": "Квест виконано!",
+      "purchase": "Нагороду отримано!"
+    }
+  }
+}

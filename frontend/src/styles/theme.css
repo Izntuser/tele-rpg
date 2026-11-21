@@ -1,0 +1,81 @@
+/*
+ * Design tokens. Dark first: :root is the dark palette; the light palette applies when
+ * data-theme="light" is set on <html> (from the Telegram colour scheme). Text pairs meet WCAG AA
+ * (4.5:1): dark fg #e8eaf0 on #0f1117 ~ 15:1, muted #a3a9b8 ~ 7.6:1;
+ * light fg #14161c on #ffffff ~ 17:1, muted #4a5163 ~ 8:1.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #0f1117;
+  --surface: #181b24;
+  --surface-2: #222634;
+  --border: #343a4d;
+  --fg: #e8eaf0;
+  --fg-muted: #a3a9b8;
+  --accent: #8b9bff;
+  --accent-fg: #0f1117;
+  --gold: #f5c542;
+  --xp: #5ee0a0;
+  --danger: #ff8a8a;
+  --gm: #c792ff;
+  --focus: #ffffff;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --nav-height: 3.5rem;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f3f4f8;
+  --surface-2: #e7e9f0;
+  --border: #c5c9d6;
+  --fg: #14161c;
+  --fg-muted: #4a5163;
+  --accent: #3a4bd1;
+  --accent-fg: #ffffff;
+  --gold: #8a6100;
+  --xp: #0d7a4a;
+  --danger: #b3261e;
+  --gm: #6a2fb8;
+  --focus: #14161c;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-gold: var(--gold);
+  --color-xp: var(--xp);
+  --color-danger: var(--danger);
+  --color-gm: var(--gm);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

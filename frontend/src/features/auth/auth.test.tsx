@@ -12,7 +12,7 @@ const AUTH: AuthResponse = {
   jwt: 'jwt-1',
   token_type: 'bearer',
   expires_at: '2026-01-16T12:00:00Z',
-  start_param: 'invite_abc',
+  start_param: null,
   user: {
     id: 1,
     tg_user_id: 42,

@@ -1,0 +1,81 @@
+{
+  "app": { "title": "Modern Life RPG" },
+  "auth": {
+    "signingIn": "Signing in…",
+    "openFromTelegram": "Open this app from Telegram to play.",
+    "retry": "Try again",
+    "rejected": "Telegram sign-in was rejected. Please reopen the app from Telegram.",
+    "deleted": "This account has been deleted.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
+    "failed": "Could not sign in. Check your connection and try again.",
+    "greeting": "Hi, {{name}}"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "home": "Home",
+    "quests": "Quests",
+    "shop": "Shop",
+    "stats": "Stats",
+    "companion": "Companion"
+  },
+  "pages": {
+    "placeholder": "Coming soon",
+    "home": "Placeholder home",
+    "onboarding": "Onboarding",
+    "invite": "Accept invitation",
+    "quests": "Quests",
+    "questNew": "New quest",
+    "questDetail": "Quest",
+    "shop": "Shop",
+    "inventory": "Inventory",
+    "shopManage": "Manage shop",
+    "stats": "Stats",
+    "journal": "Adventure journal",
+    "companion": "Companion",
+    "goals": "My goals",
+    "wishlist": "My wishlist",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "ui": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "typeToConfirm": "Type \"{{text}}\" to confirm",
+    "empty": "Nothing here yet"
+  },
+  "game": {
+    "level": "Level {{level}}",
+    "xp": "{{current}} / {{max}} XP",
+    "gold": "{{amount}} gold",
+    "continue": "Continue",
+    "attribute": {
+      "physical": "Physical",
+      "intellectual": "Intellectual",
+      "discipline": "Discipline",
+      "social": "Social",
+      "creativity": "Creativity",
+      "wellbeing": "Wellbeing"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "normal": "Normal",
+      "hard": "Hard",
+      "epic": "Epic"
+    },
+    "status": {
+      "offered": "Offered",
+      "active": "Active",
+      "submitted": "Submitted",
+      "completed": "Completed",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    },
+    "celebration": {
+      "levelUp": "Level up!",
+      "questComplete": "Quest complete!",
+      "purchase": "Reward claimed!"
+    }
+  }
+}

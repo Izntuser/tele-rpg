@@ -32,3 +32,8 @@ surprising: FastAPI 0.165 wraps included routers, so the route-walk test flatten
 ## 2026-11-21 S03 review fix-up (round 2) + S01 regression fix
 done: S01 regression: e2e/smoke.spec.ts now signs in as user A via the telegram fixture and asserts "Placeholder home" + greeting (not the h1 shared with the no-Telegram screen); S01.png re-captured showing the real home. VITE_MOCK_INIT_DATA is read only when import.meta.env.DEV (inline, so prod builds drop it; verified a marker is absent from a prod bundle) + unit tests. playwright workers: 1. 4 TODO lines. check-stage S01 and S03 pass.
 surprising: the DB-touching smoke spec raced auth.spec across parallel workers (reset truncated the other worker's user -> 401), so playwright.config.ts got workers: 1 (resolves that TODO line).
+
+## 2026-11-21 S04 DONE (pending review)
+done: router with all ARCHITECTURE s6 routes + placeholder pages in features/*/pages, AppLayout (locale from user, dark-first theme.css tokens + safe-area vars, deeplink redirect, Telegram BackButton, bottom nav hidden on onboarding/invite), namespaced i18n (en/uk common.json, glob-loaded, key-parity test), lib/deeplink, ui + game components with RTL tests, auth strings moved to i18n, e2e/shell.spec.ts + S04.png; S01/S03 checks still pass.
+changed outside list: test-setup.ts (imports i18n, RTL cleanup), auth.test.tsx (start_param now null, since a start param redirects), smoke.spec.ts (assertion scoped to page-home).
+left: ConfirmSheet/BottomSheet have no focus trap (TODO).
