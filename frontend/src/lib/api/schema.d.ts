@@ -21,6 +21,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Account
+         * @description Everything stored about me, as one JSON document (downloaded as a file).
+         */
+        get: operations["export_account_api_account_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Account
+         * @description Typed confirmation ``DELETE``. Afterwards every existing JWT of this account is rejected
+         *     and logging in again with the same Telegram account starts a new, empty account.
+         */
+        delete: operations["delete_account_api_account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/telegram": {
         parameters: {
             query?: never;
@@ -141,6 +182,131 @@ export interface paths {
         patch: operations["update_goal_api_goals__goal_id__patch"];
         trace?: never;
     };
+    "/api/partnership/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Invitation
+         * @description New invite link (revokes my previous pending one). The token is shown only here.
+         */
+        post: operations["create_invitation_api_partnership_invitations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership/invitations/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Invitation */
+        delete: operations["revoke_invitation_api_partnership_invitations_current_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership/invitations/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Invitation
+         * @description Who invited me (for the accept screen); same validity rules as accept.
+         */
+        post: operations["preview_invitation_api_partnership_invitations_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Invitation */
+        post: operations["accept_invitation_api_partnership_invitations_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Partnership */
+        get: operations["get_partnership_api_partnership_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership/companion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Companion */
+        get: operations["get_companion_api_partnership_companion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/partnership/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave */
+        post: operations["leave_api_partnership_leave_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wishlist": {
         parameters: {
             query?: never;
@@ -185,6 +351,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptOut */
+        AcceptOut: {
+            partnership: components["schemas"]["ActivePartnershipOut"];
+            /** Reactivated */
+            reactivated: boolean;
+        };
+        /** ActivePartnershipOut */
+        ActivePartnershipOut: {
+            /** Id */
+            id: number;
+            /** Accepted At */
+            accepted_at: string | null;
+            companion: components["schemas"]["CompanionCard"];
+        };
         /**
          * Attribute
          * @enum {string}
@@ -279,6 +459,54 @@ export interface components {
             /** Timezone */
             timezone?: string | null;
         };
+        /**
+         * CompanionCard
+         * @description Public profile of another user: no Telegram id or username.
+         */
+        CompanionCard: {
+            /** User Id */
+            user_id: number;
+            /** Display Name */
+            display_name: string;
+            /** Avatar Url */
+            avatar_url: string | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Nickname */
+            nickname: string | null;
+            /** Level */
+            level: number;
+        };
+        /** CompanionGoalOut */
+        CompanionGoalOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Attribute */
+            attribute: string | null;
+            status: components["schemas"]["GoalStatus"];
+        };
+        /** CompanionProfileOut */
+        CompanionProfileOut: {
+            card: components["schemas"]["CompanionCard"];
+            /** Bio */
+            bio: string | null;
+            /** Total Xp */
+            total_xp: number;
+            /** Xp Into Level */
+            xp_into_level: number;
+            /** Xp For Next Level */
+            xp_for_next_level: number;
+            /** Attributes */
+            attributes: components["schemas"]["AttributeOut"][];
+            /** Goals */
+            goals: components["schemas"]["CompanionGoalOut"][];
+            /** Wishlist */
+            wishlist: components["schemas"]["CompanionWishOut"][];
+        };
         /** CompanionSummary */
         CompanionSummary: {
             /** Id */
@@ -287,6 +515,21 @@ export interface components {
             display_name: string;
             /** Avatar Url */
             avatar_url: string | null;
+        };
+        /** CompanionWishOut */
+        CompanionWishOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["WishlistStatus"];
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /** Confirm Text */
+            confirm_text: string;
         };
         /** GoalCreate */
         GoalCreate: {
@@ -335,6 +578,35 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * InvitationCreated
+         * @description Returned once, on creation: only the sha256 of ``token`` is stored.
+         */
+        InvitationCreated: {
+            /** Token */
+            token: string;
+            /** Link */
+            link: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** InvitationPreview */
+        InvitationPreview: {
+            inviter: components["schemas"]["CompanionCard"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** InvitationTokenIn */
+        InvitationTokenIn: {
+            /** Token */
+            token: string;
+        };
+        /**
          * Locale
          * @enum {string}
          */
@@ -372,11 +644,24 @@ export interface components {
             user: components["schemas"]["UserOut"];
             character: components["schemas"]["CharacterOut"];
         };
+        /** PartnershipStateOut */
+        PartnershipStateOut: {
+            partnership: components["schemas"]["ActivePartnershipOut"] | null;
+            pending_invitation: components["schemas"]["PendingInvitationOut"] | null;
+        };
         /** PartnershipSummary */
         PartnershipSummary: {
             /** Id */
             id: number;
             companion: components["schemas"]["CompanionSummary"];
+        };
+        /** PendingInvitationOut */
+        PendingInvitationOut: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** TelegramAuthIn */
         TelegramAuthIn: {
@@ -477,6 +762,59 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    export_account_api_account_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    delete_account_api_account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -736,6 +1074,181 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GoalOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invitation_api_partnership_invitations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationCreated"];
+                };
+            };
+        };
+    };
+    revoke_invitation_api_partnership_invitations_current_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    preview_invitation_api_partnership_invitations_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationTokenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_invitation_api_partnership_invitations_accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationTokenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_partnership_api_partnership_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartnershipStateOut"];
+                };
+            };
+        };
+    };
+    get_companion_api_partnership_companion_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanionProfileOut"];
+                };
+            };
+        };
+    };
+    leave_api_partnership_leave_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

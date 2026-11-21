@@ -211,6 +211,10 @@ async def resolve_owner(session: AsyncSession, user: User, who: str) -> int:
     companion_id = await active_companion_id(session, user.id)
     if companion_id is None:
         raise NotPartneredError
+    # Defence in depth: account deletion ends the partnership, but never serve a deleted user.
+    companion = await session.get(User, companion_id)
+    if companion is None or companion.deleted_at is not None:
+        raise NotPartneredError
     return companion_id
 
 

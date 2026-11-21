@@ -38,6 +38,10 @@ test('@S05 user A onboards, adds a goal and a wish, and Home shows the character
   await page.getByTestId('onboarding-finish').click();
   expect((await done).status()).toBe(200);
 
+  // Step 4 (S06): invite a companion, or start right away.
+  await expect(page.getByTestId('onboarding-step-invite')).toBeVisible();
+  await page.getByTestId('onboarding-start').click();
+
   // Home: avatar, name, level, XP bar and gold.
   await expect(page).toHaveURL(/\/$/);
   const header = page.getByTestId('character-header');
@@ -98,6 +102,7 @@ test('@S05 an onboarded user is not sent back to onboarding', async ({ page, tel
   await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-finish').click();
+  await page.getByTestId('onboarding-start').click();
   await expect(page.getByTestId('character-header')).toBeVisible();
 
   await page.goto('/onboarding');

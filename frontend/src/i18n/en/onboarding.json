@@ -4,7 +4,8 @@
   "steps": {
     "character": "Your character",
     "goals": "Your goals",
-    "timezone": "Your timezone"
+    "timezone": "Your timezone",
+    "invite": "Invite your companion"
   },
   "character": {
     "avatarHint": "Your Telegram photo is your avatar.",

@@ -1,9 +1,16 @@
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { setLocale } from '../../i18n';
 import { ApiError } from '../../lib/api/client';
-import { makeCharacter, makeUser, renderApp } from '../../test/harness';
+import { App } from '../../app/App';
+import { Providers } from '../../app/providers';
+import { createTestRouter } from '../../app/router';
+import { MockAdapter } from '../../lib/telegram/mock';
+import { fakeApi, makeCharacter, makeUser, renderApp } from '../../test/harness';
+import { AuthGate } from '../auth/AuthGate';
 import { detectTimezone } from './pages/OnboardingPage';
 import { deeplinkAllowedBeforeOnboarding, isOnboardingRoute, needsOnboarding } from './redirect';
 
@@ -73,6 +80,27 @@ describe('routing', () => {
     await waitFor(() => expect(invite.router.state.location.pathname).toBe('/invite/abc'));
   });
 
+  test('an invite deeplink survives StrictMode re-running the onboarding redirect', async () => {
+    const fake = fakeApi(NEW_USER, {}, 'invite_tok_x');
+    const router = createTestRouter(['/']);
+    render(
+      <StrictMode>
+        <Providers
+          api={fake.api}
+          telegram={new MockAdapter({ initData: 'x' })}
+          queryClient={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+          <AuthGate>
+            <App router={router} />
+          </AuthGate>
+        </Providers>
+      </StrictMode>,
+    );
+    expect(await screen.findByTestId('page-invite')).toBeInTheDocument();
+    await act(async () => {});
+    expect(router.state.location.pathname).toBe('/invite/tok_x');
+  });
+
   test('an onboarded user visiting onboarding goes Home', async () => {
     const { router } = renderApp('/onboarding', { routes: { 'GET /character': makeCharacter() } });
     expect(await screen.findByTestId('page-home')).toBeInTheDocument();
@@ -91,11 +119,19 @@ describe('flow', () => {
     });
   }
 
-  test('character -> goals -> timezone, then POST /character/onboarding/complete and Home', async () => {
+  test('character -> goals -> timezone, POST /character/onboarding/complete, invite step, then Home', async () => {
     const complete = completeRoute();
     const { router, calls, adapter } = renderApp('/', {
       user: NEW_USER,
-      routes: { 'POST /character/onboarding/complete': complete, 'GET /goals': [] },
+      routes: {
+        'POST /character/onboarding/complete': complete,
+        'GET /goals': [],
+        'POST /partnership/invitations': {
+          token: 'tok_123',
+          link: 'https://t.me/bot/app?startapp=invite_tok_123',
+          expires_at: '2026-01-22T12:00:00Z',
+        },
+      },
     });
 
     // Step 1: name prefilled from Telegram, Telegram photo as the avatar.
@@ -103,7 +139,7 @@ describe('flow', () => {
     expect(name).toHaveValue('Alice Archer');
     expect(screen.getByRole('img', { name: 'Alice Archer' })).toHaveAttribute('src', 'https://t.me/i/a.jpg');
     expect(screen.getByTestId('user-greeting')).toHaveTextContent('Alice Archer');
-    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     fireEvent.change(name, { target: { value: '  ' } });
     fireEvent.click(screen.getByTestId('onboarding-next'));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a name');
@@ -131,6 +167,18 @@ describe('flow', () => {
     fireEvent.change(tz, { target: { value: 'America/New_York' } });
     await act(async () => fireEvent.click(screen.getByTestId('onboarding-finish')));
 
+    // Step 4 (the character now exists): invite a companion, then start.
+    expect(await screen.findByTestId('onboarding-step-invite')).toBeInTheDocument();
+    expect(screen.getByText('Step 4 of 4')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/onboarding');
+    await act(async () => fireEvent.click(screen.getByTestId('invite-create')));
+    expect(await screen.findByTestId('invite-link')).toHaveValue('https://t.me/bot/app?startapp=invite_tok_123');
+    expect(screen.getByTestId('invite-share')).toHaveAttribute(
+      'href',
+      expect.stringContaining(encodeURIComponent('https://t.me/bot/app?startapp=invite_tok_123')),
+    );
+    fireEvent.click(screen.getByTestId('onboarding-start'));
+
     expect(await screen.findByTestId('page-home')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
     expect(complete).toHaveBeenCalledTimes(1);
@@ -147,6 +195,30 @@ describe('flow', () => {
     // The Home header is fed from the onboarding response (no extra fetch needed).
     expect(await screen.findByTestId('character-name')).toHaveTextContent('Aria');
     expect(adapter.calls).toContainEqual({ method: 'haptic.notification', args: ['success'] });
+  });
+
+  test('arriving from an invitation skips the invite step and returns to the invitation', async () => {
+    const complete = completeRoute();
+    const preview = {
+      inviter: { user_id: 2, display_name: 'Bo', avatar_url: null, character_name: 'Bold', nickname: null, level: 2 },
+      expires_at: '2026-01-22T12:00:00Z',
+    };
+    const { router } = renderApp('/invite/tok_abc', {
+      user: NEW_USER,
+      routes: {
+        'POST /character/onboarding/complete': complete,
+        'POST /partnership/invitations/preview': preview,
+      },
+    });
+    expect(await screen.findByTestId('invite-inviter')).toHaveTextContent('Bold');
+    expect(screen.queryByTestId('invite-accept')).toBeNull();
+    fireEvent.click(screen.getByTestId('invite-onboard'));
+    expect(await screen.findByText('Step 1 of 3')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('onboarding-next'));
+    fireEvent.click(await screen.findByTestId('onboarding-next'));
+    await act(async () => fireEvent.click(await screen.findByTestId('onboarding-finish')));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/invite/tok_abc'));
+    expect(await screen.findByTestId('invite-accept')).toBeInTheDocument();
   });
 
   test('Back returns to the previous step and keeps the input', async () => {
