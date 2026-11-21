@@ -24,3 +24,5 @@
 - auth: consider a shorter login max_age for initData than 24h to narrow the replay window.
 - POST /api/test/reset takes a write-rate-limit token before reset_all() clears the limits; harmless today.
 - core/ratelimit.py: prune is O(n) once past 10k keys, and in-memory limits multiply with more uvicorn workers (ARCHITECTURE assumes one worker).
+- Prod frontend build must not set NODE_ENV=development or VITE_MOCK_INIT_DATA (mock initData gate relies on import.meta.env.DEV).
+- Add a CI/smoke check that builds the frontend and greps the bundle to prove mock initData is stripped (unit tests only prove runtime behaviour).

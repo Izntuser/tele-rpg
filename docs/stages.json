@@ -119,7 +119,7 @@
         "On the frontend, TelegramAdapter picks TmaAdapter inside Telegram and MockAdapter in a plain browser, and neither throws. The API client keeps the JWT in memory only (no localStorage, no cookies), sends it as a Bearer header, re-authenticates once on a 401, and sends an Idempotency-Key header when asked.",
         "e2e/fixtures/telegram.ts injects a window.Telegram.WebApp stub with genuinely signed initData for users A and B, using the fake bot token of the init.sh stack, and calls /api/test/reset before each test. pnpm e2e --grep @S03 shows A's Telegram first name on the home page and saves docs/screens/S03.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

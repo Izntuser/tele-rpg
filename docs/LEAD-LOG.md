@@ -24,3 +24,12 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T17:12 REVIEW S02 -> stage-reviewer(opus,security) (round 3 exception, @6322fdd)
 2026-11-21T17:14 REVIEW S02 stage-reviewer(opus,security) round 3: APPROVE (2 TODOs)
 2026-11-21T17:15 MERGED S02 (check-stage --mark passed on main; 3 review rounds, round 3 human-approved exception; killed stray api/web from a worker worktree before DoD)
+2026-11-21T17:15 DISPATCH S03 -> stage-worker(opus) (high, sensitive, ui, auth)
+2026-11-21T17:31 REVIEW S03 -> stage-reviewer + stage-reviewer(opus,security; codex unavailable) (round 1, @08ea42e)
+2026-11-21T17:33 REVIEW S03 stage-reviewer(opus,security): APPROVE (5 TODOs; awaiting stage-reviewer)
+2026-11-21T17:34 REVIEW S03 stage-reviewer: REQUEST CHANGES (S01 smoke e2e no longer reaches placeholder home)
+2026-11-21T17:34 DISPATCH S03 -> stage-worker(opus) (round 2: S01 regression, mock gate)
+2026-11-21T17:37 REVIEW S03 -> stage-reviewer + stage-reviewer(opus,security) (round 2, @fce8192)
+2026-11-21T17:38 REVIEW S03 stage-reviewer(opus,security) round 2: APPROVE (2 TODOs; awaiting stage-reviewer)
+2026-11-21T17:39 REVIEW S03 stage-reviewer round 2: APPROVE
+2026-11-21T17:40 MERGED S03 (check-stage --mark passed on main; S01 recheck passed; 2 review rounds)
