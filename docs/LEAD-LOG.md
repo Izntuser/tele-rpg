@@ -93,3 +93,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T00:18 MERGED S11 (check-stage --mark passed on main after OrbStack restart; S01/S03/S05-S10 recheck passed; 1 review round)
 2026-11-22T00:18 REGRESSION S04 e2e after S11 merge: 2 nav a[aria-current=page] (expected 1); deterministic
 2026-11-22T00:18 DISPATCH S04-repair -> stage-worker(sonnet) (restore S04 e2e after S11)
+2026-11-22T00:21 S04-repair worker: fix done @c5f7137, check-stage not run (ports held by main stack; kill denied) -> stage-reviewer, then checks on main
+2026-11-22T00:23 REVIEW S04-repair stage-reviewer: APPROVE
