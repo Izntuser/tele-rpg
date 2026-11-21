@@ -28,7 +28,11 @@ def _redact_validation_error(exc: ValidationError) -> ValidationError:
         loc = err["loc"]
         detail: InitErrorDetails = {"type": err["type"], "loc": loc, "input": HIDDEN_INPUT}
         if "ctx" in err:
-            detail["ctx"] = err["ctx"]
+            ctx = dict(err["ctx"])
+            if isinstance(ctx.get("error"), BaseException):
+                # A fresh exception carries no __traceback__ (whose frames could hold secrets).
+                ctx["error"] = ValueError(str(ctx["error"]))
+            detail["ctx"] = ctx
         known.append(detail)
         # Fallback when an error type is not a built-in one: keep type name and message.
         message = err["msg"].replace("{", "{{").replace("}", "}}")

@@ -8,6 +8,8 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   retries: 0,
+  // Every spec resets the one shared e2e database, so spec files must not run in parallel.
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:3000',

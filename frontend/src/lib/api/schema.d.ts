@@ -21,10 +21,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/telegram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Auth Telegram
+         * @description Exchange Telegram initData (sent in the JSON body, never the URL) for a JWT.
+         */
+        post: operations["auth_telegram_api_auth_telegram_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Auth Me */
+        get: operations["auth_me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        /** AuthOut */
+        AuthOut: {
+            /** Jwt */
+            jwt: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            user: components["schemas"]["UserOut"];
+            /** Start Param */
+            start_param: string | null;
+        };
+        /** CharacterSummary */
+        CharacterSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Nickname */
+            nickname: string | null;
+            /** Total Xp */
+            total_xp: number;
+        };
+        /** CompanionSummary */
+        CompanionSummary: {
+            /** Id */
+            id: number;
+            /** Display Name */
+            display_name: string;
+            /** Avatar Url */
+            avatar_url: string | null;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * Locale
+         * @enum {string}
+         */
+        Locale: "en" | "uk";
+        /** MeOut */
+        MeOut: {
+            user: components["schemas"]["UserOut"];
+            character: components["schemas"]["CharacterSummary"] | null;
+            partnership: components["schemas"]["PartnershipSummary"] | null;
+        };
+        /** PartnershipSummary */
+        PartnershipSummary: {
+            /** Id */
+            id: number;
+            companion: components["schemas"]["CompanionSummary"];
+        };
+        /** TelegramAuthIn */
+        TelegramAuthIn: {
+            /** Init Data */
+            init_data: string;
+        };
+        /** UserOut */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Tg User Id */
+            tg_user_id: number;
+            /** Tg Username */
+            tg_username: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Avatar Url */
+            avatar_url: string | null;
+            locale: components["schemas"]["Locale"];
+            /** Timezone */
+            timezone: string;
+            /** Onboarded At */
+            onboarded_at: string | null;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -51,6 +185,59 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    auth_telegram_api_auth_telegram_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TelegramAuthIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
                 };
             };
         };
