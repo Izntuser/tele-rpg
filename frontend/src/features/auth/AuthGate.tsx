@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from './context';
 
@@ -13,6 +14,7 @@ function Centered({ children }: { children: ReactNode }) {
 /** Renders children only once the user is signed in; otherwise a status screen. */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { state } = useAuth();
+  const { t } = useTranslation();
   switch (state.status) {
     case 'authenticated':
       return <>{children}</>;
@@ -20,15 +22,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
       return (
         <Centered>
           <p role="status" aria-live="polite" className="text-sm opacity-70">
-            Signing in…
+            {t('auth.signingIn')}
           </p>
         </Centered>
       );
     case 'no-telegram':
       return (
         <Centered>
-          <h1 className="text-2xl font-bold">Modern Life RPG</h1>
-          <p className="text-sm opacity-70">Open this app from Telegram to play.</p>
+          <h1 className="text-2xl font-bold">{t('app.title')}</h1>
+          <p className="text-sm opacity-70">{t('auth.openFromTelegram')}</p>
         </Centered>
       );
     case 'error':
@@ -42,7 +44,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             onClick={state.retry}
             className="rounded-md border px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2"
           >
-            Try again
+            {t('auth.retry')}
           </button>
         </Centered>
       );

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, type ReactNode } from 'react';
 
+import { i18n } from '../../i18n';
 import { ApiError, NoInitDataError, type ApiClient } from '../../lib/api/client';
 import type { TelegramAdapter } from '../../lib/telegram';
 import { AuthContext, type AuthState } from './context';
@@ -9,15 +10,15 @@ export const AUTH_QUERY_KEY = ['auth', 'session'] as const;
 
 function describe(error: unknown): string {
   if (error instanceof ApiError && error.status === 401) {
-    return 'Telegram sign-in was rejected. Please reopen the app from Telegram.';
+    return i18n.t('auth.rejected');
   }
   if (error instanceof ApiError && error.status === 403) {
-    return 'This account has been deleted.';
+    return i18n.t('auth.deleted');
   }
   if (error instanceof ApiError && error.status === 429) {
-    return 'Too many attempts. Please wait a moment and try again.';
+    return i18n.t('auth.rateLimited');
   }
-  return 'Could not sign in. Check your connection and try again.';
+  return i18n.t('auth.failed');
 }
 
 /** Logs in with Telegram initData once on start and exposes the session via useAuth(). */
