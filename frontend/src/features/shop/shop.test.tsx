@@ -88,6 +88,14 @@ describe('buyBlock', () => {
 });
 
 describe('shop page', () => {
+  test('the shop switcher is not a nav landmark, so the bottom bar owns aria-current', async () => {
+    renderApp('/shop', { routes: shopRoutes([reward()]) });
+    await screen.findAllByTestId('reward-card');
+    expect(screen.getByTestId('shop-nav-shop')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByTestId('shop-nav-shop').closest('nav')).toBeNull();
+    expect(document.querySelectorAll('nav a[aria-current="page"]')).toHaveLength(1);
+  });
+
   test('lists rewards with price, quantity, cooldown and my balance', async () => {
     renderApp('/shop', {
       routes: shopRoutes([

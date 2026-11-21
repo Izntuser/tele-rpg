@@ -44,7 +44,8 @@ export function ShopFrame({
           </span>
         ) : null}
       </header>
-      <nav aria-label={t('nav.label')} className="flex gap-2">
+      {/* Not a <nav>: the bottom bar is the only navigation landmark with aria-current links. */}
+      <div role="group" aria-label={t('nav.label')} className="flex gap-2">
         {TABS.map((tab) => (
           <NavLink
             key={tab.id}
@@ -61,7 +62,7 @@ export function ShopFrame({
             {t(`nav.${tab.id}`)}
           </NavLink>
         ))}
-      </nav>
+      </div>
       {unpaired ? (
         <>
           <EmptyState title={t('unpaired.title')} description={t('unpaired.hint')} />
