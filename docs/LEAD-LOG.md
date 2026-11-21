@@ -76,3 +76,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T22:24 DISPATCH S09 -> stage-worker(sonnet) (medium, normal, ui, quest UI)
 2026-11-21T22:36 REVIEW S09 -> stage-reviewer (round 1, @1d6f5bd)
 2026-11-21T22:38 REVIEW S09 stage-reviewer: APPROVE (round 1; 5 minor notes, 2 TODOs)
+2026-11-21T22:49 MERGED S09 (check-stage --mark passed on main; S01/S03-S08 recheck passed; 1 review round; 2 TODOs)
+2026-11-21T22:49 DISPATCH S10 -> stage-worker(opus) (high, sensitive, reward shop backend)

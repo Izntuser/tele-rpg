@@ -348,7 +348,7 @@
         "Confirming shows the CelebrationOverlay, plus a level-up overlay when the player levels up. Home lists today's quests, offers and pending confirmations. POST/DELETE /quest-presets act only on my own templates.",
         "pnpm e2e --grep @S09: A creates a Normal / Physical / 50 Gold quest, B accepts and submits, A confirms, and B sees 50 Gold and 50 XP. The test saves docs/screens/S09.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

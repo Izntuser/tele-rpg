@@ -66,3 +66,5 @@
 - S09: no edit / propose-revision UI for the GM (PATCH /quests/{id}); detail only shows and decides pending revisions. Pause/resume of recurring quests has no UI or route either.
 - S09: the quests tabs fetch GET /quests and /quest-templates (limit 200) and bucket client-side; add server-side status filters/pagination if lists grow.
 - S09: Companion page "Create quest" shortcut (ARCHITECTURE s6) not wired; /quests/new is reachable from the Quests FAB and duplicate only.
+- Quest UI: QuestActions/QuestDetailPage only allow accepting a revision on an active occurrence; DECISIONS #15 also allows active/paused templates whose latest recurring occurrence is in_review/completed (S09 review).
+- api/router.py: /quests/estimate only beats /quests/{id} because routes load by file name (presets < quests); make the order explicit (S09 review).
