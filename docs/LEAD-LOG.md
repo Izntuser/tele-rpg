@@ -70,3 +70,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T20:27 REVIEW S08 -> stage-reviewer + stage-reviewer(opus,security) (round 2, @5510310; migration 0005 changes user.tg_user_id uniqueness)
 2026-11-21T20:29 REVIEW S08 stage-reviewer(opus,security) round 2: APPROVE (3 TODOs incl. narrow expired-key vs deletion deadlock; awaiting stage-reviewer)
 2026-11-21T20:33 PAUSED S08 (human stopped stage-reviewer round 2 mid-run; security round 2 APPROVE; stage/S08 @5510310 unmerged)
+2026-11-21T22:11 RESUME S08 -> stage-reviewer (round 2 rerun, @5510310)
+2026-11-21T22:14 REVIEW S08 stage-reviewer round 2: APPROVE (4 TODOs; out-of-list files per DECISIONS #16)
