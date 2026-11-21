@@ -347,6 +347,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quests/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quest Estimate
+         * @description Most Gold a quest could create per week and per month (inflation guidance).
+         */
+        get: operations["quest_estimate_api_quests_estimate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Presets
+         * @description Built-in presets in my language, plus my saved templates.
+         */
+        get: operations["list_presets_api_quest_presets_get"];
+        put?: never;
+        /** Save Preset */
+        post: operations["save_preset_api_quest_presets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-presets/{preset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Preset */
+        delete: operations["delete_preset_api_quest_presets__preset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quests": {
         parameters: {
             query?: never;
@@ -877,6 +935,19 @@ export interface components {
          * @enum {string}
          */
         Difficulty: "easy" | "normal" | "hard" | "epic";
+        /**
+         * Estimate
+         * @description Most Gold the quest can mint if every day / week is completed.
+         */
+        Estimate: {
+            /** Gold */
+            gold: number;
+            recurrence: components["schemas"]["Recurrence"];
+            /** Weekly */
+            weekly: number;
+            /** Monthly */
+            monthly: number;
+        };
         /** GoalCreate */
         GoalCreate: {
             /** Title */
@@ -1101,6 +1172,59 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /** PresetCreate */
+        PresetCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            attribute: components["schemas"]["Attribute"];
+            /** @default normal */
+            difficulty: components["schemas"]["Difficulty"];
+            /** Gold */
+            gold: number;
+            /** @default once */
+            recurrence: components["schemas"]["Recurrence"];
+            /** @default manual */
+            confirmation: components["schemas"]["ConfirmationMode"];
+            /**
+             * Photo Required
+             * @default false
+             */
+            photo_required: boolean;
+        };
+        /** PresetList */
+        PresetList: {
+            /** Builtin */
+            builtin: components["schemas"]["PresetOut"][];
+            /** Saved */
+            saved: components["schemas"]["PresetOut"][];
+        };
+        /**
+         * PresetOut
+         * @description One preset. ``saved_id`` is set only for the caller's own saved templates (the id that
+         *     ``DELETE /quest-presets/{id}`` takes); built-ins have ``builtin=True`` and a stable ``key``.
+         */
+        PresetOut: {
+            /** Key */
+            key: string;
+            /** Builtin */
+            builtin: boolean;
+            /** Saved Id */
+            saved_id: number | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            attribute: components["schemas"]["Attribute"];
+            difficulty: components["schemas"]["Difficulty"];
+            /** Gold */
+            gold: number;
+            recurrence: components["schemas"]["Recurrence"];
+            confirmation: components["schemas"]["ConfirmationMode"];
+            /** Photo Required */
+            photo_required: boolean;
         };
         /**
          * QuestActionResult
@@ -2039,6 +2163,120 @@ export interface operations {
                 "application/json": components["schemas"]["app__modules__partnerships__schemas__ConfirmIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quest_estimate_api_quests_estimate_get: {
+        parameters: {
+            query: {
+                gold: number;
+                recurrence?: components["schemas"]["Recurrence"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Estimate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_presets_api_quest_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresetList"];
+                };
+            };
+        };
+    };
+    save_preset_api_quest_presets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_preset_api_quest_presets__preset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                preset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {

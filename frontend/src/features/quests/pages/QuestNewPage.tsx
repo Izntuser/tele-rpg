@@ -1,5 +1,6 @@
-import { PlaceholderPage } from '../../../components/ui/PlaceholderPage';
+import { QuestsPage } from './QuestsPage';
 
+/** /quests/new: the quest list with the create sheet open on top of it. */
 export function QuestNewPage() {
-  return <PlaceholderPage titleKey="pages.questNew" testId="page-quest-new" />;
+  return <QuestsPage creating />;
 }

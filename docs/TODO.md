@@ -62,3 +62,7 @@
 - user.tg_user_id: add a CHECK (tg_user_id > 0 OR (deleted_at IS NOT NULL AND tg_user_id = -id)) so the partial unique index cannot be bypassed (S08 review).
 - core/idempotency.py claim(): the row-is-None branch retries recursively without bound; cap at one retry or return 409 (S08 review).
 - ARCHITECTURE.md user table: tg_user_id is unique only among live ids (partial index, DECISIONS #16); bot lookups by Telegram id must use it (S08 review).
+- S09: quest photo upload is not in the submit form (no files route yet); a photo_required quest cannot be submitted from the UI until the files stage adds an uploader to QuestActions.
+- S09: no edit / propose-revision UI for the GM (PATCH /quests/{id}); detail only shows and decides pending revisions. Pause/resume of recurring quests has no UI or route either.
+- S09: the quests tabs fetch GET /quests and /quest-templates (limit 200) and bucket client-side; add server-side status filters/pagination if lists grow.
+- S09: Companion page "Create quest" shortcut (ARCHITECTURE s6) not wired; /quests/new is reachable from the Quests FAB and duplicate only.

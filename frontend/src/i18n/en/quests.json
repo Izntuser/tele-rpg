@@ -1,0 +1,142 @@
+{
+  "title": "Quests",
+  "tabsLabel": "Quest lists",
+  "tabs": {
+    "active": "My active",
+    "offers": "Offers",
+    "recurring": "Recurring",
+    "assigned": "Assigned by me",
+    "toConfirm": "To confirm",
+    "completed": "Completed"
+  },
+  "empty": {
+    "active": "No active quests. Accept an offer to get started.",
+    "offers": "No offers waiting for you.",
+    "recurring": "No recurring quests yet.",
+    "assigned": "You have not assigned any open quests.",
+    "toConfirm": "Nothing is waiting for your confirmation.",
+    "completed": "No completed quests yet."
+  },
+  "loading": "Loading quests…",
+  "error": "Could not load quests. Please try again.",
+  "retry": "Try again",
+  "newQuest": "New quest",
+  "unpaired": {
+    "title": "Quests need a companion",
+    "hint": "Invite your companion to create quests for each other."
+  },
+  "gmLabel": "You are the Game Master",
+  "fromMe": "From me to my companion",
+  "forMe": "From my companion to me",
+  "xp": "{{amount}} XP",
+  "revisionPending": "Revision proposed",
+  "status": { "paused": "Paused" },
+  "recurrence": { "once": "One time", "daily": "Daily", "weekly": "Weekly" },
+  "confirmation": { "manual": "Game Master confirms", "auto": "Completes on submit" },
+  "terms": {
+    "recurrence": "Repeats",
+    "confirmation": "Confirmation",
+    "photo": "Photo",
+    "photoRequired": "Required",
+    "photoOptional": "Not required",
+    "deadline": "Deadline"
+  },
+  "timeline": {
+    "offered": "Offered",
+    "accepted": "Accepted",
+    "submitted": "Submitted for review",
+    "redo": "Sent back for corrections",
+    "completed": "Completed",
+    "declined": "Declined",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "waitingReview": "Waiting for your companion to confirm this quest.",
+  "revisionProposed": "Your companion proposed new terms (shown below).",
+  "actions": {
+    "title": "Quest actions",
+    "accept": "Accept quest",
+    "decline": "Decline",
+    "acceptRevision": "Accept new terms",
+    "declineRevision": "Decline new terms",
+    "declineReason": "Reason (optional)",
+    "declineSend": "Send decline",
+    "commentLabel": "Comment (optional)",
+    "submit": "Submit for review",
+    "feedbackLabel": "Feedback (optional)",
+    "confirm": "Confirm and reward",
+    "redo": "Request redo",
+    "redoReason": "What needs to be corrected?",
+    "redoSend": "Send back",
+    "cancel": "Cancel quest",
+    "cancelTitle": "Cancel this quest?",
+    "cancelBody": "It will be closed for both of you. This cannot be undone.",
+    "cancelConfirm": "Cancel quest",
+    "keep": "Keep quest"
+  },
+  "errors": {
+    "conflict": "This quest has changed. Reloading the latest version.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "detail": {
+    "title": "Quest",
+    "notFound": "Quest not found",
+    "error": "Could not load this quest.",
+    "timeline": "Timeline",
+    "yourProposal": "Your proposed terms",
+    "proposedTerms": "Proposed new terms",
+    "declinedBecause": "Declined: {{reason}}",
+    "duplicate": "Duplicate quest"
+  },
+  "create": {
+    "heading": "New quest",
+    "presets": "Choose a preset",
+    "title": "Title",
+    "attribute": "Attribute",
+    "difficulty": "Difficulty",
+    "gold": "Gold reward",
+    "more": "More options",
+    "fewer": "Fewer options",
+    "description": "Description",
+    "recurrence": "Repeats",
+    "deadline": "Deadline",
+    "confirmation": "Confirmation",
+    "photo": "Require a photo",
+    "saveTemplate": "Save as template",
+    "templateSaved": "Template saved",
+    "submit": "Offer quest",
+    "creating": "Offering…",
+    "errors": {
+      "limit": "You have too many open quests.",
+      "invalid": "Check the quest details and try again.",
+      "generic": "Could not create the quest. Please try again."
+    }
+  },
+  "presets": {
+    "loading": "Loading presets…",
+    "error": "Could not load presets.",
+    "saved": "My templates",
+    "builtin": "Ideas",
+    "delete": "Delete template {{title}}"
+  },
+  "estimate": {
+    "title": "Economy check",
+    "body": "Up to {{weekly}} gold a week and about {{monthly}} gold a month if every one is completed.",
+    "loading": "Calculating…",
+    "error": "Estimate unavailable."
+  },
+  "celebration": {
+    "rewardSelf": "+{{gold}} gold, +{{xp}} XP",
+    "rewardCompanion": "Your companion earned {{gold}} gold and {{xp}} XP",
+    "levelSelf": "You reached level {{level}}",
+    "levelCompanion": "Your companion reached level {{level}}"
+  },
+  "today": {
+    "title": "Today",
+    "active": "My quests",
+    "offers": "Offers for me",
+    "toConfirm": "Waiting for my confirmation",
+    "empty": "Nothing planned. Check the Quests tab.",
+    "more": "{{count}} more"
+  }
+}
