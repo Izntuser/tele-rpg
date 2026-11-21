@@ -22,6 +22,8 @@ from app.modules.common.enums import ALL_ENUMS
 from tests.conftest import TEST_DATABASE_URL, alembic_config
 from tests.db_guard import assert_disposable_db
 
+HEAD = "0003"
+
 EXPECTED_TABLES = {
     "user",
     "character",
@@ -212,7 +214,7 @@ def test_check_unique_and_partial_unique_constraints_exist() -> None:
 
 
 def test_0002_adds_the_reward_hidden_by_partnership_end_flag() -> None:
-    assert rows("SELECT version_num FROM alembic_version") == [("0002",)]
+    assert rows("SELECT version_num FROM alembic_version") == [(HEAD,)]
     assert rows(
         "SELECT data_type, is_nullable, column_default FROM information_schema.columns"
         " WHERE table_schema = 'public' AND table_name = 'reward'"
@@ -225,6 +227,34 @@ def test_0002_adds_the_reward_hidden_by_partnership_end_flag() -> None:
             rows(
                 "SELECT 1 FROM information_schema.columns WHERE table_name = 'reward'"
                 " AND column_name = 'hidden_by_partnership_end'"
+            )
+            == []
+        )
+    finally:
+        command.upgrade(cfg, "head")
+
+
+def test_0003_adds_quest_offer_flow_columns_and_indexes() -> None:
+    assert rows("SELECT version_num FROM alembic_version") == [(HEAD,)]
+    assert rows(
+        "SELECT data_type, is_nullable FROM information_schema.columns"
+        " WHERE table_name = 'quest_revision' AND column_name = 'decline_reason'"
+    ) == [("text", "YES")]
+    indexdefs = dict(rows("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public'"))
+    pending = indexdefs["ux_quest_revision_one_pending"]
+    assert "UNIQUE" in pending and "(template_id)" in pending and "'pending'" in pending
+    assert "(assignee_id, status)" in indexdefs["ix_quest_occurrence_assignee_id_status"]
+    assert "(partnership_id)" in indexdefs["ix_quest_template_partnership_id"]
+    cfg = alembic_config()
+    try:
+        command.downgrade(cfg, "0002")
+        names = {r[0] for r in rows("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")}
+        assert "ux_quest_revision_one_pending" not in names
+        assert "ix_quest_occurrence_assignee_id_status" not in names
+        assert (
+            rows(
+                "SELECT 1 FROM information_schema.columns WHERE table_name = 'quest_revision'"
+                " AND column_name = 'decline_reason'"
             )
             == []
         )
