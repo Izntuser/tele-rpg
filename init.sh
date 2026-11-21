@@ -18,6 +18,9 @@ done
 : "${E2E_DATABASE_URL:=postgresql+asyncpg://telerpg:telerpg@localhost:5432/telerpg_e2e}"
 : "${TG_BOT_TOKEN:=123456789:AAFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE}"
 
+# The dev database (DATABASE_URL) is migrated too, so `alembic check` and dev tools see head.
+DEV_DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://telerpg:telerpg@localhost:5432/telerpg}"
+
 # The stack started here is the e2e/test stack: no real Telegram calls, separate DB.
 export APP_ENV=test
 export DATABASE_URL="$E2E_DATABASE_URL"
@@ -34,6 +37,7 @@ pnpm install --frozen-lockfile
 pnpm exec playwright install chromium >/dev/null
 
 (cd backend && uv run alembic upgrade head)
+(cd backend && DATABASE_URL="$DEV_DATABASE_URL" APP_ENV=development uv run alembic upgrade head)
 
 port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
 pid_alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }

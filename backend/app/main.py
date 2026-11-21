@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 
+from app.api.router import build_api_router
 from app.core.config import get_settings
 from app.core.db import make_engine
 
@@ -30,6 +31,9 @@ def create_app() -> FastAPI:
             response.status_code = 503
             return {"status": "error", "db": "error"}
         return {"status": "ok", "db": "ok"}
+
+    # Before the SPA catch-all, so /api/* never falls through to index.html.
+    app.include_router(build_api_router())
 
     dist = _dist_dir()
     index = dist / "index.html"

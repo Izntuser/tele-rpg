@@ -3,10 +3,13 @@ import asyncio
 from alembic import context
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
+from app.db.base import Base, load_models
 
-target_metadata = None
+load_models()
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
@@ -26,10 +29,14 @@ def _do_run(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    engine = create_async_engine(get_settings().database_url)
-    async with engine.connect() as connection:
-        await connection.run_sync(_do_run)
-    await engine.dispose()
+    # config.attributes["database_url"] lets tests target a database explicitly.
+    url = context.config.attributes.get("database_url") or get_settings().database_url
+    engine = create_async_engine(url, poolclass=NullPool)
+    try:
+        async with engine.connect() as connection:
+            await connection.run_sync(_do_run)
+    finally:
+        await engine.dispose()
 
 
 if context.is_offline_mode():
