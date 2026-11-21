@@ -77,7 +77,7 @@
         "app/api/router.py includes every module in app/api/routes/ that exposes `router`, so a later stage adds a route file without editing a shared file. A test adds a dummy module and confirms it gets mounted.",
         "Attribute, difficulty, recurrence and all status enums are defined once in app/modules/common/enums.py, and both the models and the Pydantic schemas import them from there."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

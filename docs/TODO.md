@@ -18,3 +18,5 @@
 - the future /api/test/reset must call `assert_disposable_db(url, suffix=E2E_DB_SUFFIX)` in addition to checking APP_ENV=test.
 - migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
 - anyone with a local DB from 603d5ff should rebuild it (downgrade base && upgrade head) to get ck_reward_quantity_remaining_within_limit.
+- core/config.py `_redact_validation_error`: rebuild ctx["error"] as a plain ValueError(str(...)) so its __traceback__ (with _prod_guards locals holding secrets) is dropped.
+- core/config.py: custom-error-type fallback drops ctx and downgrades a mixed error list entirely; cosmetic.
