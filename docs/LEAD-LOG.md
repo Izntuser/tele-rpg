@@ -33,3 +33,10 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T17:38 REVIEW S03 stage-reviewer(opus,security) round 2: APPROVE (2 TODOs; awaiting stage-reviewer)
 2026-11-21T17:39 REVIEW S03 stage-reviewer round 2: APPROVE
 2026-11-21T17:40 MERGED S03 (check-stage --mark passed on main; S01 recheck passed; 2 review rounds)
+2026-11-21T17:40 DISPATCH S04 -> stage-worker(sonnet) (medium, normal, ui shell)
+2026-11-21T17:48 REVIEW S04 -> stage-reviewer (round 1, @c3d7dcd)
+2026-11-21T17:51 REVIEW S04 stage-reviewer: REQUEST CHANGES (BackButton exits app after deeplink redirect)
+2026-11-21T17:51 DISPATCH S04 -> stage-worker(sonnet) (round 2: back after deeplink)
+2026-11-21T17:55 REVIEW S04 -> stage-reviewer (round 2, @71b1cac)
+2026-11-21T17:58 REVIEW S04 stage-reviewer round 2: APPROVE (2 TODOs)
+2026-11-21T18:00 MERGED S04 (check-stage --mark passed on main; S01/S03 recheck passed; 2 review rounds)

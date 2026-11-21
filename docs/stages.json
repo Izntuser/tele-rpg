@@ -159,7 +159,7 @@
         "Each shared component has an RTL test: XpBar, GoldBadge, AttributeChip, DifficultyChip, StatusPill, BottomSheet, ConfirmSheet (with an optional typed-confirmation mode and no window.confirm), CelebrationOverlay (no animation under reduced motion), EmptyState and Avatar.",
         "pnpm e2e --grep @S04 taps all 5 bottom-nav tabs as authenticated user A and saves docs/screens/S04.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

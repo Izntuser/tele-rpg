@@ -28,3 +28,5 @@
 - BottomSheet/ConfirmSheet: add a focus trap and restore focus on close; consider the shadcn Dialog primitive.
 - ARCHITECTURE.md:281 says notifications use `startapp=inv_<id>`, but lib/deeplink.ts maps inv_ to `/` (deeplink.test.ts:17 pins it); the notifications stage must resolve this.
 - shell.test.tsx "no native dialogs" test only renders a placeholder Settings page; strengthen it once real pages exist.
+- AppLayout first-entry check relies on location.state {deeplink: true}; any future replace-redirect at app start (e.g. onboarding) must set the same flag or use a shared helper, else Back exits the app.
+- shell.test.tsx safe-area test: move viewport.mockRestore() and CSS var reset into afterEach so a failing assertion can't leak state.
