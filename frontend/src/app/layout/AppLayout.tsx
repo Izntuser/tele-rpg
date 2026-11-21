@@ -17,7 +17,10 @@ export function AppLayout() {
   const startParam = state.status === 'authenticated' ? state.startParam : null;
   const locale = state.status === 'authenticated' ? state.user.locale : null;
   const isRoot = location.pathname === '/';
-  const isInitialEntry = location.key === 'default';
+  // The first history entry is either the cold-start entry or the one the deeplink redirect
+  // replaced it with (marked via location state, since a replace gives it a new key).
+  const isInitialEntry =
+    location.key === 'default' || (location.state as { deeplink?: boolean } | null)?.deeplink === true;
 
   useEffect(() => {
     setLocale(locale);
@@ -41,7 +44,9 @@ export function AppLayout() {
     if (handledDeeplink.current) return;
     handledDeeplink.current = true;
     const target = deeplinkToRoute(startParam ?? telegram.startParam());
-    if (target !== '/' && isRoot) void navigate(target, { replace: true });
+    if (target !== '/' && isRoot) {
+      void navigate(target, { replace: true, state: { deeplink: true } });
+    }
   }, [startParam, telegram, isRoot, navigate]);
 
   useEffect(() => {

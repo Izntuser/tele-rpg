@@ -161,6 +161,51 @@ describe('telegram back button', () => {
 });
 
 describe('theme, locale and deeplinks', () => {
+  test('Back after a start-param redirect goes Home instead of leaving the app', async () => {
+    const { adapter, router } = renderShell('/', { telegram: { startParam: 'q_12' } });
+    await screen.findByTestId('page-quest-detail');
+    expect(router.state.location.pathname).toBe('/quests/12');
+    await act(async () => {
+      adapter.pressBack();
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(await screen.findByTestId('page-home')).toBeInTheDocument();
+  });
+
+  test('Back after in-app navigation past a deeplink steps back through history', async () => {
+    const { adapter, router } = renderShell('/', { telegram: { startParam: 'q_12' } });
+    await screen.findByTestId('page-quest-detail');
+    await act(async () => {
+      await router.navigate('/shop');
+    });
+    await act(async () => {
+      adapter.pressBack();
+    });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/quests/12'));
+  });
+
+  test('a server-provided start_param opens the mapped route', async () => {
+    const { router } = renderShell('/', { startParam: 'q_31' });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/quests/31'));
+    expect(await screen.findByTestId('page-quest-detail')).toBeInTheDocument();
+  });
+
+  test('Telegram safe-area insets reach the --safe-* CSS variables', async () => {
+    const root = document.documentElement.style;
+    ['top', 'bottom', 'left', 'right'].forEach((s) => root.removeProperty(`--safe-${s}`));
+    const viewport = vi
+      .spyOn(MockAdapter.prototype, 'viewport')
+      .mockReturnValue({ height: 600, stableHeight: 600, safeArea: { top: 11, bottom: 22, left: 33, right: 44 } });
+    renderShell('/');
+    await screen.findByTestId('page-home');
+    expect(root.getPropertyValue('--safe-top')).toBe('11px');
+    expect(root.getPropertyValue('--safe-bottom')).toBe('22px');
+    expect(root.getPropertyValue('--safe-left')).toBe('33px');
+    expect(root.getPropertyValue('--safe-right')).toBe('44px');
+    viewport.mockRestore();
+    ['top', 'bottom', 'left', 'right'].forEach((s) => root.removeProperty(`--safe-${s}`));
+  });
+
   test('dark by default; light when Telegram says so', async () => {
     renderShell('/');
     await screen.findByTestId('page-home');

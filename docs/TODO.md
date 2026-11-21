@@ -26,3 +26,5 @@
 - Prod frontend build must not set NODE_ENV=development or VITE_MOCK_INIT_DATA (mock initData gate relies on import.meta.env.DEV).
 - Add a CI/smoke check that builds the frontend and greps the bundle to prove mock initData is stripped (unit tests only prove runtime behaviour).
 - BottomSheet/ConfirmSheet: add a focus trap and restore focus on close; consider the shadcn Dialog primitive.
+- ARCHITECTURE.md:281 says notifications use `startapp=inv_<id>`, but lib/deeplink.ts maps inv_ to `/` (deeplink.test.ts:17 pins it); the notifications stage must resolve this.
+- shell.test.tsx "no native dialogs" test only renders a placeholder Settings page; strengthen it once real pages exist.

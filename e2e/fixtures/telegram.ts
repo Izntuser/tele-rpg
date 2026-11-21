@@ -71,18 +71,26 @@ function installTelegramStub({ initData, user, startParam }: StubArgs): void {
     (...args: unknown[]) => {
       calls.push({ method, args });
     };
+  const handlers: Record<string, () => void> = {};
   const button = (name: string) => ({
     isVisible: false,
     show: rec(`${name}.show`),
     hide: rec(`${name}.hide`),
-    onClick: rec(`${name}.onClick`),
-    offClick: rec(`${name}.offClick`),
+    onClick: (handler: () => void) => {
+      calls.push({ method: `${name}.onClick`, args: [] });
+      handlers[name] = handler;
+    },
+    offClick: (handler: () => void) => {
+      calls.push({ method: `${name}.offClick`, args: [] });
+      if (handlers[name] === handler) delete handlers[name];
+    },
     setText: rec(`${name}.setText`),
     showProgress: rec(`${name}.showProgress`),
     hideProgress: rec(`${name}.hideProgress`),
   });
   const w = window as unknown as Record<string, unknown>;
   w.__telegramCalls = calls;
+  w.__telegramClick = (name: string) => handlers[name]?.();
   w.Telegram = {
     WebApp: {
       initData,

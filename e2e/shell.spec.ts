@@ -57,3 +57,12 @@ test('@S04 a start param deeplink opens its screen', async ({ page, telegram }) 
   await expect(page).toHaveURL(/\/quests\/77$/);
   await expect(page.getByTestId('page-quest-detail')).toBeVisible();
 });
+
+test('@S04 Back after a deeplink goes Home instead of leaving the app', async ({ page, telegram }) => {
+  await telegram('A', { startParam: 'q_77' });
+  await page.goto('/');
+  await expect(page.getByTestId('page-quest-detail')).toBeVisible();
+  await page.evaluate(() => (window as unknown as { __telegramClick: (n: string) => void }).__telegramClick('BackButton'));
+  await expect(page.getByTestId('page-home')).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+});

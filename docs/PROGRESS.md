@@ -37,3 +37,6 @@ surprising: the DB-touching smoke spec raced auth.spec across parallel workers (
 done: router with all ARCHITECTURE s6 routes + placeholder pages in features/*/pages, AppLayout (locale from user, dark-first theme.css tokens + safe-area vars, deeplink redirect, Telegram BackButton, bottom nav hidden on onboarding/invite), namespaced i18n (en/uk common.json, glob-loaded, key-parity test), lib/deeplink, ui + game components with RTL tests, auth strings moved to i18n, e2e/shell.spec.ts + S04.png; S01/S03 checks still pass.
 changed outside list: test-setup.ts (imports i18n, RTL cleanup), auth.test.tsx (start_param now null, since a start param redirects), smoke.spec.ts (assertion scoped to page-home).
 left: ConfirmSheet/BottomSheet have no focus trap (TODO).
+
+## 2026-11-21 S04 review fix-up round 2
+done: BackButton first-entry detection now flags the deeplink replace redirect via location state (Back goes Home); tests for it (unit + e2e), server start_param path, safe-area CSS vars; DECISIONS 12 (namespaced i18n); TODO lines. e2e stub now keeps BackButton handlers so a test can press Back (e2e/fixtures/telegram.ts).
