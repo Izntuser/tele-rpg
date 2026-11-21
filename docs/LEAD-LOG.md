@@ -95,3 +95,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T00:18 DISPATCH S04-repair -> stage-worker(sonnet) (restore S04 e2e after S11)
 2026-11-22T00:21 S04-repair worker: fix done @c5f7137, check-stage not run (ports held by main stack; kill denied) -> stage-reviewer, then checks on main
 2026-11-22T00:23 REVIEW S04-repair stage-reviewer: APPROVE
+2026-11-22T00:29 MERGED S04-repair (check-stage S04/S09/S11 pass on main)
+2026-11-22T00:29 DISPATCH S13 -> stage-worker(sonnet) (medium, normal, ui, scheduler)
