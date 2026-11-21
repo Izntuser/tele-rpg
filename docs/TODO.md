@@ -59,3 +59,6 @@
 - Files stage: one quest photo can be reused across several submissions; decide whether an attachment may be linked to only one submission.
 - S13 test_step 4: quest_streak.current only resets at the next completion, so after a missed day the stale value is shown; derive or reset it (e.g. by the expiry job) when a period is missed.
 - S14/frontend: render the new journal/notification type quest_revision_superseded (GM's pending proposal dropped by the player's submit).
+- user.tg_user_id: add a CHECK (tg_user_id > 0 OR (deleted_at IS NOT NULL AND tg_user_id = -id)) so the partial unique index cannot be bypassed (S08 review).
+- core/idempotency.py claim(): the row-is-None branch retries recursively without bound; cap at one retry or return 409 (S08 review).
+- ARCHITECTURE.md user table: tg_user_id is unique only among live ids (partial index, DECISIONS #16); bot lookups by Telegram id must use it (S08 review).

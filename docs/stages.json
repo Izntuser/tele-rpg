@@ -313,7 +313,7 @@
         "test_ledger_invariants.py runs a random sequence of operations and then checks wallet.balance == sum(gold_transaction.amount), total_xp == sum(xp_transaction.xp), and that no balance is negative.",
         "GET /economy/balance returns the active wallet plus any frozen wallets. GET /economy/transactions is cursor-paginated and returns only my own ledger."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },
