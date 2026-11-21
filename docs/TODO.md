@@ -14,3 +14,7 @@
 - Account deletion must decide what happens to user.tg_user_id (NOT NULL unique) and to re-login.
 - Add indexes on hot FK/filter columns (quest_occurrence(assignee_id,status), gold_transaction(wallet_id), notification(status,send_after), reward(partnership_id)) in the stages that write those queries.
 - tests/integration/test_migrations.py round-trip (downgrade base) assumes pytest runs serially (no xdist).
+- deploy: the prod image must set APP_ENV=prod (or require APP_ENV explicitly); today a deploy that forgets APP_ENV skips every prod guard.
+- the future /api/test/reset must call `assert_disposable_db(url, suffix=E2E_DB_SUFFIX)` in addition to checking APP_ENV=test.
+- migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
+- anyone with a local DB from 603d5ff should rebuild it (downgrade base && upgrade head) to get ck_reward_quantity_remaining_within_limit.

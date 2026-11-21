@@ -19,3 +19,7 @@ surprising: partial unique indexes cannot stop a user being user_a in one active
 ## 2026-11-21 S02 security review fix-up (round 2)
 done: prod guards for fake TG_BOT_TOKEN and TG_WEBHOOK_SECRET (>=32); jwt/tg secrets and DATABASE_URL are SecretStr (repr test); engines pin READ COMMITTED (+DECISIONS #11); tests/db_guard.py refuses TRUNCATE/downgrade unless DB ends in _test (_e2e helper ready); CHECK quantity_remaining <= quantity_limit in model + 0001; 6 TODO lines. check-stage S02 passes (94 backend tests).
 surprising: 0001 was edited in place; the sandbox refused `downgrade base` on the shared dev/e2e DBs, so the new CHECK was added to telerpg, telerpg_e2e, telerpg_test with an additive ALTER TABLE (alembic check clean). Fresh DBs get it from 0001.
+
+## 2026-11-21 S02 security fix-up (round 3)
+done: Settings has hide_input_in_errors=True and re-raises every ValidationError redacted (input -> "[hidden]", no __cause__/__context__), since hide_input only scrubs str(exc) while errors()/json() still held the raw env dict; tests assert no secret/DB password in str/repr/errors()/json for prod-guard and field failures; 4 TODO lines. check-stage S02 passes (99 backend tests).
+surprising: validator messages never interpolated secrets; the leak was pydantic's model-level error input (whole env dict).

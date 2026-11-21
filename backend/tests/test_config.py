@@ -1,7 +1,14 @@
 import pytest
 from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 
-from app.core.config import DEV_JWT_SECRET, DEV_TG_BOT_TOKEN, Settings
+from app.core.config import (
+    DEV_JWT_SECRET,
+    DEV_TG_BOT_TOKEN,
+    HIDDEN_INPUT,
+    Settings,
+    _redact_validation_error,
+)
 from app.modules.common.enums import Difficulty
 
 STRONG = "x" * 48
@@ -106,3 +113,65 @@ def test_difficulty_xp_must_cover_every_difficulty(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("DIFFICULTY_XP", '{"easy": 20}')
     with pytest.raises(ValidationError, match="difficulty_xp"):
         Settings()
+
+
+LEAK_JWT = "leak-jwt-secret-7d1e5b2c9a4f8e3d6b0a1c5f9e2d4b8a"
+LEAK_TOKEN = "555000111:AALEAKLEAKLEAKLEAKLEAKLEAKLEAKLEAKLE"
+LEAK_HOOK_LONG = "leak-webhook-secret-3a9f1c7e5b2d8f4a6c"
+LEAK_HOOK_SHORT = "leak-hook-short-91"
+LEAK_DB_PASSWORD = "pg-leak-pass-4e8b2f"
+LEAK_DB_URL = f"postgresql+asyncpg://someone:{LEAK_DB_PASSWORD}@db.internal:5432/telerpg"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        # _prod_guards (model validator) fails: webhook secret too short.
+        {"TG_WEBHOOK_SECRET": LEAK_HOOK_SHORT},
+        # field validation fails while every secret is present in the input.
+        {"DB_POOL_SIZE": "0"},
+        {"JWT_TTL_SECONDS": "-1"},
+        # difficulty_xp check (same model validator) fails.
+        {"DIFFICULTY_XP": '{"easy": 20}'},
+    ],
+    ids=["prod-guard", "pool-size", "jwt-ttl", "difficulty-xp"],
+)
+def test_validation_errors_never_leak_secrets(
+    monkeypatch: pytest.MonkeyPatch, overrides: dict[str, str]
+) -> None:
+    prod_env(
+        monkeypatch,
+        JWT_SECRET=LEAK_JWT,
+        TG_BOT_TOKEN=LEAK_TOKEN,
+        TG_WEBHOOK_SECRET=LEAK_HOOK_LONG,
+        DATABASE_URL=LEAK_DB_URL,
+    )
+    for name, value in overrides.items():
+        monkeypatch.setenv(name, value)
+    with pytest.raises(ValidationError) as excinfo:
+        Settings()
+    exc = excinfo.value
+    assert exc.__cause__ is None and exc.__context__ is None
+    assert exc.errors() and all(e["input"] == HIDDEN_INPUT for e in exc.errors())
+    rendered = str(exc) + repr(exc) + repr(exc.errors()) + exc.json()
+    for secret in (LEAK_JWT, LEAK_TOKEN, LEAK_HOOK_LONG, LEAK_HOOK_SHORT, LEAK_DB_PASSWORD):
+        assert secret not in rendered
+
+
+def test_redaction_falls_back_for_custom_error_types() -> None:
+    original = ValidationError.from_exception_data(
+        "Settings",
+        [
+            {
+                "type": PydanticCustomError("my_check", "bad {thing}", {"thing": "x"}),
+                "loc": ("jwt_secret",),
+                "input": LEAK_JWT,
+            }
+        ],
+    )
+    redacted = _redact_validation_error(original)
+    [err] = redacted.errors()
+    assert err["type"] == "my_check"
+    assert err["msg"] == "bad x"
+    assert err["input"] == HIDDEN_INPUT
+    assert LEAK_JWT not in str(redacted) + repr(redacted.errors()) + redacted.json()

@@ -1,7 +1,8 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic_core import InitErrorDetails, PydanticCustomError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.modules.common.enums import Difficulty
@@ -12,6 +13,32 @@ DEV_JWT_SECRET = "dev-jwt-secret-change-me"
 DEV_TG_BOT_TOKEN = "123456789:AAFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"
 MIN_PROD_JWT_SECRET_LEN = 32
 MIN_PROD_WEBHOOK_SECRET_LEN = 32
+HIDDEN_INPUT = "[hidden]"
+
+
+def _redact_validation_error(exc: ValidationError) -> ValidationError:
+    """Copy of ``exc`` with every error's ``input`` replaced by HIDDEN_INPUT.
+
+    ``hide_input_in_errors`` only scrubs ``str(exc)``; ``exc.errors()`` and ``exc.json()``
+    still carry the raw input, which for model-level errors is the whole env dict (secrets).
+    """
+    known: list[InitErrorDetails] = []
+    custom: list[InitErrorDetails] = []
+    for err in exc.errors():
+        loc = err["loc"]
+        detail: InitErrorDetails = {"type": err["type"], "loc": loc, "input": HIDDEN_INPUT}
+        if "ctx" in err:
+            detail["ctx"] = err["ctx"]
+        known.append(detail)
+        # Fallback when an error type is not a built-in one: keep type name and message.
+        message = err["msg"].replace("{", "{{").replace("}", "}}")
+        custom.append(
+            {"type": PydanticCustomError(err["type"], message), "loc": loc, "input": HIDDEN_INPUT}
+        )
+    try:
+        return ValidationError.from_exception_data(exc.title, known, hide_input=True)
+    except (KeyError, TypeError, ValueError):
+        return ValidationError.from_exception_data(exc.title, custom, hide_input=True)
 
 
 class Settings(BaseSettings):
@@ -21,7 +48,8 @@ class Settings(BaseSettings):
     appear in ``repr``/logs; read them with ``.get_secret_value()``.
     """
 
-    model_config = SettingsConfigDict(extra="ignore")
+    # hide_input_in_errors: a failed validation must not echo raw env input (secrets) in errors.
+    model_config = SettingsConfigDict(extra="ignore", hide_input_in_errors=True)
 
     app_env: Literal["development", "test", "prod"] = "development"
     database_url: SecretStr = SecretStr(f"{_DB}/telerpg")
@@ -46,6 +74,16 @@ class Settings(BaseSettings):
         Difficulty.HARD: 100,
         Difficulty.EPIC: 250,
     }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        redacted: ValidationError | None = None
+        try:
+            super().__init__(*args, **kwargs)
+        except ValidationError as exc:
+            redacted = _redact_validation_error(exc)
+        if redacted is not None:
+            # Raised outside `except` so neither __cause__ nor __context__ keeps the raw input.
+            raise redacted
 
     @model_validator(mode="after")
     def _prod_guards(self) -> "Settings":
