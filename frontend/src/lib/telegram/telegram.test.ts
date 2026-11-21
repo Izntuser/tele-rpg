@@ -4,6 +4,7 @@ import {
   MockAdapter,
   TmaAdapter,
   createTelegramAdapter,
+  mockInitData,
   getTelegram,
   setTelegram,
   type TelegramAdapter,
@@ -93,6 +94,29 @@ describe('createTelegramAdapter', () => {
       },
     });
     expect(createTelegramAdapter(win)).toBeInstanceOf(MockAdapter);
+  });
+});
+
+describe('VITE_MOCK_INIT_DATA', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  test('feeds the MockAdapter in DEV', () => {
+    vi.stubEnv('DEV', true);
+    vi.stubEnv('VITE_MOCK_INIT_DATA', 'user=dev&hash=h');
+    expect(mockInitData()).toBe('user=dev&hash=h');
+    expect(createTelegramAdapter(fakeWindow()).getInitData()).toBe('user=dev&hash=h');
+  });
+
+  test('is ignored outside DEV (production build)', () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('VITE_MOCK_INIT_DATA', 'user=leak&hash=h');
+    expect(mockInitData()).toBe('');
+    const adapter = createTelegramAdapter(fakeWindow());
+    expect(adapter).toBeInstanceOf(MockAdapter);
+    expect(adapter.getInitData()).toBe('');
   });
 });
 

@@ -17,8 +17,10 @@
 - migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
 - anyone with a local DB from 603d5ff should rebuild it (downgrade base && upgrade head) to get ck_reward_quantity_remaining_within_limit.
 - core/config.py: custom-error-type fallback drops ctx and downgrades a mixed error list entirely; cosmetic.
-- playwright.config.ts: e2e specs share one DB and reset it per test; set `workers: 1` (or fullyParallel false + serial projects) before a second DB-touching spec file lands.
-- prod: login rate limit keys on request.client.host; run uvicorn with --proxy-headers/--forwarded-allow-ips for Railway, or all users share one 30/min login bucket.
+- prod: login rate limit keys on request.client.host; run uvicorn with --proxy-headers and --forwarded-allow-ips limited to Railway's proxy range (never '*', which lets any client spoof X-Forwarded-For and dodge the limit), or all users share one 30/min login bucket.
 - features/auth strings (AuthGate, UserGreeting) are hard-coded English; move them to i18n in S04.
 - /auth/telegram creates only the user row; /auth/me returns character=null until S05 onboarding creates the character (+6 attribute rows).
 - InsecureKeyLengthWarning in pytest: DEV_JWT_SECRET (and .env.example JWT_SECRET) is 24 bytes; consider a >=32-byte dev default.
+- auth: consider a shorter login max_age for initData than 24h to narrow the replay window.
+- POST /api/test/reset takes a write-rate-limit token before reset_all() clears the limits; harmless today.
+- core/ratelimit.py: prune is O(n) once past 10k keys, and in-memory limits multiply with more uvicorn workers (ARCHITECTURE assumes one worker).
