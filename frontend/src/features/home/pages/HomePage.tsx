@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import { UserGreeting } from '../../auth/UserGreeting';
 import { useCharacter } from '../../character/api';
 import { AttributeGrid, CharacterHeader } from '../../character/CharacterHeader';
+import { TodayPanel } from '../../quests/components/TodayPanel';
 
 function QuickLink({ to, icon, label, testId }: { to: string; icon: ReactNode; label: string; testId: string }) {
   return (
@@ -58,6 +59,8 @@ export function HomePage() {
           {tp('character.loading')}
         </p>
       )}
+
+      <TodayPanel />
 
       <div className="flex flex-col gap-2">
         <QuickLink to="/me/goals" testId="home-goals-link" icon={<Target size={20} />} label={tp('home.goals')} />

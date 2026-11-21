@@ -71,7 +71,7 @@ const ROUTES: [string, string][] = [
   ['/', 'page-home'],
   ['/invite/tok', 'page-invite'],
   ['/quests', 'page-quests'],
-  ['/quests/new', 'page-quest-new'],
+  ['/quests/new', 'page-quests'],
   ['/quests/5', 'page-quest-detail'],
   ['/shop', 'page-shop'],
   ['/shop/inventory', 'page-inventory'],

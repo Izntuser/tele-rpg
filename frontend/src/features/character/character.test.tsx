@@ -56,7 +56,8 @@ test('Home shows an inline error with retry when the character fails to load', a
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not load your character');
   await act(async () => screen.getByRole('button', { name: 'Try again' }).click());
   expect(await screen.findByTestId('character-header')).toBeInTheDocument();
-  expect(request).toHaveBeenCalledTimes(2);
+  // Home also loads the partnership / quests for the today panel; count only the character.
+  expect(request.mock.calls.filter((c) => c[1] === '/character')).toHaveLength(2);
 });
 
 test('Home follows the uk locale', async () => {
