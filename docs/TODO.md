@@ -6,11 +6,8 @@
 - scripts/test-smoke.sh: simulate API-down by killing uvicorn (per S01 test_step), not only a dead port.
 - init.sh: PID liveness via `kill -0` can match a reused PID; also verify the process command line.
 - backend/app/core/db.py (S01, NullPool engine used by /healthz) duplicates app/db/session.py; point /healthz at db.session and delete core/db.py.
-- gold_transaction.(user_id, partnership_id) is not FK-tied to its wallet's (user_id, partnership_id); consider a composite FK to wallet(id, user_id, partnership_id).
-- Purchase stage: namespace idempotency keys per user (e.g. `purchase:{user_id}:{key}`) and cap the Idempotency-Key header length to fit String(255).
-- gold_transaction has no CHECK requiring quest_occurrence_id for quest_reward or purchase_id for purchase/refund.
 - Schema does not enforce cross-partnership consistency (reward_purchase vs reward partnership, occurrence assignee vs template, wallet user membership); consider composite FKs.
-- Add indexes on hot FK/filter columns (gold_transaction(wallet_id), notification(status,send_after), reward(partnership_id)) in the stages that write those queries (quest indexes done in 0003).
+- Add indexes on hot FK/filter columns (notification(status,send_after), reward(partnership_id)) in the stages that write those queries (quest indexes done in 0003, ledger indexes in 0004).
 - tests/integration/test_migrations.py round-trip (downgrade base) assumes pytest runs serially (no xdist).
 - deploy: the prod image must set APP_ENV=prod (or require APP_ENV explicitly); today a deploy that forgets APP_ENV skips every prod guard.
 - migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
@@ -48,10 +45,13 @@
 - main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
 - test_health.py asserts Referrer-Policy only on the fallback; add /invite/<x> and an asset path.
 - partnerships/service._notify writes Notification rows directly; route it through notifications.service.enqueue (payload guard).
-- S08: when a one-time quest goes to in_review while a revision is pending, decide whether submit supersedes it (today accepting it later only updates the template, not the submitted occurrence).
 - S14: notifications for recurring-template events (offer/decline/cancel of a template) have deep_link NULL (no occurrence id); add a template deep link (e.g. qt_<id>) in lib/deeplink.ts and the dispatcher.
 - S09: recurring offers have no occurrence until accepted; the Offers tab must merge GET /quests?role=player&status=offered with GET /quest-templates?role=player&status=offered&recurrence=daily|weekly.
 - Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
 - GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.
 - quests/service.py _declined_by_template loads all declined revisions per template and picks the last in Python; use DISTINCT ON if revisions grow.
-- Recurring offers have no offer deadline (accept deadline check is one-time only); re-check in S08/S09.
+- Rewards stage: debit/refund only through economy.service.post with purchase_key(user_id, key) / refund_key(purchase_id), locking partnership FOR SHARE, then reward, then wallet (DECISIONS 16 lock order).
+- Achievements stage: hook achievement checks into quests/completion.complete_occurrence (same transaction).
+- Scheduler stage: run core.idempotency.purge_expired periodically (rows older than 24h are only replaced lazily on reuse today).
+- Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
+- Level-ups only write journal events (level_up, attribute_level_up); add an optional Telegram notification in the notifications stage.

@@ -22,7 +22,7 @@ from app.modules.common.enums import ALL_ENUMS
 from tests.conftest import TEST_DATABASE_URL, alembic_config
 from tests.db_guard import assert_disposable_db
 
-HEAD = "0003"
+HEAD = "0004"
 
 EXPECTED_TABLES = {
     "user",
@@ -57,6 +57,7 @@ EXPECTED_CHECKS = {
     "ck_partnership_users_ordered",
     "ck_wallet_balance_non_negative",
     "ck_gold_transaction_amount_sign_matches_type",
+    "ck_gold_transaction_reference_matches_type",
     "ck_xp_transaction_xp_non_negative",
     "ck_xp_transaction_attribute_xp_non_negative",
     "ck_quest_template_assignee_not_creator",
@@ -85,6 +86,7 @@ EXPECTED_UNIQUES = {
     "uq_partnership_user_a_id_user_b_id",
     "uq_partnership_invitation_token_hash",
     "uq_wallet_user_id_partnership_id",
+    "uq_wallet_id_user_id_partnership_id",
     "uq_gold_transaction_idempotency_key",
     "uq_xp_transaction_quest_occurrence_id",
     "uq_quest_revision_template_id_version",
@@ -258,6 +260,38 @@ def test_0003_adds_quest_offer_flow_columns_and_indexes() -> None:
             )
             == []
         )
+    finally:
+        command.upgrade(cfg, "head")
+
+
+def test_0004_adds_ledger_constraints_and_indexes() -> None:
+    assert rows("SELECT version_num FROM alembic_version") == [(HEAD,)]
+    indexdefs = dict(rows("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public'"))
+    assert "(wallet_id)" in indexdefs["ix_gold_transaction_wallet_id"]
+    assert "(user_id, id)" in indexdefs["ix_gold_transaction_user_id_id"]
+    assert "(user_id)" in indexdefs["ix_xp_transaction_user_id"]
+    assert "(created_at)" in indexdefs["ix_idempotency_key_created_at"]
+    fk = rows(
+        "SELECT pg_get_constraintdef(oid) FROM pg_constraint"
+        " WHERE conname = 'fk_gold_transaction_wallet_owner'"
+    )
+    assert fk == [
+        (
+            "FOREIGN KEY (wallet_id, user_id, partnership_id)"
+            " REFERENCES wallet(id, user_id, partnership_id)",
+        )
+    ]
+    cfg = alembic_config()
+    try:
+        command.downgrade(cfg, "0003")
+        names = constraints("c") | constraints("f") | constraints("u")
+        assert "ck_gold_transaction_reference_matches_type" not in names
+        assert "fk_gold_transaction_wallet_owner" not in names
+        assert "uq_wallet_id_user_id_partnership_id" not in names
+        index_names = {
+            r[0] for r in rows("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
+        }
+        assert "ix_gold_transaction_wallet_id" not in index_names
     finally:
         command.upgrade(cfg, "head")
 

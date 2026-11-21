@@ -21,7 +21,7 @@ from app.modules.common.enums import (
     Recurrence,
     SubmissionReviewStatus,
 )
-from app.modules.common.validation import Description, Reason, Title
+from app.modules.common.validation import Description, Reason, RequiredReason, Title
 
 GOLD_MIN = 0
 GOLD_MAX = 1000
@@ -117,6 +117,32 @@ class DeclineIn(BaseModel):
     reason: Reason = None
 
 
+class SubmitIn(BaseModel):
+    """The assignee's report. ``attachment_id`` must be a quest photo the assignee uploaded;
+    a ``photo_required`` quest needs one."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    comment: Description = None
+    attachment_id: Annotated[int, Field(gt=0, le=2**63 - 1)] | None = None
+
+
+class ConfirmIn(BaseModel):
+    """Optional positive feedback from the creator."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    feedback: Reason = None
+
+
+class RedoIn(BaseModel):
+    """Why the creator wants corrections: required, non-blank."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    reason: RequiredReason
+
+
 class RevisionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -196,3 +222,26 @@ class QuestCreated(BaseModel):
     #: The offered occurrence of a one-time quest; null for a recurring offer, whose first
     #: occurrence is created when the assignee accepts.
     occurrence: OccurrenceOut | None
+
+
+class CompletionOut(BaseModel):
+    """What completing the occurrence awarded to its assignee (for the celebration)."""
+
+    gold: int
+    xp: int
+    attribute: Attribute
+    attribute_xp: int
+    total_xp: int
+    level_before: int
+    level: int
+    attribute_level_before: int
+    attribute_level: int
+    #: Wallet balance in the quest's partnership after the credit.
+    balance: int
+
+
+class QuestActionResult(OccurrenceDetail):
+    """Response of submit / confirm / request-redo. ``completion`` is set when this request
+    completed the occurrence (confirm, or submit of an auto-confirm quest)."""
+
+    completion: CompletionOut | None = None

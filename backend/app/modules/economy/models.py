@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint, text
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, created_at, id_pk, pg_enum
@@ -15,6 +24,8 @@ class Wallet(Base):
     __table_args__ = (
         CheckConstraint("balance >= 0", name="balance_non_negative"),
         UniqueConstraint("user_id", "partnership_id"),
+        # Target of gold_transaction's composite FK: a ledger row's owner is its wallet's (0004).
+        UniqueConstraint("id", "user_id", "partnership_id"),
     )
 
     id: Mapped[int] = id_pk()
@@ -35,6 +46,21 @@ class GoldTransaction(Base):
             " OR type = 'adjustment'",
             name="amount_sign_matches_type",
         ),
+        # A quest reward names its occurrence; a purchase or refund names its purchase (0004).
+        CheckConstraint(
+            "(type <> 'quest_reward' OR quest_occurrence_id IS NOT NULL)"
+            " AND (type NOT IN ('reward_purchase', 'reward_refund') OR purchase_id IS NOT NULL)",
+            name="reference_matches_type",
+        ),
+        # user_id / partnership_id must be the wallet's own (0004).
+        ForeignKeyConstraint(
+            ["wallet_id", "user_id", "partnership_id"],
+            ["wallet.id", "wallet.user_id", "wallet.partnership_id"],
+            name="fk_gold_transaction_wallet_owner",
+        ),
+        Index(None, "wallet_id"),
+        # GET /economy/transactions: my ledger, newest first, keyset on id.
+        Index(None, "user_id", "id"),
     )
 
     id: Mapped[int] = id_pk()
@@ -45,6 +71,6 @@ class GoldTransaction(Base):
     amount: Mapped[int] = mapped_column(Integer)
     quest_occurrence_id: Mapped[int | None] = mapped_column(ForeignKey("quest_occurrence.id"))
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("reward_purchase.id"))
-    # e.g. quest:{occurrence_id}, purchase:{key}, refund:{purchase_id}
+    # quest:{occurrence_id}, purchase:{user_id}:{key}, refund:{purchase_id} (economy.service)
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True)
     created_at: Mapped[datetime] = created_at()

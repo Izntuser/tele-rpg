@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, created_at, id_pk, pg_enum
@@ -14,6 +14,7 @@ class XpTransaction(Base):
     __table_args__ = (
         CheckConstraint("xp >= 0", name="xp_non_negative"),
         CheckConstraint("attribute_xp >= 0", name="attribute_xp_non_negative"),
+        Index(None, "user_id"),
     )
 
     id: Mapped[int] = id_pk()

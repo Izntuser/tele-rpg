@@ -105,7 +105,7 @@ async def test_duplicate_gold_transaction_idempotency_key_rejected(session: Asyn
         "wallet_id": wallet.id,
         "user_id": a.id,
         "partnership_id": p.id,
-        "type": GoldTransactionType.QUEST_REWARD,
+        "type": GoldTransactionType.ADJUSTMENT,
         "amount": 50,
         "idempotency_key": "quest:1",
     }
@@ -114,6 +114,81 @@ async def test_duplicate_gold_transaction_idempotency_key_rejected(session: Asyn
         session,
         insert(GoldTransaction).values(**{**row, "amount": 20}),
         "uq_gold_transaction_idempotency_key",
+    )
+
+
+async def ledger_refs(
+    session: AsyncSession, a: Any, b: Any, p: Partnership
+) -> dict[GoldTransactionType, dict[str, int]]:
+    """The reference columns each ledger type requires (ck_..._reference_matches_type)."""
+    template = await f.create_quest_template(session, p, b, a)
+    occurrence = await f.create_quest_occurrence(session, template)
+    reward = await f.create_reward(session, p, b)
+    purchase = RewardPurchase(
+        reward_id=reward.id,
+        partnership_id=p.id,
+        buyer_id=a.id,
+        provider_id=b.id,
+        price_paid=40,
+        reward_snapshot={},
+        idempotency_key=f"refs:{reward.id}",
+    )
+    session.add(purchase)
+    await session.flush()
+    return {
+        GoldTransactionType.QUEST_REWARD: {"quest_occurrence_id": occurrence.id},
+        GoldTransactionType.REWARD_PURCHASE: {"purchase_id": purchase.id},
+        GoldTransactionType.REWARD_REFUND: {"purchase_id": purchase.id},
+        GoldTransactionType.ADJUSTMENT: {},
+    }
+
+
+@pytest.mark.parametrize(
+    "tx_type",
+    [
+        GoldTransactionType.QUEST_REWARD,
+        GoldTransactionType.REWARD_PURCHASE,
+        GoldTransactionType.REWARD_REFUND,
+    ],
+)
+async def test_gold_transaction_requires_its_reference(
+    session: AsyncSession, tx_type: GoldTransactionType
+) -> None:
+    a, b, p = await pair(session)
+    wallet = await f.create_wallet(session, a, p)
+    refs = await ledger_refs(session, a, b, p)
+    amount = -40 if tx_type == GoldTransactionType.REWARD_PURCHASE else 40
+    row = {
+        "wallet_id": wallet.id,
+        "user_id": a.id,
+        "partnership_id": p.id,
+        "type": tx_type,
+        "amount": amount,
+    }
+    await assert_rejected(
+        session,
+        insert(GoldTransaction).values(**row, idempotency_key="refs:missing"),
+        "ck_gold_transaction_reference_matches_type",
+    )
+    await accepted(
+        session, insert(GoldTransaction).values(**row, idempotency_key="refs:ok", **refs[tx_type])
+    )
+
+
+async def test_gold_transaction_owner_must_match_its_wallet(session: AsyncSession) -> None:
+    a, b, p = await pair(session)
+    wallet = await f.create_wallet(session, a, p)
+    await assert_rejected(
+        session,
+        insert(GoldTransaction).values(
+            wallet_id=wallet.id,
+            user_id=b.id,
+            partnership_id=p.id,
+            type=GoldTransactionType.ADJUSTMENT,
+            amount=5,
+            idempotency_key="owner:wrong",
+        ),
+        "fk_gold_transaction_wallet_owner",
     )
 
 
@@ -135,8 +210,9 @@ async def test_duplicate_gold_transaction_idempotency_key_rejected(session: Asyn
 async def test_gold_transaction_sign_matches_type(
     session: AsyncSession, tx_type: GoldTransactionType, amount: int, ok: bool
 ) -> None:
-    a, _, p = await pair(session)
+    a, b, p = await pair(session)
     wallet = await f.create_wallet(session, a, p)
+    refs = await ledger_refs(session, a, b, p)
     stmt = insert(GoldTransaction).values(
         wallet_id=wallet.id,
         user_id=a.id,
@@ -144,6 +220,7 @@ async def test_gold_transaction_sign_matches_type(
         type=tx_type,
         amount=amount,
         idempotency_key=f"sign:{tx_type}:{amount}",
+        **refs[tx_type],
     )
     if ok:
         await accepted(session, stmt)

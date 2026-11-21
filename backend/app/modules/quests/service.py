@@ -104,6 +104,14 @@ class DeadlineNotAllowedError(QuestError):
     """A deadline on a recurring quest (the create schema rejects it; PATCH lands here)."""
 
 
+class InvalidAttachmentError(QuestError):
+    """``attachment_id`` is not a quest photo uploaded by the submitting assignee."""
+
+
+class PhotoRequiredError(QuestError):
+    """The quest's terms require a photo and the submission has none."""
+
+
 # --- helpers ---------------------------------------------------------------------------------
 
 
@@ -182,6 +190,8 @@ def _event(
     occurrence: QuestOccurrence | None,
     terms: QuestTerms,
     extra: dict[str, Any] | None = None,
+    *,
+    category: NotificationCategory = NotificationCategory.QUESTS,
 ) -> None:
     """Journal event (shared, by the actor) + notification to the other member."""
     entity_type, entity_id = (
@@ -213,7 +223,7 @@ def _event(
         session,
         recipient_id=_other(template, actor_id),
         type=type_,
-        category=NotificationCategory.QUESTS,
+        category=category,
         entity_type=entity_type,
         entity_id=entity_id,
         payload=base,
@@ -330,6 +340,14 @@ async def _supersede_pending(session: AsyncSession, template: QuestTemplate) -> 
         revision.status = state.next_revision_status(revision.status, "supersede")
         revision.decided_at = now
     await session.flush()
+
+
+# Shared with ``quests.completion`` (submit / confirm / request-redo): one lock order, one
+# event writer, one place that closes a quest's pending revisions.
+Locked = _Locked
+lock_quest = _lock
+quest_event = _event
+supersede_pending = _supersede_pending
 
 
 # --- create ----------------------------------------------------------------------------------
