@@ -412,7 +412,7 @@
         "A purchase shows the CelebrationOverlay, and the balance updates without a reload through query invalidation.",
         "e2e/core-loop.spec.ts, tagged @P0 @S11, implements ARCHITECTURE §10 steps 1–8 with two browser contexts and ends with B's inventory showing Fulfilled. pnpm e2e --grep @S11 saves docs/screens/S11.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

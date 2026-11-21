@@ -90,3 +90,6 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T23:37 DISPATCH S11 -> stage-worker(sonnet) (medium, normal, ui, shop UI P0)
 2026-11-21T23:46 REVIEW S11 -> stage-reviewer (round 1, @d77b62d)
 2026-11-21T23:49 REVIEW S11 stage-reviewer: APPROVE (round 1; frozen-voucher UI gaps as TODO)
+2026-11-22T00:18 MERGED S11 (check-stage --mark passed on main after OrbStack restart; S01/S03/S05-S10 recheck passed; 1 review round)
+2026-11-22T00:18 REGRESSION S04 e2e after S11 merge: 2 nav a[aria-current=page] (expected 1); deterministic
+2026-11-22T00:18 DISPATCH S04-repair -> stage-worker(sonnet) (restore S04 e2e after S11)
