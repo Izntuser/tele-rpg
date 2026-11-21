@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, created_at, id_pk, pg_enum
@@ -33,6 +33,9 @@ class Reward(Base):
     status: Mapped[RewardStatus] = mapped_column(
         pg_enum(RewardStatus), server_default=RewardStatus.ACTIVE.value
     )
+    # Set only by ending the partnership (it hid this reward); re-pairing restores exactly
+    # these and clears it. A reward its creator hid on purpose never carries it.
+    hidden_by_partnership_end: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     # Circular with wishlist_item.linked_reward_id, hence created by ALTER after both tables.
     source_wishlist_item_id: Mapped[int | None] = mapped_column(
         ForeignKey(

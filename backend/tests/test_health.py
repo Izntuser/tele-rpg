@@ -44,4 +44,5 @@ async def test_spa_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     finally:
         get_settings.cache_clear()
     assert 'id="root"' in page.text
+    assert page.headers["referrer-policy"] == "no-referrer"
     assert api.status_code == 404

@@ -272,15 +272,21 @@ async def preview_invitation(session: AsyncSession, user: User, token: str) -> I
 
 
 async def _restore_rewards(session: AsyncSession, partnership_id: int) -> None:
-    """Undo ``leave``'s hiding: back to active, or sold_out when nothing is left."""
+    """Undo ``end_partnership``'s hiding, and only that: rewards it hid (flagged) go back to
+    active, or sold_out when nothing is left. Rewards hidden by their creator stay hidden."""
     rewards = await session.scalars(
         select(Reward)
-        .where(Reward.partnership_id == partnership_id, Reward.status == RewardStatus.HIDDEN)
+        .where(
+            Reward.partnership_id == partnership_id,
+            Reward.status == RewardStatus.HIDDEN,
+            Reward.hidden_by_partnership_end.is_(True),
+        )
         .with_for_update()
     )
     for reward in rewards:
         sold_out = reward.quantity_remaining is not None and reward.quantity_remaining <= 0
         reward.status = RewardStatus.SOLD_OUT if sold_out else RewardStatus.ACTIVE
+        reward.hidden_by_partnership_end = False
 
 
 async def accept_invitation(session: AsyncSession, user: User, token: str) -> AcceptOut:
@@ -380,7 +386,7 @@ async def end_partnership(
     await session.execute(
         update(Reward)
         .where(Reward.partnership_id == partnership.id, Reward.status != RewardStatus.HIDDEN)
-        .values(status=RewardStatus.HIDDEN, updated_at=now)
+        .values(status=RewardStatus.HIDDEN, hidden_by_partnership_end=True, updated_at=now)
     )
     # Wallets are frozen by the partnership status itself: purchases require an active
     # partnership; refunds may still credit them. Ledger rows are never touched.

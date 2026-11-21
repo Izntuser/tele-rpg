@@ -38,6 +38,9 @@
 - TelegramAdapter: add openTelegramLink/switchInlineQuery so InvitePanel shares through Telegram natively (today an https://t.me/share/url link).
 - Companion page: add recent shared activity and life balance + suggestions (ARCHITECTURE s6) in the journal/stats stages.
 - Notifications stage: render partnership_accepted / partnership_ended (stored with category quests; consider a dedicated category).
-- Re-pair un-hides every hidden reward of the partnership, including ones the creator hid before leaving; add a flag if that matters.
 - partnership_invitation rows past expires_at stay `pending` (accept/preview treat them as expired); a scheduler job could mark them `expired`.
 - InvitePanel/useInvitePreview: preview is a POST (token in the body), so it takes a write rate-limit token per view.
+- Account deletion removes File rows but not the stored bytes (users/account.py:182); the files stage must delete the bytes too.
+- Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
+- Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; later stages must keep notification and journal payloads free of names.
+- Rewards stage: decide whether a creator editing/re-hiding a reward while the partnership is ended should clear reward.hidden_by_partnership_end (today it stays set, so re-pair restores it).

@@ -29,6 +29,8 @@ test('@S06 A invites, B opens startapp=invite_<token> before onboarding, accepts
     await pageB.goto('/');
     await expect(pageB).toHaveURL(new RegExp(`/invite/${token}$`));
     await expect(pageB.getByTestId('invite-inviter')).toContainText('Aria');
+    // The token is in this URL: the page must never send it on as a Referer.
+    await expect(pageB.locator('meta[name="referrer"]')).toHaveAttribute('content', 'no-referrer');
     // Not onboarded yet: create the character first, then come back to the invitation.
     await expect(pageB.getByTestId('invite-accept')).toHaveCount(0);
     await pageB.getByTestId('invite-onboard').click();
@@ -57,7 +59,7 @@ test('@S06 A invites, B opens startapp=invite_<token> before onboarding, accepts
     await contextB.close();
   }
 
-  // A sees B (name prefilled from Telegram during B's onboarding), with B's goals and wishes.
+  // A sees B (name prefilled from Telegram during B's onboarding) and is B's Game Master.
   await page.reload();
   await expect(page.getByTestId('companion-card').getByTestId('companion-name')).toHaveText('Bohdan');
   await expect(page.getByTestId('companion-profile')).toContainText('You are the Game Master');

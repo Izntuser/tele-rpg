@@ -1,4 +1,5 @@
-"""Migration 0001 builds exactly the ARCHITECTURE §4 schema, round-trips, and has no drift.
+"""Migrations build exactly the ARCHITECTURE §4 schema (0001, plus later additive revisions),
+round-trip, and have no drift.
 
 These tests are sync on purpose: alembic's env.py runs its own event loop. Each one leaves the
 test database at head.
@@ -208,6 +209,27 @@ def test_check_unique_and_partial_unique_constraints_exist() -> None:
         "SELECT tgname FROM pg_trigger WHERE tgrelid = 'partnership'::regclass AND NOT tgisinternal"
     )
     assert triggers == [("partnership_one_active_per_user",)]
+
+
+def test_0002_adds_the_reward_hidden_by_partnership_end_flag() -> None:
+    assert rows("SELECT version_num FROM alembic_version") == [("0002",)]
+    assert rows(
+        "SELECT data_type, is_nullable, column_default FROM information_schema.columns"
+        " WHERE table_schema = 'public' AND table_name = 'reward'"
+        " AND column_name = 'hidden_by_partnership_end'"
+    ) == [("boolean", "NO", "false")]
+    cfg = alembic_config()
+    try:
+        command.downgrade(cfg, "0001")
+        assert (
+            rows(
+                "SELECT 1 FROM information_schema.columns WHERE table_name = 'reward'"
+                " AND column_name = 'hidden_by_partnership_end'"
+            )
+            == []
+        )
+    finally:
+        command.upgrade(cfg, "head")
 
 
 def test_composite_primary_keys() -> None:

@@ -535,10 +535,29 @@ async def test_repair_reactivates_the_old_partnership(
     unlimited = await factories.create_reward(session, partnership, a)
     empty = await factories.create_reward(session, partnership, a, quantity_limit=1)
     empty.quantity_remaining = 0
+    withdrawn = await factories.create_reward(session, partnership, a, status=RewardStatus.HIDDEN)
+    edited = await factories.create_reward(session, partnership, a)
     old_quest = await factories.create_quest_template(session, partnership, a, b)
     await session.flush()
 
     assert (await leave(client, b)).status_code == 204
+    for reward in (unlimited, empty, withdrawn, edited):
+        await session.refresh(reward)
+    assert [r.hidden_by_partnership_end for r in (unlimited, empty, withdrawn, edited)] == [
+        True,
+        True,
+        False,
+        True,
+    ]
+    # The creator edits a leave-hidden reward while the partnership is ended: updated_at moves
+    # past ended_at, which must not matter for restoring it.
+    await session.refresh(partnership)
+    ended_at = partnership.ended_at
+    assert ended_at is not None
+    edited.title = "Edited while ended"
+    edited.updated_at = ended_at + timedelta(hours=1)
+    await session.commit()
+
     second = await accept(client, a, await invite(client, b))
     assert second.status_code == 200, second.text
     assert second.json()["reactivated"] is True
@@ -555,6 +574,12 @@ async def test_repair_reactivates_the_old_partnership(
     await session.refresh(unlimited)
     await session.refresh(empty)
     assert (unlimited.status, empty.status) == (RewardStatus.ACTIVE, RewardStatus.SOLD_OUT)
+    await session.refresh(edited)
+    assert (edited.status, edited.title) == (RewardStatus.ACTIVE, "Edited while ended")
+    await session.refresh(withdrawn)
+    assert withdrawn.status == RewardStatus.HIDDEN  # hidden by its creator before the leave
+    for reward in (unlimited, empty, withdrawn, edited):
+        assert reward.hidden_by_partnership_end is False
     await session.refresh(old_quest)
     assert old_quest.status == QuestTemplateStatus.CANCELLED  # history stays history
 
