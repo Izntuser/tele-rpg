@@ -52,3 +52,4 @@
 - S14: notifications for recurring-template events (offer/decline/cancel of a template) have deep_link NULL (no occurrence id); add a template deep link (e.g. qt_<id>) in lib/deeplink.ts and the dispatcher.
 - S09: recurring offers have no occurrence until accepted; the Offers tab must merge GET /quests?role=player&status=offered with GET /quest-templates?role=player&status=offered&recurrence=daily|weekly.
 - Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
+- GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.

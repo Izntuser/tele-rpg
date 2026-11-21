@@ -160,6 +160,20 @@ def _transition_error(exc: state.InvalidTransitionError) -> QuestStateError:
     return QuestStateError(str(exc))
 
 
+def _check_revisable(
+    template: QuestTemplate, occurrence: QuestOccurrence | None, action: str
+) -> None:
+    """A pending revision can be decided only on an open quest: an active / paused template
+    and, for a one-time quest, its still-active occurrence (409 otherwise)."""
+    if template.status not in REVISABLE_TEMPLATE_STATUSES:
+        raise QuestStateError(f"cannot {action} a quest that is {template.status.value}")
+    if template.recurrence == Recurrence.ONCE and (
+        occurrence is None or occurrence.status != QuestOccurrenceStatus.ACTIVE
+    ):
+        status = occurrence.status.value if occurrence is not None else "missing"
+        raise QuestStateError(f"cannot {action} a quest that is {status}")
+
+
 def _event(
     session: AsyncSession,
     actor_id: int,
@@ -277,8 +291,9 @@ async def _lock(
 async def _pending_revision(
     session: AsyncSession, template: QuestTemplate, *, lock: bool = False
 ) -> QuestRevision | None:
-    """The revision awaiting the assignee after acceptance (not the offer's revision 1)."""
-    if template.status == QuestTemplateStatus.OFFERED:
+    """The revision awaiting the assignee after acceptance (not the offer's revision 1). Only a
+    revisable (active / paused) template has one; a closed template never shows a stale one."""
+    if template.status not in REVISABLE_TEMPLATE_STATUSES:
         return None
     query = select(QuestRevision).where(
         QuestRevision.template_id == template.id,
@@ -518,6 +533,8 @@ async def accept(
     try:
         if template.status == QuestTemplateStatus.OFFERED:
             if occurrence is not None:
+                if occurrence.due_at is not None and occurrence.due_at <= now:
+                    raise QuestStateError("the offer's deadline has passed")
                 occurrence.status = state.next_occurrence_status(occurrence.status, "accept")
                 occurrence.accepted_at = now
             template.status = state.next_template_status(template.status, "accept")
@@ -532,10 +549,9 @@ async def accept(
             terms = QuestTerms.model_validate(revision.terms)
             _event(session, user.id, "quest_accepted", template, occurrence, terms)
         else:
+            _check_revisable(template, occurrence, "accept")
             pending = await _pending_revision(session, template, lock=True)
             if pending is None:
-                if occurrence is not None:
-                    state.next_occurrence_status(occurrence.status, "accept")
                 raise QuestStateError("nothing to accept")
             pending.status = state.next_revision_status(pending.status, "accept")
             pending.decided_at = now
@@ -594,10 +610,9 @@ async def decline(
             terms = QuestTerms.model_validate(revision.terms)
             extra: dict[str, Any] = {}
         else:
+            _check_revisable(template, occurrence, "decline")
             pending = await _pending_revision(session, template, lock=True)
             if pending is None:
-                if occurrence is not None:
-                    state.next_occurrence_status(occurrence.status, "decline")
                 raise QuestStateError("nothing to decline")
             pending.status = state.next_revision_status(pending.status, "decline")
             pending.decided_at = now
@@ -672,7 +687,7 @@ async def cancel(
 async def _pending_by_template(
     session: AsyncSession, templates: Iterable[QuestTemplate]
 ) -> dict[int, QuestRevision]:
-    ids = [t.id for t in templates if t.status != QuestTemplateStatus.OFFERED]
+    ids = [t.id for t in templates if t.status in REVISABLE_TEMPLATE_STATUSES]
     if not ids:
         return {}
     rows = await session.scalars(
@@ -684,11 +699,30 @@ async def _pending_by_template(
     return {r.template_id: r for r in rows}
 
 
+async def _declined_by_template(
+    session: AsyncSession, template_ids: Iterable[int]
+) -> dict[int, QuestRevision]:
+    """The newest declined revision of each template (its reason is shown to both members)."""
+    ids = list(template_ids)
+    if not ids:
+        return {}
+    rows = await session.scalars(
+        select(QuestRevision)
+        .where(
+            QuestRevision.template_id.in_(ids),
+            QuestRevision.status == QuestRevisionStatus.DECLINED,
+        )
+        .order_by(QuestRevision.version)
+    )
+    return {r.template_id: r for r in rows}  # the last (highest version) wins
+
+
 async def _template_out(
     session: AsyncSession,
     template: QuestTemplate,
     user_id: int,
     pending: QuestRevision | None = None,
+    declined: QuestRevision | None = None,
     *,
     lookup_pending: bool = True,
 ) -> TemplateOut:
@@ -701,8 +735,15 @@ async def _template_out(
         terms, version = QuestTerms.model_validate(current.terms), current.version
     else:  # pragma: no cover - rows written outside this service (fixtures, manual SQL)
         terms, version = _template_terms(get_settings(), template), 0
-    if pending is None and lookup_pending:
-        pending = await _pending_revision(session, template)
+    if lookup_pending:
+        if pending is None:
+            pending = await _pending_revision(session, template)
+        if declined is None:
+            declined = (await _declined_by_template(session, [template.id])).get(template.id)
+    # A declined proposal stays visible until a newer revision is accepted; a declined offer is
+    # the current revision itself.
+    if declined is not None and declined.version < version:
+        declined = None
     return TemplateOut(
         id=template.id,
         partnership_id=template.partnership_id,
@@ -714,6 +755,9 @@ async def _template_out(
         terms=terms,
         version=version,
         pending_revision=RevisionOut.model_validate(pending) if pending is not None else None,
+        last_declined_revision=RevisionOut.model_validate(declined)
+        if declined is not None
+        else None,
         created_at=template.created_at,
     )
 
@@ -872,7 +916,10 @@ async def list_templates(
         query = query.where(QuestTemplate.recurrence == recurrence)
     templates = list(await session.scalars(query))
     pending = await _pending_by_template(session, templates)
+    declined = await _declined_by_template(session, [t.id for t in templates])
     return [
-        await _template_out(session, t, user.id, pending.get(t.id), lookup_pending=False)
+        await _template_out(
+            session, t, user.id, pending.get(t.id), declined.get(t.id), lookup_pending=False
+        )
         for t in templates
     ]

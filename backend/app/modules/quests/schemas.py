@@ -127,6 +127,9 @@ class RevisionOut(BaseModel):
     proposed_by: int
     created_at: datetime
     decided_at: datetime | None
+    #: The assignee's reason when it was declined; visible to both members, never copied into
+    #: journal or notification payloads.
+    decline_reason: str | None
 
 
 class SubmissionOut(BaseModel):
@@ -153,6 +156,9 @@ class TemplateOut(BaseModel):
     terms: QuestTerms
     version: int
     pending_revision: RevisionOut | None
+    #: The newest declined revision (a declined offer, or a declined proposal not yet replaced
+    #: by a newer accepted revision), with its decline_reason; null otherwise.
+    last_declined_revision: RevisionOut | None
     created_at: datetime
 
 

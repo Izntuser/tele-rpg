@@ -1040,3 +1040,225 @@ async def test_schema_allows_one_pending_revision_per_template(
                 )
             )
             await session.flush()
+
+
+# --- closed quests and pending revisions -------------------------------------------------------
+
+
+async def _revision(session: AsyncSession, template_id: int, version: int) -> QuestRevision:
+    revision = await session.scalar(
+        select(QuestRevision)
+        .where(QuestRevision.template_id == template_id, QuestRevision.version == version)
+        .execution_options(populate_existing=True)
+    )
+    assert revision is not None
+    return revision
+
+
+async def _leave_and_repair(
+    client: httpx.AsyncClient, session: AsyncSession, player: User, partnership: Partnership
+) -> None:
+    """End the partnership, then reactivate the same row the way re-pairing does."""
+    response = await client.post(
+        "/api/partnership/leave", headers=auth(player), json={"confirm_text": "LEAVE"}
+    )
+    assert response.status_code == 204, response.text
+    await session.refresh(partnership)
+    partnership.status = PartnershipStatus.ACTIVE
+    partnership.ended_at = None
+    partnership.ended_by = None
+    await session.flush()
+
+
+async def _accepted_once_with_proposal(
+    client: httpx.AsyncClient, gm: User, player: User
+) -> tuple[int, int]:
+    """(occurrence id, template id) of an accepted one-time quest with gold 77 proposed."""
+    occurrence_id = (await create_quest(client, gm))["occurrence"]["id"]
+    assert (await post(client, player, f"/quests/{occurrence_id}/accept")).status_code == 200
+    patch = await client.patch(f"/api/quests/{occurrence_id}", headers=auth(gm), json={"gold": 77})
+    assert patch.status_code == 200 and patch.json()["has_pending_revision"] is True
+    return occurrence_id, patch.json()["template_id"]
+
+
+async def test_pending_revision_on_a_closed_quest_cannot_be_decided_after_repair(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    gm, player, partnership = await pair(session)
+    occurrence_id, template_id = await _accepted_once_with_proposal(client, gm, player)
+    await _leave_and_repair(client, session, player, partnership)
+    before = await counts(session)
+
+    for path in (
+        f"/quests/{occurrence_id}/accept",
+        f"/quests/{occurrence_id}/decline",
+        f"/quest-templates/{template_id}/accept",
+        f"/quest-templates/{template_id}/decline",
+    ):
+        assert (await post(client, player, path)).status_code == 409, path
+
+    template = await session.get(QuestTemplate, template_id, populate_existing=True)
+    assert template is not None
+    assert template.status == QuestTemplateStatus.CANCELLED and template.gold == 50
+    assert await counts(session) == before
+    detail = (await client.get(f"/api/quests/{occurrence_id}", headers=auth(gm))).json()
+    assert detail["status"] == "cancelled" and detail["terms"]["gold"] == 50
+    assert detail["template"]["terms"]["gold"] == 50
+    assert detail["has_pending_revision"] is False
+    assert detail["template"]["pending_revision"] is None
+
+
+async def test_stale_pending_revision_on_a_closed_template_is_refused_and_hidden(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    """Even if a pending revision survives on a closed template (rows from before the fix, or a
+    later close path that forgets to supersede), accept / decline give 409 and GET hides it."""
+    gm, player, partnership = await pair(session)
+    occurrence_id, template_id = await _accepted_once_with_proposal(client, gm, player)
+    await _leave_and_repair(client, session, player, partnership)
+    revision = await _revision(session, template_id, 2)
+    revision.status = QuestRevisionStatus.PENDING
+    revision.decided_at = None
+    await session.flush()
+    before = await counts(session)
+
+    assert (await post(client, player, f"/quests/{occurrence_id}/accept")).status_code == 409
+    decline = await post(client, player, f"/quests/{occurrence_id}/decline", {"reason": "No"})
+    assert decline.status_code == 409
+    template = await session.get(QuestTemplate, template_id, populate_existing=True)
+    assert template is not None and template.gold == 50
+    revision = await _revision(session, template_id, 2)
+    assert revision.status == QuestRevisionStatus.PENDING and revision.decline_reason is None
+    assert await counts(session) == before
+
+    detail = (await client.get(f"/api/quests/{occurrence_id}", headers=auth(gm))).json()
+    assert detail["has_pending_revision"] is False
+    assert detail["template"]["pending_revision"] is None
+    template_detail = await client.get(f"/api/quest-templates/{template_id}", headers=auth(gm))
+    assert template_detail.json()["pending_revision"] is None
+    listed = await client.get("/api/quest-templates", headers=auth(gm))
+    assert all(t["pending_revision"] is None for t in listed.json())
+
+
+async def test_decline_of_a_revision_on_a_finished_once_quest_is_409(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    """A one-time quest needs its occurrence still active to decide a revision."""
+    gm, player, _ = await pair(session)
+    occurrence_id, template_id = await _accepted_once_with_proposal(client, gm, player)
+    occurrence = await session.get(QuestOccurrence, occurrence_id)
+    assert occurrence is not None
+    occurrence.status = QuestOccurrenceStatus.IN_REVIEW
+    await session.flush()
+    for action in ("accept", "decline"):
+        assert (await post(client, player, f"/quests/{occurrence_id}/{action}")).status_code == 409
+    assert (await _revision(session, template_id, 2)).status == QuestRevisionStatus.PENDING
+
+
+async def test_end_partnership_supersedes_pending_revisions(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    gm, player, _ = await pair(session)
+    active_id = (await create_quest(client, gm, recurrence="daily"))["template"]["id"]
+    await post(client, player, f"/quest-templates/{active_id}/accept")
+    await client.patch(f"/api/quest-templates/{active_id}", headers=auth(gm), json={"gold": 9})
+    offered_id = (await create_quest(client, gm, recurrence="weekly"))["template"]["id"]
+    response = await client.post(
+        "/api/partnership/leave", headers=auth(gm), json={"confirm_text": "LEAVE"}
+    )
+    assert response.status_code == 204
+    pending = await session.scalar(
+        select(func.count())
+        .select_from(QuestRevision)
+        .where(
+            QuestRevision.template_id.in_([active_id, offered_id]),
+            QuestRevision.status == QuestRevisionStatus.PENDING,
+        )
+    )
+    assert pending == 0
+    superseded = await _revision(session, active_id, 2)
+    assert superseded.status == QuestRevisionStatus.SUPERSEDED
+    assert superseded.decided_at is not None
+    assert (await _revision(session, active_id, 1)).status == QuestRevisionStatus.ACCEPTED
+    offer = await _revision(session, offered_id, 1)
+    assert offer.status == QuestRevisionStatus.SUPERSEDED
+
+
+async def test_cancelling_a_template_supersedes_its_pending_revision(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    gm, player, _ = await pair(session)
+    template_id = (await create_quest(client, gm, recurrence="daily"))["template"]["id"]
+    await post(client, player, f"/quest-templates/{template_id}/accept")
+    await client.patch(f"/api/quest-templates/{template_id}", headers=auth(gm), json={"gold": 9})
+    response = await post(client, gm, f"/quest-templates/{template_id}/cancel")
+    assert response.status_code == 200
+    assert response.json()["pending_revision"] is None
+    assert (await _revision(session, template_id, 2)).status == QuestRevisionStatus.SUPERSEDED
+    accept = await post(client, player, f"/quest-templates/{template_id}/accept")
+    assert accept.status_code == 409
+
+    # A one-time quest: cancelling its occurrence cancels the template and its proposal too.
+    occurrence_id, once_id = await _accepted_once_with_proposal(client, gm, player)
+    assert (await post(client, player, f"/quests/{occurrence_id}/cancel")).status_code == 200
+    assert (await _revision(session, once_id, 2)).status == QuestRevisionStatus.SUPERSEDED
+    assert (await post(client, player, f"/quests/{occurrence_id}/decline")).status_code == 409
+
+
+async def test_revision_decline_reason_is_exposed_but_not_in_payloads(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    gm, player, _ = await pair(session)
+    offer_id = (await create_quest(client, gm, recurrence="daily"))["template"]["id"]
+    declined_offer = await post(
+        client, player, f"/quest-templates/{offer_id}/decline", {"reason": "Not now"}
+    )
+    assert declined_offer.json()["last_declined_revision"]["decline_reason"] == "Not now"
+    as_gm = await client.get(f"/api/quest-templates/{offer_id}", headers=auth(gm))
+    assert as_gm.json()["last_declined_revision"]["decline_reason"] == "Not now"
+
+    template_id = (await create_quest(client, gm, recurrence="weekly"))["template"]["id"]
+    await post(client, player, f"/quest-templates/{template_id}/accept")
+    proposed = await client.patch(
+        f"/api/quest-templates/{template_id}", headers=auth(gm), json={"title": "Swim"}
+    )
+    assert proposed.json()["pending_revision"]["decline_reason"] is None
+    assert proposed.json()["last_declined_revision"] is None
+    await post(client, player, f"/quest-templates/{template_id}/decline", {"reason": "Secret pool"})
+    detail = (await client.get(f"/api/quest-templates/{template_id}", headers=auth(gm))).json()
+    assert detail["last_declined_revision"]["version"] == 2
+    assert detail["last_declined_revision"]["decline_reason"] == "Secret pool"
+    listed = await client.get("/api/quest-templates", headers=auth(gm))
+    by_id = {t["id"]: t for t in listed.json()}
+    assert by_id[template_id]["last_declined_revision"]["decline_reason"] == "Secret pool"
+    assert by_id[offer_id]["last_declined_revision"]["decline_reason"] == "Not now"
+
+    # A newer accepted revision replaces the declined one.
+    await client.patch(f"/api/quest-templates/{template_id}", headers=auth(gm), json={"gold": 5})
+    accepted = await post(client, player, f"/quest-templates/{template_id}/accept")
+    assert accepted.json()["last_declined_revision"] is None
+
+    payloads = [*await session.scalars(select(JournalEvent.payload))]
+    payloads += [*await session.scalars(select(Notification.payload))]
+    assert payloads
+    for payload in payloads:
+        assert "Secret pool" not in str(payload) and "Not now" not in str(payload)
+
+
+async def test_offer_past_its_deadline_cannot_be_accepted(
+    client: httpx.AsyncClient, session: AsyncSession, frozen_clock: ModuleType
+) -> None:
+    gm, player, _ = await pair(session)
+    deadline = clock.now() + timedelta(hours=1)
+    created = await create_quest(client, gm, deadline_at=deadline.isoformat())
+    occurrence_id = created["occurrence"]["id"]
+    frozen_clock.advance(timedelta(hours=1))
+    before = await counts(session)
+    response = await post(client, player, f"/quests/{occurrence_id}/accept")
+    assert response.status_code == 409
+    assert "deadline" in response.text
+    assert await counts(session) == before
+    detail = (await client.get(f"/api/quests/{occurrence_id}", headers=auth(player))).json()
+    assert detail["status"] == "offered" and detail["accepted_at"] is None
+    # Declining an offer whose deadline passed is still allowed.
+    assert (await post(client, player, f"/quests/{occurrence_id}/decline")).status_code == 200

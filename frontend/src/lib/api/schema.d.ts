@@ -1069,6 +1069,8 @@ export interface components {
             created_at: string;
             /** Decided At */
             decided_at: string | null;
+            /** Decline Reason */
+            decline_reason: string | null;
         };
         /** SubmissionOut */
         SubmissionOut: {
@@ -1122,6 +1124,7 @@ export interface components {
             /** Version */
             version: number;
             pending_revision: components["schemas"]["RevisionOut"] | null;
+            last_declined_revision: components["schemas"]["RevisionOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -1150,6 +1153,7 @@ export interface components {
             /** Version */
             version: number;
             pending_revision: components["schemas"]["RevisionOut"] | null;
+            last_declined_revision: components["schemas"]["RevisionOut"] | null;
             /**
              * Created At
              * Format: date-time

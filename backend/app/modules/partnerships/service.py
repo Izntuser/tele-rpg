@@ -31,6 +31,7 @@ from app.modules.common.enums import (
     NotificationCategory,
     PartnershipStatus,
     QuestOccurrenceStatus,
+    QuestRevisionStatus,
     QuestTemplateStatus,
     RewardStatus,
     WishlistStatus,
@@ -53,7 +54,7 @@ from app.modules.partnerships.schemas import (
     PendingInvitationOut,
 )
 from app.modules.progression.levels import level_for_xp, progress_for_xp
-from app.modules.quests.models import QuestOccurrence, QuestTemplate
+from app.modules.quests.models import QuestOccurrence, QuestRevision, QuestTemplate
 from app.modules.rewards.models import Reward
 from app.modules.users.models import Character, CharacterAttribute, User
 from app.modules.users.schemas import AttributeOut
@@ -382,6 +383,16 @@ async def end_partnership(
             QuestTemplate.status.in_(OPEN_TEMPLATE_STATUSES),
         )
         .values(status=QuestTemplateStatus.CANCELLED)
+    )
+    # Pending revisions (and pending offer revisions) die with their quests: superseded, so a
+    # later re-pair cannot accept or decline terms on a closed quest (DECISIONS #15).
+    await session.execute(
+        update(QuestRevision)
+        .where(
+            QuestRevision.template_id.in_(templates),
+            QuestRevision.status == QuestRevisionStatus.PENDING,
+        )
+        .values(status=QuestRevisionStatus.SUPERSEDED, decided_at=now)
     )
     await session.execute(
         update(Reward)
