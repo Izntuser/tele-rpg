@@ -202,7 +202,7 @@
         "Goals and wishlist CRUD work on my own items. Editing or deleting another user's item returns 404. GET ?user=companion returns the partner's items only while a partnership is active, and 403 otherwise.",
         "pnpm e2e --grep @S05 completes onboarding as user A, adds a goal and a wishlist item, and saves docs/screens/S05.png of Home with avatar, name, level, XP bar and gold."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

@@ -40,3 +40,8 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T17:55 REVIEW S04 -> stage-reviewer (round 2, @71b1cac)
 2026-11-21T17:58 REVIEW S04 stage-reviewer round 2: APPROVE (2 TODOs)
 2026-11-21T18:00 MERGED S04 (check-stage --mark passed on main; S01/S03 recheck passed; 2 review rounds)
+2026-11-21T18:00 DISPATCH S05 -> stage-worker(opus) (medium, sensitive, ui, character)
+2026-11-21T18:21 REVIEW S05 -> stage-reviewer + stage-reviewer(opus,security; codex unavailable) (round 1, @14ed351)
+2026-11-21T18:23 REVIEW S05 stage-reviewer(opus,security): APPROVE (5 TODOs; awaiting stage-reviewer)
+2026-11-21T18:25 REVIEW S05 stage-reviewer: APPROVE (round 1)
+2026-11-21T18:28 MERGED S05 (check-stage --mark passed on main; S01/S03/S04 recheck passed; 1 review round)

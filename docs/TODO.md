@@ -33,3 +33,9 @@
 - Onboarding has no "Invite companion" step yet (ARCHITECTURE s6); the partnership stage should add it after Goals/Timezone.
 - Settings stage: edit locale/timezone via PATCH /character and update the AUTH_QUERY_KEY user (as OnboardingPage does) so AppLayout switches language.
 - Any new replace-redirect at app start should reuse features/onboarding/redirect.ts FIRST_ENTRY_STATE so Telegram Back goes Home.
+- common/validation.py: bidi blocklist misses U+200E/U+200F/U+061C; reject all Cf/Zl/Zp (except ZWJ) and U+2028/U+2029 in single-line fields.
+- users/service.py resolve_owner: also check companion deleted_at (defence in depth for the account-deletion stage).
+- test_goals_wishlist.py: parametrize companion 403 over PENDING and LEFT, not only ENDED.
+- validation.py timezone: legacy aliases (Factory, EST, GMT+0, Cuba) are accepted; consider restricting to canonical Area/City zones.
+- Onboarding is one stepped page, ARCHITECTURE.md:290 describes sub-routes; record in DECISIONS or align.
+- Add an e2e opening an /invite/<token> deeplink as a not-yet-onboarded user (only redirect predicates are unit-tested).
