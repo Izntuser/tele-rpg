@@ -1,14 +1,14 @@
 # Project: tele-rpg
 
 ## Stack
-<!-- FILLED BY /spec after the interview. Until then: no application code exists. -->
-TBD
+Frontend: React 19 + TypeScript + Vite + Tailwind/shadcn + TanStack Query, Telegram Mini App (pnpm).
+Backend: Python 3.13 + FastAPI + SQLAlchemy 2 (async) + Alembic + aiogram 3 + APScheduler, PostgreSQL 17 (uv).
 
 ## Commands
 - bootstrap: ./init.sh            (idempotent: docker up, install, migrate, dev server)
 - smoke: scripts/smoke.sh         (must pass before you start any work)
-- test: <FILLED BY /spec>
-- lint: <FILLED BY /spec>
+- test: pnpm test                 (vitest --run in frontend + uv run pytest in backend)
+- lint: pnpm lint                 (eslint + tsc in frontend + ruff check/format --check + mypy in backend)
 - e2e: pnpm e2e --grep @<id>      (Playwright; saves docs/screens/<id>.png; only if the project has a web UI)
 - stage check: scripts/check-stage.sh <id>              (runs the stage's definition of done)
 - stage done:  scripts/check-stage.sh <id> --mark        (the ONLY way to set passes=true)
