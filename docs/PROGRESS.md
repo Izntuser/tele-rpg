@@ -10,3 +10,16 @@ surprising: pnpm pinned via packageManager (latest pnpm rejects fresh lockfile e
 ## 2026-11-21 S01 review fix-up (round 2)
 done: compose name tele-rpg; init.sh uses PID files, cleans stale ones, fails on foreign port holder, frozen-lockfile no fallback; CI playwright --with-deps; scripts/test-smoke.sh (in pnpm test) proves smoke.sh fails naming api /healthz via API_URL override; TODOs added.
 left: .env.example pending (human).
+
+## 2026-11-21 S02 DONE (pending review)
+done: Settings (+prod JWT_SECRET guard, difficulty_xp), core/clock (freeze/advance), db/base (naming convention, pg_enum, load_models), db/session, /api router autodiscovery wired in main.py, all 24 §4 tables in app/modules/*/models.py, enums in common/enums.py, hand-tuned 0001 migration (explicit enum types, deferred cyclic FKs, partnership one-active trigger), conftest fixtures + factories, 74 backend tests; check-stage S02 passes.
+left: nothing in scope; TODOs added (core/db.py consolidation, gold_transaction composite FK).
+surprising: partial unique indexes cannot stop a user being user_a in one active partnership and user_b in another, so a trigger with per-user advisory locks covers it; init.sh now also migrates the dev DB because the dod's `alembic check` reads the default DATABASE_URL; FastAPI 0.165 wraps included routers (_IncludedRouter), so tests check openapi paths.
+
+## 2026-11-21 S02 security review fix-up (round 2)
+done: prod guards for fake TG_BOT_TOKEN and TG_WEBHOOK_SECRET (>=32); jwt/tg secrets and DATABASE_URL are SecretStr (repr test); engines pin READ COMMITTED (+DECISIONS #11); tests/db_guard.py refuses TRUNCATE/downgrade unless DB ends in _test (_e2e helper ready); CHECK quantity_remaining <= quantity_limit in model + 0001; 6 TODO lines. check-stage S02 passes (94 backend tests).
+surprising: 0001 was edited in place; the sandbox refused `downgrade base` on the shared dev/e2e DBs, so the new CHECK was added to telerpg, telerpg_e2e, telerpg_test with an additive ALTER TABLE (alembic check clean). Fresh DBs get it from 0001.
+
+## 2026-11-21 S02 security fix-up (round 3)
+done: Settings has hide_input_in_errors=True and re-raises every ValidationError redacted (input -> "[hidden]", no __cause__/__context__), since hide_input only scrubs str(exc) while errors()/json() still held the raw env dict; tests assert no secret/DB password in str/repr/errors()/json for prod-guard and field failures; 4 TODO lines. check-stage S02 passes (99 backend tests).
+surprising: validator messages never interpolated secrets; the leak was pydantic's model-level error input (whole env dict).
