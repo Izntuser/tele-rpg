@@ -99,3 +99,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T00:29 DISPATCH S13 -> stage-worker(sonnet) (medium, normal, ui, scheduler)
 2026-11-22T00:42 REVIEW S13 -> stage-reviewer (round 1, @710c179; worker ran dod pieces by hand, ports held)
 2026-11-22T00:45 REVIEW S13 stage-reviewer: APPROVE (round 1; runner lock-loss notes as TODO)
+2026-11-22T00:48 PENDING-MARK S13 (merged; check-stage on main: unit/backend green, @S13 e2e fails because main api (no --reload) predates S13 routes; restart needs user, kill denied by auto mode)
