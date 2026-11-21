@@ -83,3 +83,6 @@
 - S11: the core-loop e2e stops at B's Fulfilled voucher; ARCHITECTURE s10 step 9 (journal shows every event) waits for the journal UI stage.
 - S11: e2e user B has Telegram language_code uk, so B's UI is Ukrainian unless the spec sets B's locale (PATCH /api/character) or injects language_code en before B's first login.
 - S11: purchased vouchers are refundable by the buyer in the UI; no way yet for the provider to see/refund frozen vouchers of an ended partnership except the requests queue (shown there while status is purchased/requested/scheduled).
+- jobs/runner.py: the leader never re-checks its lock connection; add a periodic SELECT 1 that steps down on failure so two leaders can't run after a connection drop (S13 review).
+- jobs/runner.py: if pg_advisory_unlock fails, invalidate the connection instead of returning it to the pool still holding the session lock (S13 review).
+- Recurring quests: an assignee changing timezone can produce a second scheduled_date for the same real day (S13 review).
