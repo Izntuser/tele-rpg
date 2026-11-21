@@ -1,0 +1,60 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: telerpg
+          POSTGRES_PASSWORD: telerpg
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U telerpg"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      PGPASSWORD: telerpg
+      SKIP_DOCKER: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - name: Create databases
+        run: psql -h localhost -U telerpg -d postgres -f scripts/db-init.sql
+      - name: Install
+        run: |
+          pnpm install --frozen-lockfile
+          (cd backend && uv sync --frozen)
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - name: Start stack and smoke
+        run: |
+          ./init.sh
+          scripts/smoke.sh
+      - run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: docs/screens
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: logs
+          path: logs/*.log
