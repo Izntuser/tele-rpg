@@ -1,8 +1,9 @@
 """A seeded random walk over quest and economy operations (create, accept, submit, confirm by the
-right or wrong member, redo, cancel, Gold debits) by both members of a partnership. After every
-step: wallet.balance == sum(gold_transaction.amount), no negative balance, character total_xp ==
-sum(xp_transaction.xp), every attribute's xp == its xp_transactions, and exactly one Gold and
-one XP row per completed occurrence."""
+right or wrong member, redo, cancel, Gold debits, and the shop: create rewards, purchase, refund
+by the buyer or provider, request) by both members of a partnership. After every step:
+wallet.balance == sum(gold_transaction.amount), no negative balance, character total_xp ==
+sum(xp_transaction.xp), every attribute's xp == its xp_transactions, exactly one Gold and one
+XP row per completed occurrence, one debit per purchase and one credit per refunded purchase."""
 
 import random
 from typing import Any
@@ -20,13 +21,18 @@ from app.modules.common.enums import (
     QuestOccurrenceStatus,
     QuestTemplateStatus,
     Recurrence,
+    RewardPurchaseStatus,
 )
 from app.modules.economy import service as economy
 from app.modules.economy.models import GoldTransaction, Wallet
+from app.modules.inventory import service as inventory
 from app.modules.progression.models import XpTransaction
 from app.modules.quests import completion, service
 from app.modules.quests.models import QuestOccurrence, QuestTemplate
 from app.modules.quests.schemas import ConfirmIn, QuestCreate, RedoIn, SubmitIn
+from app.modules.rewards import service as rewards
+from app.modules.rewards.models import Reward, RewardPurchase
+from app.modules.rewards.schemas import RewardCreate
 from app.modules.users.models import User
 from tests.integration.completion_support import assert_ledger_invariants, count, pair
 
@@ -79,6 +85,18 @@ async def _check(session: AsyncSession) -> None:
         .where(XpTransaction.id.is_(None))
     )
     assert unpaid == 0
+    purchases = await count(session, RewardPurchase)
+    debits = await count(
+        session, GoldTransaction, GoldTransaction.type == GoldTransactionType.REWARD_PURCHASE
+    )
+    assert debits == purchases
+    refunded = await count(
+        session, RewardPurchase, RewardPurchase.status == RewardPurchaseStatus.REFUNDED
+    )
+    credits = await count(
+        session, GoldTransaction, GoldTransaction.type == GoldTransactionType.REWARD_REFUND
+    )
+    assert credits == refunded
 
 
 @pytest.mark.parametrize("seed", [1, 2, 3])
@@ -152,7 +170,48 @@ async def test_random_operations_keep_the_ledger_consistent(
         )
         await session.commit()
 
+    async def create_reward() -> None:
+        creator = await _user(session, rng.choice(members))
+        await rewards.create(
+            session,
+            creator,
+            RewardCreate(
+                title=f"Reward {rng.randint(1, 10_000)}",
+                price=rng.choice([1, 10, 40, 120]),
+                quantity_limit=rng.choice([None, 1, 2, 5]),
+            ),
+        )
+
+    async def purchase() -> None:
+        reward_ids = list(await session.scalars(select(Reward.id)))
+        if reward_ids:
+            buyer = await _user(session, rng.choice(members))
+            await rewards.purchase(
+                session, buyer, rng.choice(reward_ids), client_key=f"walk-{seed}-{rng.random()}"
+            )
+
+    async def voucher(action: str) -> None:
+        rows = (
+            await session.execute(
+                select(RewardPurchase.id, RewardPurchase.buyer_id, RewardPurchase.provider_id)
+                .where(RewardPurchase.status.not_in(rewards.VOID_STATUSES))
+                .order_by(RewardPurchase.id)
+            )
+        ).all()
+        if not rows:
+            return
+        pid, buyer_id, provider_id = rng.choice(rows)
+        actor = await _user(session, rng.choice([buyer_id, provider_id]))
+        if action == "refund":
+            await inventory.refund(session, actor, pid)
+        else:
+            await inventory.request(session, actor, pid)
+
     ops = {
+        "create_reward": create_reward,
+        "purchase": purchase,
+        "refund": lambda: voucher("refund"),
+        "request": lambda: voucher("request"),
         "create": create,
         "accept": accept,
         "submit": submit,
@@ -162,6 +221,10 @@ async def test_random_operations_keep_the_ledger_consistent(
         "debit": debit,
     }
     weights = {
+        "create_reward": 1,
+        "purchase": 3,
+        "refund": 2,
+        "request": 1,
         "create": 4,
         "accept": 4,
         "submit": 5,
@@ -176,7 +239,7 @@ async def test_random_operations_keep_the_ledger_consistent(
         try:
             await ops[name]()
             stats[name] = stats.get(name, 0) + 1
-        except (service.QuestError, economy.InsufficientGoldError):
+        except (service.QuestError, economy.InsufficientGoldError, rewards.RewardError):
             await session.rollback()
             stats[f"{name}:refused"] = stats.get(f"{name}:refused", 0) + 1
         await _check(session)
@@ -184,3 +247,4 @@ async def test_random_operations_keep_the_ledger_consistent(
     # The walk must actually have paid quests out.
     assert stats.get("confirm", 0) + stats.get("submit", 0) > 5, stats
     assert await count(session, XpTransaction) > 0, stats
+    assert stats.get("purchase", 0) > 0 and stats.get("refund", 0) > 0, stats

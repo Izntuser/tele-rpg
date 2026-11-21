@@ -1,7 +1,19 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, Text, func, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, created_at, id_pk, pg_enum
@@ -18,6 +30,10 @@ class Reward(Base):
             "quantity_remaining <= quantity_limit", name="quantity_remaining_within_limit"
         ),
         CheckConstraint("cooldown_days >= 0", name="cooldown_days_non_negative"),
+        # Target of reward_purchase's composite FK: a purchase's partnership is its reward's (0006).
+        UniqueConstraint("id", "partnership_id"),
+        # GET /rewards: a shop is (partnership, creator) (0006).
+        Index(None, "partnership_id", "creator_id"),
     )
 
     id: Mapped[int] = id_pk()
@@ -55,6 +71,16 @@ class RewardPurchase(Base):
     __table_args__ = (
         CheckConstraint("price_paid > 0", name="price_paid_positive"),
         CheckConstraint("buyer_id <> provider_id", name="buyer_not_provider"),
+        # partnership_id must be the reward's own (0006).
+        ForeignKeyConstraint(
+            ["reward_id", "partnership_id"],
+            ["reward.id", "reward.partnership_id"],
+            name="fk_reward_purchase_reward_partnership",
+        ),
+        # Cooldown check (last purchase of a reward by a buyer) and GET /inventory (0006).
+        Index(None, "reward_id", "buyer_id"),
+        Index(None, "buyer_id", "id"),
+        Index(None, "provider_id", "id"),
     )
 
     id: Mapped[int] = id_pk()
