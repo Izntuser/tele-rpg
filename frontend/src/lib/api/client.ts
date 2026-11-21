@@ -1,0 +1,173 @@
+import { getTelegram } from '../telegram';
+import type { components } from './schema';
+
+export type AuthResponse = components['schemas']['AuthOut'];
+export type MeResponse = components['schemas']['MeOut'];
+export type User = components['schemas']['UserOut'];
+
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly detail: unknown,
+  ) {
+    super(typeof detail === 'string' ? detail : `HTTP ${status}`);
+    this.name = 'ApiError';
+  }
+}
+
+/** Telegram initData is missing (opened outside Telegram): login is impossible. */
+export class NoInitDataError extends Error {
+  constructor() {
+    super('Open this app from Telegram');
+    this.name = 'NoInitDataError';
+  }
+}
+
+export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export interface RequestOptions {
+  body?: unknown;
+  /** `true` generates a fresh key; a string is sent as-is. Kept across the re-auth retry. */
+  idempotencyKey?: string | true;
+  signal?: AbortSignal;
+}
+
+export interface ApiClientOptions {
+  baseUrl?: string;
+  getInitData: () => string;
+  fetch?: typeof fetch;
+  newIdempotencyKey?: () => string;
+}
+
+export interface ApiClient {
+  /** Exchange initData for a JWT (deduplicated while in flight); keeps the JWT in memory. */
+  login(): Promise<AuthResponse>;
+  request<T>(method: Method, path: string, options?: RequestOptions): Promise<T>;
+  get<T>(path: string, options?: Omit<RequestOptions, 'body'>): Promise<T>;
+  post<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'body'>): Promise<T>;
+  patch<T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'body'>): Promise<T>;
+  delete<T>(path: string, options?: Omit<RequestOptions, 'body'>): Promise<T>;
+  hasToken(): boolean;
+  logout(): void;
+}
+
+async function readBody(response: Response): Promise<unknown> {
+  if (response.status === 204) return undefined;
+  const text = await response.text();
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+function errorDetail(body: unknown): unknown {
+  if (body && typeof body === 'object' && 'detail' in body) {
+    return (body as { detail: unknown }).detail;
+  }
+  return body;
+}
+
+/**
+ * Fetch client for `/api`. The JWT lives only in this closure: never in localStorage,
+ * sessionStorage, cookies or URLs. It is sent as `Authorization: Bearer`. A 401 triggers one
+ * re-login with fresh initData and one retry of the request.
+ */
+export function createApiClient(options: ApiClientOptions): ApiClient {
+  const baseUrl = options.baseUrl ?? '/api';
+  const doFetch = options.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+  const newKey = options.newIdempotencyKey ?? (() => crypto.randomUUID());
+  let token: string | null = null;
+  let pendingLogin: Promise<AuthResponse> | null = null;
+
+  async function send(
+    method: Method,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    const init: RequestInit = {
+      method,
+      headers: {
+        Accept: 'application/json',
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...headers,
+      },
+      credentials: 'omit',
+      cache: 'no-store',
+      signal,
+    };
+    if (body !== undefined) init.body = JSON.stringify(body);
+    return doFetch(`${baseUrl}${path}`, init);
+  }
+
+  async function doLogin(): Promise<AuthResponse> {
+    const initData = options.getInitData();
+    if (!initData) throw new NoInitDataError();
+    const response = await send('POST', '/auth/telegram', { init_data: initData }, {});
+    const body = await readBody(response);
+    if (!response.ok) {
+      token = null;
+      throw new ApiError(response.status, errorDetail(body));
+    }
+    const auth = body as AuthResponse;
+    token = auth.jwt;
+    return auth;
+  }
+
+  function login(): Promise<AuthResponse> {
+    pendingLogin ??= doLogin().finally(() => {
+      pendingLogin = null;
+    });
+    return pendingLogin;
+  }
+
+  async function request<T>(method: Method, path: string, opts: RequestOptions = {}): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (opts.idempotencyKey) {
+      headers['Idempotency-Key'] = opts.idempotencyKey === true ? newKey() : opts.idempotencyKey;
+    }
+    if (token === null) await login();
+
+    let response = await send(
+      method,
+      path,
+      opts.body,
+      { ...headers, Authorization: `Bearer ${token}` },
+      opts.signal,
+    );
+    if (response.status === 401) {
+      // The JWT expired or was revoked: re-authenticate once, then retry with the same key.
+      token = null;
+      await login();
+      response = await send(
+        method,
+        path,
+        opts.body,
+        { ...headers, Authorization: `Bearer ${token}` },
+        opts.signal,
+      );
+    }
+    const body = await readBody(response);
+    if (!response.ok) throw new ApiError(response.status, errorDetail(body));
+    return body as T;
+  }
+
+  return {
+    login,
+    request,
+    get: (path, o) => request('GET', path, o),
+    post: (path, body, o) => request('POST', path, { ...o, body }),
+    patch: (path, body, o) => request('PATCH', path, { ...o, body }),
+    delete: (path, o) => request('DELETE', path, o),
+    hasToken: () => token !== null,
+    logout: () => {
+      token = null;
+    },
+  };
+}
+
+/** The app-wide client; initData comes from the Telegram adapter. */
+export const api = createApiClient({ getInitData: () => getTelegram().getInitData() });

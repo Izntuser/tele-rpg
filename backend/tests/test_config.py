@@ -175,3 +175,18 @@ def test_redaction_falls_back_for_custom_error_types() -> None:
     assert err["msg"] == "bad x"
     assert err["input"] == HIDDEN_INPUT
     assert LEAK_JWT not in str(redacted) + repr(redacted.errors()) + redacted.json()
+
+
+def test_redacted_ctx_error_has_no_traceback(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The prod-guard ValueError's traceback would reference _prod_guards' locals (secrets).
+    prod_env(monkeypatch, JWT_SECRET=LEAK_JWT, TG_WEBHOOK_SECRET=LEAK_HOOK_SHORT)
+    with pytest.raises(ValidationError) as excinfo:
+        Settings()
+    errors = excinfo.value.errors()
+    ctx_errors = [e["ctx"]["error"] for e in errors if "error" in e.get("ctx", {})]
+    assert ctx_errors
+    for err in ctx_errors:
+        assert type(err) is ValueError
+        assert err.__traceback__ is None
+        assert err.__cause__ is None and err.__context__ is None
+        assert LEAK_JWT not in str(err) and LEAK_HOOK_SHORT not in str(err)

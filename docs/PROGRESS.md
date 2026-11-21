@@ -23,3 +23,8 @@ surprising: 0001 was edited in place; the sandbox refused `downgrade base` on th
 ## 2026-11-21 S02 security fix-up (round 3)
 done: Settings has hide_input_in_errors=True and re-raises every ValidationError redacted (input -> "[hidden]", no __cause__/__context__), since hide_input only scrubs str(exc) while errors()/json() still held the raw env dict; tests assert no secret/DB password in str/repr/errors()/json for prod-guard and field failures; 4 TODO lines. check-stage S02 passes (99 backend tests).
 surprising: validator messages never interpolated secrets; the leak was pydantic's model-level error input (whole env dict).
+
+## 2026-11-21 S03 DONE (pending review)
+done: validate_init_data (compare_digest, 24h + 5min future skew, dup keys, strict hash), HS256 JWT (alg/iss/aud pinned, exp via app clock), /auth/telegram (upsert on tg_user_id, uk/en locale, per-IP 30/min) + /auth/me, core/deps current_user (Bearer only, 30 writes/min/user -> 429), test-only /api/test/reset (404 unless APP_ENV=test, hidden from OpenAPI, _e2e/_test DB guard, JWT required, TRUNCATE CASCADE); frontend TelegramAdapter (Tma over WebApp or SDK bridge, Mock), in-memory API client, AuthProvider/AuthGate; e2e fixture signs real initData; check-stage S03 passes.
+left: nothing in scope; TODO lines for playwright workers, proxy headers, i18n, character creation.
+surprising: FastAPI 0.165 wraps included routers, so the route-walk test flattens _IncludedRouter.effective_route_contexts(); db_guard moved to app/core (tests re-export); App.tsx/App.test.tsx and schema.d.ts touched.
