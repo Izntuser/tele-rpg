@@ -74,3 +74,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T22:14 REVIEW S08 stage-reviewer round 2: APPROVE (4 TODOs; out-of-list files per DECISIONS #16)
 2026-11-21T22:24 MERGED S08 (check-stage --mark passed on main; S01/S03-S07 recheck passed; 2 review rounds; out-of-list files per DECISIONS #16; 3 TODOs)
 2026-11-21T22:24 DISPATCH S09 -> stage-worker(sonnet) (medium, normal, ui, quest UI)
+2026-11-21T22:36 REVIEW S09 -> stage-reviewer (round 1, @1d6f5bd)
+2026-11-21T22:38 REVIEW S09 stage-reviewer: APPROVE (round 1; 5 minor notes, 2 TODOs)
