@@ -78,3 +78,11 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T22:38 REVIEW S09 stage-reviewer: APPROVE (round 1; 5 minor notes, 2 TODOs)
 2026-11-21T22:49 MERGED S09 (check-stage --mark passed on main; S01/S03-S08 recheck passed; 1 review round; 2 TODOs)
 2026-11-21T22:49 DISPATCH S10 -> stage-worker(opus) (high, sensitive, reward shop backend)
+2026-11-21T23:06 REVIEW S10 -> stage-reviewer + codex-reviewer (round 1, @7ee0342; migration 0006)
+2026-11-21T23:06 REVIEW S10 codex-reviewer: UNAVAILABLE -> stage-reviewer(opus,security)
+2026-11-21T23:11 REVIEW S10 stage-reviewer(opus,security): REQUEST CHANGES (refund after lowered limit oversells; 3 TODOs; awaiting stage-reviewer)
+2026-11-21T23:13 REVIEW S10 stage-reviewer: REQUEST CHANGES (same refund-after-lowered-limit oversell)
+2026-11-21T23:13 DISPATCH S10 -> stage-worker(opus) (round 2: refund recount quantity)
+2026-11-21T23:18 REVIEW S10 -> stage-reviewer + stage-reviewer(opus,security; codex unavailable) (round 2, @69bafe6; only stage-reviewer runs suite: shared test DB)
+2026-11-21T23:19 REVIEW S10 stage-reviewer(opus,security) round 2: APPROVE (read-only; awaiting stage-reviewer)
+2026-11-21T23:22 REVIEW S10 stage-reviewer round 2: APPROVE
