@@ -6,8 +6,8 @@
 - scripts/test-smoke.sh: simulate API-down by killing uvicorn (per S01 test_step), not only a dead port.
 - init.sh: PID liveness via `kill -0` can match a reused PID; also verify the process command line.
 - backend/app/core/db.py (S01, NullPool engine used by /healthz) duplicates app/db/session.py; point /healthz at db.session and delete core/db.py.
-- Schema does not enforce cross-partnership consistency (reward_purchase vs reward partnership, occurrence assignee vs template, wallet user membership); consider composite FKs.
-- Add indexes on hot FK/filter columns (notification(status,send_after), reward(partnership_id)) in the stages that write those queries (quest indexes done in 0003, ledger indexes in 0004).
+- Schema does not enforce cross-partnership consistency (occurrence assignee vs template, wallet user membership, reward_purchase buyer/provider vs partnership members); consider composite FKs. (reward_purchase vs reward partnership done in 0006.)
+- Add indexes on hot FK/filter columns (notification(status,send_after)) in the stages that write those queries (quest indexes done in 0003, ledger indexes in 0004, shop indexes in 0006).
 - tests/integration/test_migrations.py round-trip (downgrade base) assumes pytest runs serially (no xdist).
 - deploy: the prod image must set APP_ENV=prod (or require APP_ENV explicitly); today a deploy that forgets APP_ENV skips every prod guard.
 - migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
@@ -40,8 +40,6 @@
 - Account deletion removes File rows but not the stored bytes (users/account.py:182); the files stage must delete the bytes too.
 - Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
 - Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; journal/notification payloads must stay free of names and free text (journal.service.check_payload rejects name keys; write every new event through record_event/enqueue).
-- Rewards stage: decide whether a creator editing/re-hiding a reward while the partnership is ended should clear reward.hidden_by_partnership_end (today it stays set, so re-pair restores it).
-- Rewards stage: hidden_by_partnership_end must stay out of every request schema, and any creator status change must clear it.
 - main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
 - test_health.py asserts Referrer-Policy only on the fallback; add /invite/<x> and an asset path.
 - partnerships/service._notify writes Notification rows directly; route it through notifications.service.enqueue (payload guard).
@@ -50,7 +48,6 @@
 - Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
 - GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.
 - quests/service.py _declined_by_template loads all declined revisions per template and picks the last in Python; use DISTINCT ON if revisions grow.
-- Rewards stage: debit/refund only through economy.service.post with purchase_key(user_id, key) / refund_key(purchase_id), locking partnership FOR SHARE, then reward, then wallet (DECISIONS 16 lock order).
 - Achievements stage: hook achievement checks into quests/completion.complete_occurrence (same transaction).
 - Scheduler stage: run core.idempotency.purge_expired periodically (rows older than 24h are only replaced lazily on reuse today).
 - Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
@@ -68,3 +65,15 @@
 - S09: Companion page "Create quest" shortcut (ARCHITECTURE s6) not wired; /quests/new is reachable from the Quests FAB and duplicate only.
 - Quest UI: QuestActions/QuestDetailPage only allow accepting a revision on an active occurrence; DECISIONS #15 also allows active/paused templates whose latest recurring occurrence is in_review/completed (S09 review).
 - api/router.py: /quests/estimate only beats /quests/{id} because routes load by file name (presets < quests); make the order explicit (S09 review).
+- S10: when a provider deletes their account (or a partnership ends), requested/scheduled vouchers can be refunded only by the provider, so a deleted provider's vouchers stay open forever; consider auto-refunding open vouchers in end_partnership / account deletion.
+- S10: a reward created from a wishlist item copies the companion's item title/description into reward text, which account deletion keeps (reward text is kept, TODO above); the same goes for reward_purchase.reward_snapshot (title/description frozen at purchase); decide whether the wishlist owner's deletion should scrub both.
+- S10: reward/voucher notifications have deep_link NULL; define r_<id> (reward or purchase?) in lib/deeplink.ts and set it in rewards.service.voucher_event (notifications stage).
+- S10: POST /rewards/{id}/image (reward image upload) is not built; needs the files stage (reward_image kind, partnership check).
+- S10: there is no GET /inventory/{id} or GET /rewards/{id}; the shop UI stage may need them for deep links.
+- S14/frontend: render journal/notification types reward_created, reward_purchased, reward_requested, reward_scheduled, reward_fulfilled, reward_disputed, reward_refunded (category rewards).
+- Idempotency replay of POST /rewards/{id}/purchase returns the stored voucher (24h) even if it was refunded since; clients must refetch /inventory for the current state.
+- users/account.py _scrub locks every provider reward_purchase row (no schedule_note IS NOT NULL filter) before the reward rows, while refund locks reward then purchase; can deadlock once reward images exist. Add the filter and lock rewards first (S10 review).
+- Notifications are still enqueued to deleted users (e.g. a buyer's refund notifies the deleted provider with the reward title); skip deleted recipients in enqueue/voucher_event (S10 review).
+- rewards/schemas.py ScheduleIn.scheduled_for has no upper bound (e.g. now + 1 year) (S10 review).
+- S10 tests: forced-interleaving purchase tests call the service and bypass the HTTP Idempotency-Key claim; reward create (lock_user, then partnership) vs leave/account deletion is not pinned by a test (S10 review).
+- ARCHITECTURE.md Purchase step 3 says key purchase:{idempotency_key}; the code uses purchase:{buyer_id}:{key} (S10 review).

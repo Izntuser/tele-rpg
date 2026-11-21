@@ -222,6 +222,128 @@ export interface paths {
         patch: operations["update_goal_api_goals__goal_id__patch"];
         trace?: never;
     };
+    "/api/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Inventory
+         * @description ``side=buyer``: my vouchers; ``side=provider``: vouchers I must provide. Newest first,
+         *     across all my partnerships (an ended one's are ``frozen``); ``status`` may repeat.
+         */
+        get: operations["list_inventory_api_inventory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/{purchase_id}/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Voucher
+         * @description Buyer: ask to redeem a purchased voucher.
+         */
+        post: operations["request_voucher_api_inventory__purchase_id__request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/{purchase_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Schedule Voucher
+         * @description Provider: set or move the delivery time of a requested voucher.
+         */
+        post: operations["schedule_voucher_api_inventory__purchase_id__schedule_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/{purchase_id}/fulfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fulfill Voucher
+         * @description Provider: mark a scheduled voucher as delivered.
+         */
+        post: operations["fulfill_voucher_api_inventory__purchase_id__fulfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/{purchase_id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispute Voucher
+         * @description Buyer, within 48h of fulfilment: back to requested, no Gold change.
+         */
+        post: operations["dispute_voucher_api_inventory__purchase_id__dispute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/inventory/{purchase_id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund Voucher
+         * @description Provider before fulfilment, buyer only while purchased: one credit back to the buyer's
+         *     wallet (frozen or not) and the unit back to the reward.
+         */
+        post: operations["refund_voucher_api_inventory__purchase_id__refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/partnership/invitations": {
         parameters: {
             query?: never;
@@ -664,6 +786,72 @@ export interface paths {
          * @description Either member: cancel the quest and its offered or active occurrences.
          */
         post: operations["cancel_quest_template_api_quest_templates__template_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Rewards
+         * @description ``shop=companion``: what I can buy (hidden rewards are left out); ``shop=mine``: the
+         *     rewards I provide, every status. Empty without an active partnership.
+         */
+        get: operations["list_rewards_api_rewards_get"];
+        put?: never;
+        /**
+         * Create Reward
+         * @description Add a reward to my shop, optionally from an open item on my companion's wishlist.
+         */
+        post: operations["create_reward_api_rewards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/{reward_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Reward
+         * @description Creator: edit price, terms or availability; only future purchases are affected.
+         */
+        patch: operations["update_reward_api_rewards__reward_id__patch"];
+        trace?: never;
+    };
+    "/api/rewards/{reward_id}/purchase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Purchase Reward
+         * @description Buy a companion's reward. The ``Idempotency-Key`` header is required: a retry with the
+         *     same key replays the first response (24h) and never charges twice.
+         */
+        post: operations["purchase_reward_api_rewards__reward_id__purchase_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1227,6 +1415,104 @@ export interface components {
             photo_required: boolean;
         };
         /**
+         * PurchaseOut
+         * @description A voucher in my inventory (``side=buyer``) or one I must provide (``side=provider``).
+         */
+        PurchaseOut: {
+            /** Id */
+            id: number;
+            /** Reward Id */
+            reward_id: number;
+            /** Buyer Id */
+            buyer_id: number;
+            /** Provider Id */
+            provider_id: number;
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "buyer" | "provider";
+            /** Price Paid */
+            price_paid: number;
+            reward: components["schemas"]["RewardSnapshot"];
+            status: components["schemas"]["RewardPurchaseStatus"];
+            /** Scheduled For */
+            scheduled_for: string | null;
+            /** Schedule Note */
+            schedule_note: string | null;
+            /**
+             * Purchased At
+             * Format: date-time
+             */
+            purchased_at: string;
+            /** Requested At */
+            requested_at: string | null;
+            /** Scheduled At */
+            scheduled_at: string | null;
+            /** Fulfilled At */
+            fulfilled_at: string | null;
+            /** Disputed At */
+            disputed_at: string | null;
+            /** Refunded At */
+            refunded_at: string | null;
+            /** Refunded By */
+            refunded_by: number | null;
+            /** Frozen */
+            frozen: boolean;
+            /** Dispute Until */
+            dispute_until: string | null;
+        };
+        /**
+         * PurchaseResult
+         * @description ``POST /rewards/{id}/purchase``: the new voucher plus my wallet balance after it.
+         */
+        PurchaseResult: {
+            /** Id */
+            id: number;
+            /** Reward Id */
+            reward_id: number;
+            /** Buyer Id */
+            buyer_id: number;
+            /** Provider Id */
+            provider_id: number;
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "buyer" | "provider";
+            /** Price Paid */
+            price_paid: number;
+            reward: components["schemas"]["RewardSnapshot"];
+            status: components["schemas"]["RewardPurchaseStatus"];
+            /** Scheduled For */
+            scheduled_for: string | null;
+            /** Schedule Note */
+            schedule_note: string | null;
+            /**
+             * Purchased At
+             * Format: date-time
+             */
+            purchased_at: string;
+            /** Requested At */
+            requested_at: string | null;
+            /** Scheduled At */
+            scheduled_at: string | null;
+            /** Fulfilled At */
+            fulfilled_at: string | null;
+            /** Disputed At */
+            disputed_at: string | null;
+            /** Refunded At */
+            refunded_at: string | null;
+            /** Refunded By */
+            refunded_by: number | null;
+            /** Frozen */
+            frozen: boolean;
+            /** Dispute Until */
+            dispute_until: string | null;
+            /** Balance */
+            balance: number;
+        };
+        /**
          * QuestActionResult
          * @description Response of submit / confirm / request-redo. ``completion`` is set when this request
          *     completed the occurrence (confirm, or submit of an auto-confirm quest).
@@ -1390,6 +1676,128 @@ export interface components {
             decided_at: string | null;
             /** Decline Reason */
             decline_reason: string | null;
+        };
+        /**
+         * RewardCreate
+         * @description A new reward in my shop. With ``wishlist_item_id`` (an open item on my companion's
+         *     wishlist) ``title`` / ``description`` default to the item's.
+         */
+        RewardCreate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Price */
+            price: number;
+            /** Quantity Limit */
+            quantity_limit?: number | null;
+            /** Cooldown Days */
+            cooldown_days?: number | null;
+            /**
+             * Status
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "hidden";
+            /** Wishlist Item Id */
+            wishlist_item_id?: number | null;
+        };
+        /** RewardOut */
+        RewardOut: {
+            /** Id */
+            id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Price */
+            price: number;
+            /** Image File Id */
+            image_file_id: number | null;
+            /** Quantity Limit */
+            quantity_limit: number | null;
+            /** Quantity Remaining */
+            quantity_remaining: number | null;
+            /** Cooldown Days */
+            cooldown_days: number | null;
+            status: components["schemas"]["RewardStatus"];
+            /** Source Wishlist Item Id */
+            source_wishlist_item_id: number | null;
+            /** Mine */
+            mine: boolean;
+            /** Cooldown Until */
+            cooldown_until: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RewardPurchaseStatus
+         * @enum {string}
+         */
+        RewardPurchaseStatus: "purchased" | "requested" | "scheduled" | "fulfilled" | "cancelled" | "refunded";
+        /**
+         * RewardSnapshot
+         * @description The reward as it was when bought; later edits never change it.
+         */
+        RewardSnapshot: {
+            /** Reward Id */
+            reward_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Price */
+            price: number;
+            /** Image File Id */
+            image_file_id: number | null;
+            /** Cooldown Days */
+            cooldown_days: number | null;
+            /** Quantity Limit */
+            quantity_limit: number | null;
+        };
+        /**
+         * RewardStatus
+         * @enum {string}
+         */
+        RewardStatus: "active" | "hidden" | "sold_out";
+        /**
+         * RewardUpdate
+         * @description Omitted fields are left alone. ``description``, ``quantity_limit`` and ``cooldown_days``
+         *     accept null to clear. Only future purchases are affected.
+         */
+        RewardUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Price */
+            price?: number | null;
+            /** Quantity Limit */
+            quantity_limit?: number | null;
+            /** Cooldown Days */
+            cooldown_days?: number | null;
+            /** Status */
+            status?: ("active" | "hidden") | null;
+        };
+        /** ScheduleIn */
+        ScheduleIn: {
+            /**
+             * Scheduled For
+             * Format: date-time
+             */
+            scheduled_for: string;
+            /** Note */
+            note?: string | null;
         };
         /** SubmissionOut */
         SubmissionOut: {
@@ -1994,6 +2402,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_inventory_api_inventory_get: {
+        parameters: {
+            query?: {
+                side?: "buyer" | "provider";
+                status?: components["schemas"]["RewardPurchaseStatus"][] | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_voucher_api_inventory__purchase_id__request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                purchase_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schedule_voucher_api_inventory__purchase_id__schedule_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                purchase_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fulfill_voucher_api_inventory__purchase_id__fulfill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                purchase_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispute_voucher_api_inventory__purchase_id__dispute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                purchase_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refund_voucher_api_inventory__purchase_id__refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                purchase_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOut"];
                 };
             };
             /** @description Validation Error */
@@ -2826,6 +3426,145 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_rewards_api_rewards_get: {
+        parameters: {
+            query?: {
+                shop?: "companion" | "mine";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_reward_api_rewards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_reward_api_rewards__reward_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reward_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RewardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purchase_reward_api_rewards__reward_id__purchase_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Retry-safe key (1-128 visible ASCII chars); a repeat with the same key replays the first response for 24h. */
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                reward_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseResult"];
+                };
+            };
+            /** @description Not enough gold, sold out, hidden, on cooldown, ended partnership, or my own reward */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or reused Idempotency-Key */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

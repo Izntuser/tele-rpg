@@ -22,7 +22,7 @@ from app.modules.common.enums import ALL_ENUMS
 from tests.conftest import TEST_DATABASE_URL, alembic_config
 from tests.db_guard import assert_disposable_db
 
-HEAD = "0005"
+HEAD = "0006"
 
 EXPECTED_TABLES = {
     "user",
@@ -311,6 +311,35 @@ def test_0005_makes_tg_user_id_unique_only_among_live_ids() -> None:
         }
         assert "ux_user_tg_user_id_live" not in index_names
         assert "ix_user_tg_user_id" not in index_names
+    finally:
+        command.upgrade(cfg, "head")
+
+
+def test_0006_ties_purchases_to_their_reward_partnership_and_adds_shop_indexes() -> None:
+    assert rows("SELECT version_num FROM alembic_version") == [(HEAD,)]
+    fk = rows(
+        "SELECT pg_get_constraintdef(oid) FROM pg_constraint"
+        " WHERE conname = 'fk_reward_purchase_reward_partnership'"
+    )
+    assert fk == [
+        ("FOREIGN KEY (reward_id, partnership_id) REFERENCES reward(id, partnership_id)",)
+    ]
+    assert "uq_reward_id_partnership_id" in constraints("u")
+    indexdefs = dict(rows("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public'"))
+    assert "(partnership_id, creator_id)" in indexdefs["ix_reward_partnership_id_creator_id"]
+    assert "(reward_id, buyer_id)" in indexdefs["ix_reward_purchase_reward_id_buyer_id"]
+    assert "(buyer_id, id)" in indexdefs["ix_reward_purchase_buyer_id_id"]
+    assert "(provider_id, id)" in indexdefs["ix_reward_purchase_provider_id_id"]
+    cfg = alembic_config()
+    try:
+        command.downgrade(cfg, "0005")
+        names = constraints("f") | constraints("u")
+        assert "fk_reward_purchase_reward_partnership" not in names
+        assert "uq_reward_id_partnership_id" not in names
+        index_names = {
+            r[0] for r in rows("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
+        }
+        assert "ix_reward_partnership_id_creator_id" not in index_names
     finally:
         command.upgrade(cfg, "head")
 

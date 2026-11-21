@@ -680,3 +680,25 @@ async def test_concurrent_wallet_debits_never_go_negative(
             await check.execute(select(Wallet.balance).where(Wallet.id == wallet.id))
         ).scalar_one()
     assert balance == 0
+
+
+async def test_reward_purchase_partnership_must_be_its_rewards(session: AsyncSession) -> None:
+    a, b, p = await pair(session)
+    c = await f.create_user(session)
+    other = await f.create_partnership(session, a, c, status=PartnershipStatus.ENDED)
+    reward = await f.create_reward(session, p, b)
+    row = {
+        "reward_id": reward.id,
+        "buyer_id": a.id,
+        "provider_id": b.id,
+        "price_paid": 40,
+        "reward_snapshot": {},
+    }
+    await assert_rejected(
+        session,
+        insert(RewardPurchase).values(**row, partnership_id=other.id, idempotency_key="rp:bad"),
+        "fk_reward_purchase_reward_partnership",
+    )
+    await accepted(
+        session, insert(RewardPurchase).values(**row, partnership_id=p.id, idempotency_key="rp:ok")
+    )
