@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.claude/worktrees/
+.claude/settings.local.json
+.codex-brief.md
+.codex-report.txt
+.codex-review-brief.md
+.codex-review.txt
+test-results/
+playwright-report/
+logs/*.log
+.DS_Store

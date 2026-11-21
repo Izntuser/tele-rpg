@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(./init.sh)",
+      "Bash(scripts/smoke.sh)",
+      "Bash(scripts/check-stage.sh *)",
+      "Bash(scripts/block-stage.sh *)",
+      "Bash(scripts/stages-status.sh)",
+      "Bash(pnpm *)",
+      "Bash(npx playwright *)",
+      "Bash(npx --yes ajv-cli *)",
+      "Bash(docker compose *)",
+      "Bash(jq *)",
+      "Bash(codex exec *)",
+      "Bash(command -v *)",
+      "Bash(curl -s http://localhost*)",
+      "Bash(pwd)",
+      "Bash(ls *)",
+      "Bash(tail *)",
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git rev-parse *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git merge *)",
+      "Bash(git worktree *)",
+      "Bash(git stash *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(./.env*)",
+      "Edit(./scripts/check-stage.sh)",
+      "Edit(./scripts/block-stage.sh)",
+      "Edit(./scripts/stages.schema.json)",
+      "Edit(./scripts/lock-stages.sh)",
+      "Bash(scripts/lock-stages.sh *)",
+      "Bash(git push *)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "worktree": { "baseRef": "head" }
+}
