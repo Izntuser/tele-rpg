@@ -41,14 +41,16 @@
         "pnpm e2e --grep @S01 opens / on the unchanged playwright.config.ts baseURL http://localhost:3000 and saves docs/screens/S01.png showing the placeholder home.",
         "The CI workflow runs lint, test, build and e2e against a Postgres 17 service. backend/Dockerfile builds the frontend, copies dist into the image and serves it at / with an SPA fallback."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },
     {
       "id": "S02",
       "goal": "Shared contracts: backend core (settings, clock, async DB session, route autodiscovery), every SQLAlchemy model from ARCHITECTURE §4, a single initial Alembic migration, shared enums, and test fixtures/factories that all later stages build on.",
-      "depends_on": ["S01"],
+      "depends_on": [
+        "S01"
+      ],
       "files": [
         "backend/app/core/config.py",
         "backend/app/core/clock.py",
@@ -82,7 +84,9 @@
     {
       "id": "S03",
       "goal": "Telegram auth end to end: initData HMAC validation, JWT, /auth/telegram and /auth/me, current_user dependency, rate limiting, test-only DB reset, plus the frontend TelegramAdapter (Tma + Mock), the API client and the auth bootstrap, and a Playwright fixture that signs real initData.",
-      "depends_on": ["S02"],
+      "depends_on": [
+        "S02"
+      ],
       "files": [
         "backend/app/modules/auth/telegram.py",
         "backend/app/modules/auth/jwt.py",
@@ -122,7 +126,9 @@
     {
       "id": "S04",
       "goal": "Frontend shell and design system: the router with every ARCHITECTURE §6 route (placeholder pages), layout with bottom nav and Telegram BackButton, dark-first theme tokens, namespaced i18n EN/UK, the deeplink mapper, and the shared game components.",
-      "depends_on": ["S03"],
+      "depends_on": [
+        "S03"
+      ],
       "files": [
         "frontend/src/app/App.tsx",
         "frontend/src/app/router.tsx",
@@ -160,7 +166,9 @@
     {
       "id": "S05",
       "goal": "Character and personal profile: character API with derived levels, onboarding (character, goals, timezone), development goals and wishlist CRUD with their pages, and a Home header showing level, XP and gold.",
-      "depends_on": ["S04"],
+      "depends_on": [
+        "S04"
+      ],
       "files": [
         "backend/app/modules/progression/levels.py",
         "backend/app/modules/users/service.py",
@@ -201,7 +209,9 @@
     {
       "id": "S06",
       "goal": "Partnership and account lifecycle: invite link, accept, leave with all side effects, re-pair reactivation, data export and account deletion, plus the onboarding invite step, the invite accept screen, the Companion page and the Settings page (language, timezone, danger zone).",
-      "depends_on": ["S05"],
+      "depends_on": [
+        "S05"
+      ],
       "files": [
         "backend/app/modules/partnerships/service.py",
         "backend/app/modules/partnerships/schemas.py",
@@ -238,7 +248,9 @@
     {
       "id": "S07",
       "goal": "Quest offer flow (backend): quest state machine, create, accept, decline, cancel, revisions, list and detail endpoints, the shared ensure_occurrence helper, and the journal/notification helpers that every later domain uses.",
-      "depends_on": ["S06"],
+      "depends_on": [
+        "S06"
+      ],
       "files": [
         "backend/app/modules/quests/state.py",
         "backend/app/modules/quests/service.py",
@@ -271,7 +283,9 @@
     {
       "id": "S08",
       "goal": "Quest completion and the economy (backend): submit, confirm, request-redo and auto-confirm in one transaction with the Gold ledger, XP and attribute progression, Idempotency-Key handling, the economy endpoints, and the concurrency and ledger-invariant tests.",
-      "depends_on": ["S07"],
+      "depends_on": [
+        "S07"
+      ],
       "files": [
         "backend/app/modules/quests/completion.py",
         "backend/app/modules/quests/service.py",
@@ -306,7 +320,9 @@
     {
       "id": "S09",
       "goal": "Quest UI: quest tabs, the create sheet with presets and an inflation estimate, quest detail with every lifecycle action, the Home today panel and the completion celebration, plus the backend for presets, saved templates and the estimate.",
-      "depends_on": ["S08"],
+      "depends_on": [
+        "S08"
+      ],
       "files": [
         "backend/app/modules/quests/presets.py",
         "backend/app/api/routes/presets.py",
@@ -339,7 +355,9 @@
     {
       "id": "S10",
       "goal": "Reward shop and inventory (backend): reward CRUD (including from a wishlist item), purchase with locks and idempotency, the voucher state machine (request, schedule, fulfil, dispute), and the refund rules.",
-      "depends_on": ["S08"],
+      "depends_on": [
+        "S08"
+      ],
       "files": [
         "backend/app/modules/rewards/state.py",
         "backend/app/modules/rewards/service.py",
@@ -371,7 +389,10 @@
     {
       "id": "S11",
       "goal": "Shop UI and the P0 acceptance test: companion shop, my inventory and manage-my-shop screens, with e2e/core-loop.spec.ts proving the full two-user core loop.",
-      "depends_on": ["S09", "S10"],
+      "depends_on": [
+        "S09",
+        "S10"
+      ],
       "files": [
         "frontend/src/features/shop/*",
         "frontend/src/features/inventory/*",
@@ -398,7 +419,9 @@
     {
       "id": "S12",
       "goal": "Files and photo proof: StorageBackend with LocalStorage, an authorized upload/stream API with EXIF stripping and re-encoding, avatar upload, reward image, and photo submit on quests.",
-      "depends_on": ["S11"],
+      "depends_on": [
+        "S11"
+      ],
       "files": [
         "backend/app/storage/base.py",
         "backend/app/storage/local.py",
@@ -432,7 +455,9 @@
     {
       "id": "S13",
       "goal": "Recurring quests and the scheduler: an advisory-locked APScheduler runner, timezone-aware daily/weekly occurrence generation, expiry, daily streaks, template pause/resume, and the Recurring tab controls.",
-      "depends_on": ["S09"],
+      "depends_on": [
+        "S09"
+      ],
       "files": [
         "backend/app/jobs/runner.py",
         "backend/app/jobs/generate_occurrences.py",
@@ -466,7 +491,9 @@
     {
       "id": "S14",
       "goal": "Telegram bot and notifications: aiogram webhook and polling, /start with deep-link payloads, an outbox dispatcher with preferences, quiet hours and can_message, reminder and daily-summary jobs, the inbox API and UI, the header bell and the notification settings section.",
-      "depends_on": ["S13"],
+      "depends_on": [
+        "S13"
+      ],
       "files": [
         "backend/app/bot/dispatcher.py",
         "backend/app/bot/handlers/start.py",
@@ -507,7 +534,10 @@
     {
       "id": "S15",
       "goal": "Progress and insights plus the P1 acceptance test: Adventure Journal, stats, Life Balance radar with targets and suggestions, code-defined achievements, and e2e/p1-features.spec.ts.",
-      "depends_on": ["S12", "S14"],
+      "depends_on": [
+        "S12",
+        "S14"
+      ],
       "files": [
         "backend/app/modules/journal/service.py",
         "backend/app/api/routes/journal.py",
