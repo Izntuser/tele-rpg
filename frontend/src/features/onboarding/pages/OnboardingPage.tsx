@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useNavigate } from 'react-router';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { Avatar } from '../../../components/game/Avatar';
 import type { AttributeKey } from '../../../components/game/chips';
@@ -14,6 +14,9 @@ import { useAuth, useCurrentUser } from '../../auth/context';
 import { UserGreeting } from '../../auth/UserGreeting';
 import { CHARACTER_QUERY_KEY } from '../../character/api';
 import { GOALS_QUERY_KEY } from '../../goals/api';
+import type { PendingInviteState } from '../../partnership/pages/InvitePage';
+import { InviteStep } from '../InviteStep';
+import { FIRST_ENTRY_STATE } from '../redirect';
 
 type OnboardingIn = components['schemas']['OnboardingIn'];
 type OnboardingOut = components['schemas']['OnboardingOut'];
@@ -34,7 +37,9 @@ export const GOAL_PRESETS: { key: string; attribute: AttributeKey }[] = [
   { key: 'sleep', attribute: 'wellbeing' },
 ];
 
-const STEPS = ['character', 'goals', 'timezone'] as const;
+/** The character is saved after `timezone`; `invite` needs it (only the owner can invite). */
+const STEPS = ['character', 'goals', 'timezone', 'invite'] as const;
+const SAVE_STEP = STEPS.indexOf('timezone');
 
 interface ChosenGoal {
   title: string;
@@ -62,12 +67,18 @@ function timezoneOptions(current: string): string[] {
 
 const inputClass = 'rounded-md border border-border bg-surface-2 px-3 py-2';
 
-/** Character -> goals -> timezone; finishing calls POST /character/onboarding/complete. */
+/**
+ * Character -> goals -> timezone (saved via POST /character/onboarding/complete) -> invite a
+ * companion. Arriving from an invitation link skips the invite step and returns to that link.
+ */
 export function OnboardingPage() {
   const { t } = useTranslation('onboarding');
   const { api, telegram } = useAuth();
   const user = useCurrentUser();
   const navigate = useNavigate();
+  const location = useLocation();
+  const pendingInvite = (location.state as PendingInviteState | null)?.inviteToken ?? null;
+  const steps = pendingInvite ? STEPS.slice(0, SAVE_STEP + 1) : STEPS;
   const queryClient = useQueryClient();
   const ids = useId();
 
@@ -94,12 +105,16 @@ export function OnboardingPage() {
       queryClient.setQueryData(CHARACTER_QUERY_KEY, result.character);
       void queryClient.invalidateQueries({ queryKey: GOALS_QUERY_KEY });
       telegram.haptic.notification('success');
-      void navigate('/', { replace: true });
+      if (pendingInvite) {
+        void navigate(`/invite/${pendingInvite}`, { replace: true, state: FIRST_ENTRY_STATE });
+      } else {
+        setStep(SAVE_STEP + 1);
+      }
     },
     onError: () => telegram.haptic.notification('error'),
   });
 
-  if (user.onboarded_at && !complete.isPending) return <Navigate to="/" replace />;
+  if (user.onboarded_at && !complete.isPending && !complete.isSuccess) return <Navigate to="/" replace />;
 
   const hasGoal = (title: string) => goals.some((g) => g.title.toLowerCase() === title.toLowerCase());
   const atLimit = goals.length >= MAX_GOALS;
@@ -128,7 +143,7 @@ export function OnboardingPage() {
       setNameError(true);
       return;
     }
-    if (step < STEPS.length - 1) {
+    if (step < SAVE_STEP) {
       setStep(step + 1);
       return;
     }
@@ -142,17 +157,20 @@ export function OnboardingPage() {
   };
 
   const stepKey = STEPS[step]!;
-  const last = step === STEPS.length - 1;
+  const last = step === SAVE_STEP;
 
   return (
     <section data-testid="page-onboarding" className="flex min-h-screen flex-col gap-4 p-4">
       <header className="flex flex-col gap-1">
         <p className="text-xs text-muted" data-testid="onboarding-progress">
-          {t('progress', { current: step + 1, total: STEPS.length })}
+          {t('progress', { current: step + 1, total: steps.length })}
         </p>
         <h1 className="text-2xl font-bold">{t(`steps.${stepKey}`)}</h1>
       </header>
 
+      {stepKey === 'invite' ? <InviteStep onDone={() => void navigate('/', { replace: true })} /> : null}
+
+      {stepKey === 'invite' ? null : (
       <form onSubmit={next} noValidate className="flex flex-1 flex-col gap-4" data-testid={`onboarding-step-${stepKey}`}>
         {stepKey === 'character' ? (
           <>
@@ -335,6 +353,7 @@ export function OnboardingPage() {
           </button>
         </div>
       </form>
+      )}
     </section>
   );
 }

@@ -3,7 +3,7 @@ import { Navigate, createBrowserRouter, createMemoryRouter, type RouteObject } f
 import { CompanionPage } from '../features/companion/pages/CompanionPage';
 import { GoalsPage } from '../features/goals/pages/GoalsPage';
 import { HomePage } from '../features/home/pages/HomePage';
-import { InvitePage } from '../features/invitations/pages/InvitePage';
+import { InvitePage } from '../features/partnership/pages/InvitePage';
 import { NotificationsPage } from '../features/notifications/pages/NotificationsPage';
 import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
 import { QuestDetailPage } from '../features/quests/pages/QuestDetailPage';

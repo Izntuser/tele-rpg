@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import ratelimit
+from app.core import clock, ratelimit
 from app.core.config import get_settings
 from app.modules.auth.jwt import encode_token
 from app.modules.common.enums import GoalStatus, PartnershipStatus, WishlistStatus
@@ -326,6 +326,36 @@ async def test_companion_items_visible_only_while_partnership_is_active(
     await session.flush()
     ended = await client.get(base, params={"user": "companion"}, headers=auth(me))
     assert ended.status_code == 403
+
+
+@pytest.mark.parametrize("base", RESOURCES)
+@pytest.mark.parametrize("state", ["pending", "left", "ended", "companion_deleted"])
+async def test_companion_403_unless_partnership_is_active(
+    client: httpx.AsyncClient, session: AsyncSession, base: str, state: str
+) -> None:
+    """pending: only an unaccepted invitation; left: ended through POST /partnership/leave;
+    ended: an ENDED row; companion_deleted: an (inconsistent) active row whose other member
+    is deleted (resolve_owner's defence in depth)."""
+    now = clock.now()
+    me = await factories.create_user(session, onboarded_at=now)
+    companion = await factories.create_user(session, onboarded_at=now)
+    await add(session, base, companion, "companion's")
+    if state == "pending":
+        await factories.create_invitation(session, companion)
+    elif state == "left":
+        await factories.create_partnership(session, me, companion)
+        left = await client.post(
+            "/api/partnership/leave", headers=auth(companion), json={"confirm_text": "LEAVE"}
+        )
+        assert left.status_code == 204
+    elif state == "ended":
+        await factories.create_partnership(session, me, companion, status=PartnershipStatus.ENDED)
+    else:
+        await factories.create_partnership(session, me, companion)
+        companion.deleted_at = now
+        await session.flush()
+    response = await client.get(base, params={"user": "companion"}, headers=auth(me))
+    assert response.status_code == 403
 
 
 @pytest.mark.parametrize("base", RESOURCES)

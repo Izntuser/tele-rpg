@@ -1,0 +1,39 @@
+{
+  "title": "Settings",
+  "language": {
+    "title": "Language",
+    "label": "App language",
+    "en": "English",
+    "uk": "Українська"
+  },
+  "timezone": {
+    "title": "Timezone",
+    "label": "Your timezone",
+    "hint": "Used for daily quests, deadlines and reminders."
+  },
+  "saved": "Saved",
+  "saveError": "Could not save. Please try again.",
+  "partnership": {
+    "title": "Partnership",
+    "with": "Companion: {{name}}",
+    "none": "You have no companion yet.",
+    "leave": "Leave partnership",
+    "leaveTitle": "Leave the partnership?",
+    "leaveDescription": "All open quests are cancelled, both shops are hidden and your gold is frozen. If you pair with the same person again, everything comes back.",
+    "leaveError": "Could not leave the partnership. Please try again."
+  },
+  "data": {
+    "title": "Your data",
+    "privacy": "We store your Telegram id, name, username, photo link and language, plus what you create in the app. Only you and your active companion can see your profile, goals and wishlist. You can download everything or delete your account at any time.",
+    "export": "Download my data",
+    "exporting": "Preparing…",
+    "exportError": "Could not export your data. Please try again."
+  },
+  "danger": {
+    "title": "Danger zone",
+    "delete": "Delete account",
+    "deleteTitle": "Delete your account?",
+    "deleteDescription": "Your profile, goals, wishlist and comments are erased and your partnership ends. Gold history stays with your companion under \"Deleted user\". This cannot be undone.",
+    "deleteError": "Could not delete the account. Please try again."
+  }
+}

@@ -10,7 +10,6 @@
 - Purchase stage: namespace idempotency keys per user (e.g. `purchase:{user_id}:{key}`) and cap the Idempotency-Key header length to fit String(255).
 - gold_transaction has no CHECK requiring quest_occurrence_id for quest_reward or purchase_id for purchase/refund.
 - Schema does not enforce cross-partnership consistency (reward_purchase vs reward partnership, occurrence assignee vs template, wallet user membership); consider composite FKs.
-- Account deletion must decide what happens to user.tg_user_id (NOT NULL unique) and to re-login.
 - Add indexes on hot FK/filter columns (quest_occurrence(assignee_id,status), gold_transaction(wallet_id), notification(status,send_after), reward(partnership_id)) in the stages that write those queries.
 - tests/integration/test_migrations.py round-trip (downgrade base) assumes pytest runs serially (no xdist).
 - deploy: the prod image must set APP_ENV=prod (or require APP_ENV explicitly); today a deploy that forgets APP_ENV skips every prod guard.
@@ -30,12 +29,18 @@
 - shell.test.tsx safe-area test: move viewport.mockRestore() and CSS var reset into afterEach so a failing assertion can't leak state.
 - POST /character/avatar (custom avatar upload) is not built; onboarding uses the Telegram photo_url. Needs the files/StorageBackend stage.
 - Onboarding drops a q_/r_ start param for a not-yet-onboarded user (only invite_ survives); consider resuming it after onboarding.
-- Onboarding has no "Invite companion" step yet (ARCHITECTURE s6); the partnership stage should add it after Goals/Timezone.
-- Settings stage: edit locale/timezone via PATCH /character and update the AUTH_QUERY_KEY user (as OnboardingPage does) so AppLayout switches language.
 - Any new replace-redirect at app start should reuse features/onboarding/redirect.ts FIRST_ENTRY_STATE so Telegram Back goes Home.
 - common/validation.py: bidi blocklist misses U+200E/U+200F/U+061C; reject all Cf/Zl/Zp (except ZWJ) and U+2028/U+2029 in single-line fields.
-- users/service.py resolve_owner: also check companion deleted_at (defence in depth for the account-deletion stage).
-- test_goals_wishlist.py: parametrize companion 403 over PENDING and LEFT, not only ENDED.
 - validation.py timezone: legacy aliases (Factory, EST, GMT+0, Cuba) are accepted; consider restricting to canonical Area/City zones.
 - Onboarding is one stepped page, ARCHITECTURE.md:290 describes sub-routes; record in DECISIONS or align.
-- Add an e2e opening an /invite/<token> deeplink as a not-yet-onboarded user (only redirect predicates are unit-tested).
+- Files stage: account deletion deletes the user's `file` rows but not the stored bytes; delete them through StorageBackend.
+- core/config.py: add a prod guard requiring TG_BOT_USERNAME and TG_APP_SHORT_NAME (POST /partnership/invitations answers 503 in prod without them).
+- TelegramAdapter: add openTelegramLink/switchInlineQuery so InvitePanel shares through Telegram natively (today an https://t.me/share/url link).
+- Companion page: add recent shared activity and life balance + suggestions (ARCHITECTURE s6) in the journal/stats stages.
+- Notifications stage: render partnership_accepted / partnership_ended (stored with category quests; consider a dedicated category).
+- partnership_invitation rows past expires_at stay `pending` (accept/preview treat them as expired); a scheduler job could mark them `expired`.
+- InvitePanel/useInvitePreview: preview is a POST (token in the body), so it takes a write rate-limit token per view.
+- Account deletion removes File rows but not the stored bytes (users/account.py:182); the files stage must delete the bytes too.
+- Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
+- Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; later stages must keep notification and journal payloads free of names.
+- Rewards stage: decide whether a creator editing/re-hiding a reward while the partnership is ended should clear reward.hidden_by_partnership_end (today it stays set, so re-pair restores it).

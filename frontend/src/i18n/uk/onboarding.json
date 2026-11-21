@@ -4,7 +4,8 @@
   "steps": {
     "character": "Ваш персонаж",
     "goals": "Ваші цілі",
-    "timezone": "Ваш часовий пояс"
+    "timezone": "Ваш часовий пояс",
+    "invite": "Запросіть компаньйона"
   },
   "character": {
     "avatarHint": "Ваше фото з Telegram стане аватаром.",

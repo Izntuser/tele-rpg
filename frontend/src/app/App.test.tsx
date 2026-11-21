@@ -5,6 +5,7 @@ import { expect, test, vi } from 'vitest';
 import { AuthGate } from '../features/auth/AuthGate';
 import type { ApiClient } from '../lib/api/client';
 import { MockAdapter } from '../lib/telegram';
+import indexHtml from '../../index.html?raw';
 import { App } from './App';
 import { Providers } from './providers';
 
@@ -46,4 +47,9 @@ test('renders the home with the signed-in, onboarded user', async () => {
   );
   expect(await screen.findByRole('heading', { name: 'Modern Life RPG' })).toBeInTheDocument();
   expect(screen.getByText('Hi, Bob')).toBeInTheDocument();
+});
+
+test('index.html tells the browser never to send a Referer (invite tokens sit in the URL)', () => {
+  const doc = new DOMParser().parseFromString(indexHtml, 'text/html');
+  expect(doc.querySelector('meta[name="referrer"]')?.getAttribute('content')).toBe('no-referrer');
 });

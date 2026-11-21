@@ -9,6 +9,8 @@ from app.core.config import get_settings
 from app.core.db import make_engine
 
 _API_PREFIXES = ("api", "healthz", "tg", "docs", "openapi.json")
+# Invite tokens can sit in the SPA route (/invite/<token>); never leak them via Referer.
+_SPA_HEADERS = {"Referrer-Policy": "no-referrer"}
 
 
 def _dist_dir() -> Path:
@@ -45,8 +47,8 @@ def create_app() -> FastAPI:
                 raise HTTPException(status_code=404)
             candidate = (dist / full_path).resolve()
             if full_path and candidate.is_file() and candidate.is_relative_to(dist.resolve()):
-                return FileResponse(candidate)
-            return FileResponse(index)
+                return FileResponse(candidate, headers=_SPA_HEADERS)
+            return FileResponse(index, headers=_SPA_HEADERS)
 
     return app
 

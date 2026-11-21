@@ -1,0 +1,55 @@
+{
+  "invite": {
+    "title": "Invite your companion",
+    "hint": "Send this link to the person you want to play with. It works once and expires in 7 days.",
+    "create": "Create invite link",
+    "creating": "Creating…",
+    "regenerate": "Create a new link (the old one stops working)",
+    "linkLabel": "Your invite link",
+    "expires": "Valid for 7 days, for one person.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "share": "Share",
+    "shareText": "Be my companion in Modern Life RPG!",
+    "pending": "You have an unused invite link. Create a new one to share it again.",
+    "error": "Could not create an invite link. Please try again."
+  },
+  "accept": {
+    "title": "You are invited!",
+    "subtitle": "Become companions: create quests for each other and run each other's reward shop.",
+    "loading": "Checking the invitation…",
+    "invitedBy": "Invitation from",
+    "accept": "Accept and become companions",
+    "accepting": "Accepting…",
+    "notNow": "Not now",
+    "onboardFirst": "Create your character first, then accept the invitation.",
+    "createCharacter": "Create my character",
+    "errors": {
+      "invalid": "This invitation is no longer valid. Ask for a new link.",
+      "own": "This is your own invitation. Send it to your companion.",
+      "paired": "One of you already has a companion.",
+      "onboarding": "Create your character before accepting.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "onboarding": {
+    "hint": "Your character is ready. Invite your companion now, or do it later from the Companion tab.",
+    "start": "Start the adventure"
+  },
+  "companion": {
+    "title": "Companion",
+    "loading": "Loading your companion…",
+    "error": "Could not load your companion.",
+    "retry": "Try again",
+    "none": "You have no companion yet",
+    "noneHint": "Invite someone to start creating quests for each other.",
+    "gmLabel": "You are the Game Master",
+    "about": "About",
+    "attributes": "Attributes",
+    "goals": "Wants to improve",
+    "goalsEmpty": "No goals yet",
+    "wishlist": "Wishlist",
+    "wishlistEmpty": "The wishlist is empty",
+    "inShop": "In the shop"
+  }
+}

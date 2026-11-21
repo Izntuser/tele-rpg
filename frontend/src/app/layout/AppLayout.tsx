@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '../../features/auth/context';
@@ -27,6 +27,13 @@ export function AppLayout() {
   // A user without a character goes to onboarding first (invitation links excepted).
   const mustOnboard = state.status === 'authenticated' && needsOnboarding(onboardedAt, location.pathname);
   const isRoot = location.pathname === '/';
+  const deeplinkTarget = deeplinkToRoute(startParam ?? telegram.startParam());
+  const [deeplinkDone, setDeeplinkDone] = useState(false);
+  // A new user launched from an invitation goes to the invitation, not to onboarding. Doing it
+  // in the redirect itself (not only in the effect below) keeps a re-run <Navigate> (StrictMode
+  // runs effects twice) from overriding the deeplink with /onboarding.
+  const onboardingTarget =
+    !deeplinkDone && deeplinkAllowedBeforeOnboarding(deeplinkTarget) ? deeplinkTarget : ONBOARDING_PATH;
   // The first history entry is either the cold-start entry or the one the deeplink redirect
   // replaced it with (marked via location state, since a replace gives it a new key).
   const isInitialEntry =
@@ -53,12 +60,17 @@ export function AppLayout() {
   useEffect(() => {
     if (handledDeeplink.current) return;
     handledDeeplink.current = true;
-    const target = deeplinkToRoute(startParam ?? telegram.startParam());
+    const target = deeplinkTarget;
     if (!onboardedAt && !deeplinkAllowedBeforeOnboarding(target)) return;
     if (target !== '/' && isRoot) {
       void navigate(target, { replace: true, state: FIRST_ENTRY_STATE });
     }
-  }, [startParam, telegram, isRoot, onboardedAt, navigate]);
+  }, [deeplinkTarget, isRoot, onboardedAt, navigate]);
+
+  // The start param applies to the launch only: once the app has left "/", it is spent.
+  useEffect(() => {
+    if (!isRoot) setDeeplinkDone(true);
+  }, [isRoot]);
 
   // Onboarding has its own in-page Back; Telegram's Back would only bounce back to it.
   const hideBack = isRoot || (!onboardedAt && isOnboardingRoute(location.pathname));
@@ -90,7 +102,7 @@ export function AppLayout() {
       }}
     >
       <main className="mx-auto max-w-md">
-        {mustOnboard ? <Navigate to={ONBOARDING_PATH} replace state={FIRST_ENTRY_STATE} /> : <Outlet />}
+        {mustOnboard ? <Navigate to={onboardingTarget} replace state={FIRST_ENTRY_STATE} /> : <Outlet />}
       </main>
       {showNav ? <BottomNav /> : null}
     </div>
