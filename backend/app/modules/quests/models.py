@@ -6,6 +6,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -32,6 +33,7 @@ GOLD_RANGE_SQL = "gold >= 0 AND gold <= 1000"
 class QuestTemplate(Base):
     __tablename__ = "quest_template"
     __table_args__ = (
+        Index(None, "partnership_id"),
         CheckConstraint("assignee_id <> creator_id", name="assignee_not_creator"),
         CheckConstraint(GOLD_RANGE_SQL, name="gold_range"),
         CheckConstraint(
@@ -73,6 +75,13 @@ class QuestRevision(Base):
     __table_args__ = (
         CheckConstraint("version >= 1", name="version_positive"),
         UniqueConstraint("template_id", "version"),
+        # At most one revision awaiting the assignee per template (0003).
+        Index(
+            "ux_quest_revision_one_pending",
+            "template_id",
+            unique=True,
+            postgresql_where=text("status = 'pending'"),
+        ),
     )
 
     id: Mapped[int] = id_pk()
@@ -86,11 +95,17 @@ class QuestRevision(Base):
     proposed_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     created_at: Mapped[datetime] = created_at()
     decided_at: Mapped[datetime | None]
+    # Why the assignee declined this revision (or the recurring offer it carried); scrubbed on
+    # the assignee's account deletion.
+    decline_reason: Mapped[str | None] = mapped_column(Text)
 
 
 class QuestOccurrence(Base):
     __tablename__ = "quest_occurrence"
-    __table_args__ = (UniqueConstraint("template_id", "scheduled_date"),)
+    __table_args__ = (
+        UniqueConstraint("template_id", "scheduled_date"),
+        Index(None, "assignee_id", "status"),
+    )
 
     id: Mapped[int] = id_pk()
     template_id: Mapped[int] = mapped_column(ForeignKey("quest_template.id"))

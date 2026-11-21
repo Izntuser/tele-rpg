@@ -10,7 +10,7 @@
 - Purchase stage: namespace idempotency keys per user (e.g. `purchase:{user_id}:{key}`) and cap the Idempotency-Key header length to fit String(255).
 - gold_transaction has no CHECK requiring quest_occurrence_id for quest_reward or purchase_id for purchase/refund.
 - Schema does not enforce cross-partnership consistency (reward_purchase vs reward partnership, occurrence assignee vs template, wallet user membership); consider composite FKs.
-- Add indexes on hot FK/filter columns (quest_occurrence(assignee_id,status), gold_transaction(wallet_id), notification(status,send_after), reward(partnership_id)) in the stages that write those queries.
+- Add indexes on hot FK/filter columns (gold_transaction(wallet_id), notification(status,send_after), reward(partnership_id)) in the stages that write those queries (quest indexes done in 0003).
 - tests/integration/test_migrations.py round-trip (downgrade base) assumes pytest runs serially (no xdist).
 - deploy: the prod image must set APP_ENV=prod (or require APP_ENV explicitly); today a deploy that forgets APP_ENV skips every prod guard.
 - migrations/env.py: pin READ COMMITTED on the migration engine for consistency.
@@ -42,8 +42,14 @@
 - InvitePanel/useInvitePreview: preview is a POST (token in the body), so it takes a write rate-limit token per view.
 - Account deletion removes File rows but not the stored bytes (users/account.py:182); the files stage must delete the bytes too.
 - Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
-- Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; later stages must keep notification and journal payloads free of names.
+- Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; journal/notification payloads must stay free of names and free text (journal.service.check_payload rejects name keys; write every new event through record_event/enqueue).
 - Rewards stage: decide whether a creator editing/re-hiding a reward while the partnership is ended should clear reward.hidden_by_partnership_end (today it stays set, so re-pair restores it).
 - Rewards stage: hidden_by_partnership_end must stay out of every request schema, and any creator status change must clear it.
 - main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
 - test_health.py asserts Referrer-Policy only on the fallback; add /invite/<x> and an asset path.
+- partnerships/service._notify writes Notification rows directly; route it through notifications.service.enqueue (payload guard).
+- S08: when a one-time quest goes to in_review while a revision is pending, decide whether submit supersedes it (today accepting it later only updates the template, not the submitted occurrence).
+- S14: notifications for recurring-template events (offer/decline/cancel of a template) have deep_link NULL (no occurrence id); add a template deep link (e.g. qt_<id>) in lib/deeplink.ts and the dispatcher.
+- S09: recurring offers have no occurrence until accepted; the Offers tab must merge GET /quests?role=player&status=offered with GET /quest-templates?role=player&status=offered&recurrence=daily|weekly.
+- Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
+- GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.

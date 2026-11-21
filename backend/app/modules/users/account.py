@@ -35,6 +35,7 @@ from app.modules.partnerships.models import Partnership, PartnershipInvitation
 from app.modules.progression.models import XpTransaction
 from app.modules.quests.models import (
     QuestOccurrence,
+    QuestRevision,
     QuestSubmission,
     QuestTemplate,
     SavedQuestTemplate,
@@ -162,6 +163,16 @@ async def _scrub(session: AsyncSession, user: User) -> None:
     await session.execute(
         update(QuestOccurrence)
         .where(QuestOccurrence.assignee_id == me, QuestOccurrence.decline_reason.is_not(None))
+        .values(decline_reason=None)
+    )
+    await session.execute(
+        update(QuestRevision)
+        .where(
+            QuestRevision.template_id.in_(
+                select(QuestTemplate.id).where(QuestTemplate.assignee_id == me)
+            ),
+            QuestRevision.decline_reason.is_not(None),
+        )
         .values(decline_reason=None)
     )
     await session.execute(

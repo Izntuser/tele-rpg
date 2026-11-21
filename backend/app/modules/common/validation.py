@@ -66,6 +66,13 @@ Description = Annotated[
     BeforeValidator(_multi_line),
 ]
 
+#: Optional free-text reason (decline, redo): multi-line, up to 500 characters.
+Reason = Annotated[
+    Annotated[str, Field(max_length=500)] | None,
+    BeforeValidator(_empty_to_none),
+    BeforeValidator(_multi_line),
+]
+
 
 @lru_cache
 def _timezones() -> frozenset[str]:

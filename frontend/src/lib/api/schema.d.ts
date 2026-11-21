@@ -307,6 +307,209 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Quests
+         * @description Occurrences in my active partnership. ``role=player``: assigned to me; ``role=gm``:
+         *     created by me. ``status`` may repeat. Empty without an active partnership.
+         */
+        get: operations["list_quests_api_quests_get"];
+        put?: never;
+        /**
+         * Create Quest
+         * @description Offer a quest to my companion. XP comes from the difficulty; a client ``xp`` is
+         *     ignored.
+         */
+        post: operations["create_quest_api_quests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Quest */
+        get: operations["get_quest_api_quests__occurrence_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Quest
+         * @description Creator: edit an offered quest in place, or propose a revision of an accepted one.
+         */
+        patch: operations["update_quest_api_quests__occurrence_id__patch"];
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Quest
+         * @description Assignee: accept the offer, or the pending revision.
+         */
+        post: operations["accept_quest_api_quests__occurrence_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline Quest
+         * @description Assignee: decline the offer, or the pending revision (reason optional).
+         */
+        post: operations["decline_quest_api_quests__occurrence_id__decline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quests/{occurrence_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Quest
+         * @description Either member: cancel an offered or active occurrence.
+         */
+        post: operations["cancel_quest_api_quests__occurrence_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Quest Templates
+         * @description Quests (templates) in my active partnership, e.g. recurring offers.
+         */
+        get: operations["list_quest_templates_api_quest_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Quest Template */
+        get: operations["get_quest_template_api_quest_templates__template_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Quest Template */
+        patch: operations["update_quest_template_api_quest_templates__template_id__patch"];
+        trace?: never;
+    };
+    "/api/quest-templates/{template_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Quest Template
+         * @description Assignee: accept the offer (a recurring one gets today's occurrence) or the pending
+         *     revision.
+         */
+        post: operations["accept_quest_template_api_quest_templates__template_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-templates/{template_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline Quest Template */
+        post: operations["decline_quest_template_api_quest_templates__template_id__decline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-templates/{template_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Quest Template
+         * @description Either member: cancel the quest and its offered or active occurrences.
+         */
+        post: operations["cancel_quest_template_api_quest_templates__template_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wishlist": {
         parameters: {
             query?: never;
@@ -531,6 +734,21 @@ export interface components {
             /** Confirm Text */
             confirm_text: string;
         };
+        /**
+         * ConfirmationMode
+         * @enum {string}
+         */
+        ConfirmationMode: "manual" | "auto";
+        /** DeclineIn */
+        DeclineIn: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * Difficulty
+         * @enum {string}
+         */
+        Difficulty: "easy" | "normal" | "hard" | "epic";
         /** GoalCreate */
         GoalCreate: {
             /** Title */
@@ -617,6 +835,87 @@ export interface components {
             character: components["schemas"]["CharacterSummary"] | null;
             partnership: components["schemas"]["PartnershipSummary"] | null;
         };
+        /** OccurrenceDetail */
+        OccurrenceDetail: {
+            /** Id */
+            id: number;
+            /** Template Id */
+            template_id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Assignee Id */
+            assignee_id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "player" | "gm";
+            status: components["schemas"]["QuestOccurrenceStatus"];
+            template_status: components["schemas"]["QuestTemplateStatus"];
+            recurrence: components["schemas"]["Recurrence"];
+            /**
+             * Scheduled Date
+             * Format: date
+             */
+            scheduled_date: string;
+            /** Due At */
+            due_at: string | null;
+            terms: components["schemas"]["QuestTerms"];
+            /** Accepted At */
+            accepted_at: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Cancelled By */
+            cancelled_by: number | null;
+            /** Decline Reason */
+            decline_reason: string | null;
+            /** Has Pending Revision */
+            has_pending_revision: boolean;
+            template: components["schemas"]["TemplateOut"];
+            /** Submissions */
+            submissions: components["schemas"]["SubmissionOut"][];
+        };
+        /** OccurrenceOut */
+        OccurrenceOut: {
+            /** Id */
+            id: number;
+            /** Template Id */
+            template_id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Assignee Id */
+            assignee_id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "player" | "gm";
+            status: components["schemas"]["QuestOccurrenceStatus"];
+            template_status: components["schemas"]["QuestTemplateStatus"];
+            recurrence: components["schemas"]["Recurrence"];
+            /**
+             * Scheduled Date
+             * Format: date
+             */
+            scheduled_date: string;
+            /** Due At */
+            due_at: string | null;
+            terms: components["schemas"]["QuestTerms"];
+            /** Accepted At */
+            accepted_at: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Cancelled By */
+            cancelled_by: number | null;
+            /** Decline Reason */
+            decline_reason: string | null;
+            /** Has Pending Revision */
+            has_pending_revision: boolean;
+        };
         /** OnboardingGoal */
         OnboardingGoal: {
             /** Title */
@@ -663,10 +962,203 @@ export interface components {
              */
             expires_at: string;
         };
+        /** QuestCreate */
+        QuestCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            attribute: components["schemas"]["Attribute"];
+            /** @default normal */
+            difficulty: components["schemas"]["Difficulty"];
+            /** Gold */
+            gold: number;
+            /** @default once */
+            recurrence: components["schemas"]["Recurrence"];
+            /** Deadline At */
+            deadline_at?: string | null;
+            /** @default manual */
+            confirmation: components["schemas"]["ConfirmationMode"];
+            /**
+             * Photo Required
+             * @default false
+             */
+            photo_required: boolean;
+        };
+        /** QuestCreated */
+        QuestCreated: {
+            template: components["schemas"]["TemplateOut"];
+            occurrence: components["schemas"]["OccurrenceOut"] | null;
+        };
+        /**
+         * QuestOccurrenceStatus
+         * @enum {string}
+         */
+        QuestOccurrenceStatus: "offered" | "active" | "in_review" | "completed" | "declined" | "expired" | "cancelled";
+        /**
+         * QuestRevisionStatus
+         * @enum {string}
+         */
+        QuestRevisionStatus: "pending" | "accepted" | "declined" | "superseded";
+        /**
+         * QuestTemplateStatus
+         * @enum {string}
+         */
+        QuestTemplateStatus: "offered" | "active" | "paused" | "declined" | "cancelled" | "completed";
+        /**
+         * QuestTerms
+         * @description The terms a player agrees to; stored as ``quest_revision.terms`` and copied into every
+         *     occurrence's ``terms_snapshot``.
+         */
+        QuestTerms: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            attribute: components["schemas"]["Attribute"];
+            difficulty: components["schemas"]["Difficulty"];
+            /** Gold */
+            gold: number;
+            /** Xp */
+            xp: number;
+            /** Deadline */
+            deadline: string | null;
+            confirmation: components["schemas"]["ConfirmationMode"];
+            /** Photo Required */
+            photo_required: boolean;
+        };
+        /**
+         * QuestUpdate
+         * @description Changed terms. Omitted fields stay; ``description`` and ``deadline_at`` accept null to
+         *     clear. The recurrence cannot be changed.
+         */
+        QuestUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            attribute?: components["schemas"]["Attribute"] | null;
+            difficulty?: components["schemas"]["Difficulty"] | null;
+            /** Gold */
+            gold?: number | null;
+            /** Deadline At */
+            deadline_at?: string | null;
+            confirmation?: components["schemas"]["ConfirmationMode"] | null;
+            /** Photo Required */
+            photo_required?: boolean | null;
+        };
+        /**
+         * Recurrence
+         * @enum {string}
+         */
+        Recurrence: "once" | "daily" | "weekly";
+        /** RevisionOut */
+        RevisionOut: {
+            /** Id */
+            id: number;
+            /** Version */
+            version: number;
+            terms: components["schemas"]["QuestTerms"];
+            status: components["schemas"]["QuestRevisionStatus"];
+            /** Proposed By */
+            proposed_by: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at: string | null;
+            /** Decline Reason */
+            decline_reason: string | null;
+        };
+        /** SubmissionOut */
+        SubmissionOut: {
+            /** Id */
+            id: number;
+            /** Submitted By */
+            submitted_by: number;
+            /** Comment */
+            comment: string | null;
+            /** Attachment Id */
+            attachment_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            review_status: components["schemas"]["SubmissionReviewStatus"];
+            /** Review Comment */
+            review_comment: string | null;
+            /** Reviewed At */
+            reviewed_at: string | null;
+        };
+        /**
+         * SubmissionReviewStatus
+         * @enum {string}
+         */
+        SubmissionReviewStatus: "pending" | "approved" | "redo";
         /** TelegramAuthIn */
         TelegramAuthIn: {
             /** Init Data */
             init_data: string;
+        };
+        /** TemplateDetail */
+        TemplateDetail: {
+            /** Id */
+            id: number;
+            /** Partnership Id */
+            partnership_id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Assignee Id */
+            assignee_id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "player" | "gm";
+            status: components["schemas"]["QuestTemplateStatus"];
+            recurrence: components["schemas"]["Recurrence"];
+            terms: components["schemas"]["QuestTerms"];
+            /** Version */
+            version: number;
+            pending_revision: components["schemas"]["RevisionOut"] | null;
+            last_declined_revision: components["schemas"]["RevisionOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            latest_occurrence: components["schemas"]["OccurrenceOut"] | null;
+        };
+        /** TemplateOut */
+        TemplateOut: {
+            /** Id */
+            id: number;
+            /** Partnership Id */
+            partnership_id: number;
+            /** Creator Id */
+            creator_id: number;
+            /** Assignee Id */
+            assignee_id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "player" | "gm";
+            status: components["schemas"]["QuestTemplateStatus"];
+            recurrence: components["schemas"]["Recurrence"];
+            terms: components["schemas"]["QuestTerms"];
+            /** Version */
+            version: number;
+            pending_revision: components["schemas"]["RevisionOut"] | null;
+            last_declined_revision: components["schemas"]["RevisionOut"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** UserOut */
         UserOut: {
@@ -1249,6 +1741,432 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_quests_api_quests_get: {
+        parameters: {
+            query?: {
+                role?: ("player" | "gm") | null;
+                status?: components["schemas"]["QuestOccurrenceStatus"][] | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_quest_api_quests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_quest_api_quests__occurrence_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_quest_api_quests__occurrence_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_quest_api_quests__occurrence_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decline_quest_api_quests__occurrence_id__decline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeclineIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_quest_api_quests__occurrence_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                occurrence_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OccurrenceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_quest_templates_api_quest_templates_get: {
+        parameters: {
+            query?: {
+                role?: ("player" | "gm") | null;
+                status?: components["schemas"]["QuestTemplateStatus"][] | null;
+                recurrence?: components["schemas"]["Recurrence"] | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_quest_template_api_quest_templates__template_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_quest_template_api_quest_templates__template_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_quest_template_api_quest_templates__template_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decline_quest_template_api_quest_templates__template_id__decline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeclineIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_quest_template_api_quest_templates__template_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
             };
             /** @description Validation Error */
             422: {
