@@ -40,3 +40,8 @@ left: ConfirmSheet/BottomSheet have no focus trap (TODO).
 
 ## 2026-11-21 S04 review fix-up round 2
 done: BackButton first-entry detection now flags the deeplink replace redirect via location state (Back goes Home); tests for it (unit + e2e), server start_param path, safe-area CSS vars; DECISIONS 12 (namespaced i18n); TODO lines. e2e stub now keeps BackButton handlers so a test can press Back (e2e/fixtures/telegram.ts).
+
+## 2026-11-21 S05 DONE (pending review)
+done: progression/levels.py (closed form + exact nudge, project.md table tests); GET/PATCH /character (derived level/XP/attributes, active-wallet gold, extra fields ignored, IANA tz + en/uk validated) and POST /character/onboarding/complete (user row FOR UPDATE, character + 6 attributes + goals, 409 on repeat); goals and wishlist CRUD scoped to the caller (404 on foreign ids, ?user=companion only with an active partnership else 403, 50-item caps, offered/linked_reward_id not client-settable); frontend onboarding (character -> goals -> timezone), Home header, goals and wishlist pages, onboarding/profile i18n; e2e/onboarding.spec.ts + S05.png.
+changed outside list: AppLayout (onboarding redirect with FIRST_ENTRY_STATE, Back hidden on onboarding), router, goals/wishlist schemas.py, common/validation.py, src/test/harness.tsx, schema.d.ts; S01/S03/S04 e2e now pre-onboard user A via onboardViaApi (S01 asserts the home character header instead of "Placeholder home"); old profile placeholder pages removed.
+left: avatar upload, invite step in onboarding, deeplink resume after onboarding (TODO). surprising: Optional str with Field(max_length) on the union crashes on None in pydantic; jsdom Intl has no Europe/Kyiv.

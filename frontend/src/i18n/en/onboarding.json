@@ -1,0 +1,43 @@
+{
+  "title": "Create your character",
+  "progress": "Step {{current}} of {{total}}",
+  "steps": {
+    "character": "Your character",
+    "goals": "Your goals",
+    "timezone": "Your timezone"
+  },
+  "character": {
+    "avatarHint": "Your Telegram photo is your avatar.",
+    "name": "Character name",
+    "nameRequired": "Enter a name for your character.",
+    "nickname": "Nickname (optional)",
+    "bio": "About you (optional)"
+  },
+  "goals": {
+    "title": "What do you want to improve?",
+    "hint": "Pick a few or write your own. Your companion will see them when creating quests.",
+    "custom": "Your own goal",
+    "add": "Add",
+    "remove": "Remove {{title}}",
+    "limit": "You can choose up to {{max}} goals.",
+    "presets": {
+      "exercise": "Exercise more often",
+      "discipline": "Become more disciplined",
+      "read": "Read more books",
+      "relationships": "Improve my relationships",
+      "skills": "Learn new skills",
+      "creative": "Spend more time on creative hobbies",
+      "sleep": "Improve my sleep and recovery"
+    }
+  },
+  "timezone": {
+    "title": "Your timezone",
+    "hint": "Used for daily quests, deadlines and reminders.",
+    "label": "Timezone"
+  },
+  "next": "Next",
+  "back": "Back",
+  "finish": "Start the adventure",
+  "saving": "Saving…",
+  "error": "Could not save. Please try again."
+}

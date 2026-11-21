@@ -1,7 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '../../features/auth/context';
+import {
+  FIRST_ENTRY_STATE,
+  ONBOARDING_PATH,
+  deeplinkAllowedBeforeOnboarding,
+  isOnboardingRoute,
+  needsOnboarding,
+} from '../../features/onboarding/redirect';
 import { setLocale } from '../../i18n';
 import { deeplinkToRoute } from '../../lib/deeplink';
 import { BottomNav } from './BottomNav';
@@ -16,6 +23,9 @@ export function AppLayout() {
   const location = useLocation();
   const startParam = state.status === 'authenticated' ? state.startParam : null;
   const locale = state.status === 'authenticated' ? state.user.locale : null;
+  const onboardedAt = state.status === 'authenticated' ? state.user.onboarded_at : null;
+  // A user without a character goes to onboarding first (invitation links excepted).
+  const mustOnboard = state.status === 'authenticated' && needsOnboarding(onboardedAt, location.pathname);
   const isRoot = location.pathname === '/';
   // The first history entry is either the cold-start entry or the one the deeplink redirect
   // replaced it with (marked via location state, since a replace gives it a new key).
@@ -44,13 +54,17 @@ export function AppLayout() {
     if (handledDeeplink.current) return;
     handledDeeplink.current = true;
     const target = deeplinkToRoute(startParam ?? telegram.startParam());
+    if (!onboardedAt && !deeplinkAllowedBeforeOnboarding(target)) return;
     if (target !== '/' && isRoot) {
-      void navigate(target, { replace: true, state: { deeplink: true } });
+      void navigate(target, { replace: true, state: FIRST_ENTRY_STATE });
     }
-  }, [startParam, telegram, isRoot, navigate]);
+  }, [startParam, telegram, isRoot, onboardedAt, navigate]);
+
+  // Onboarding has its own in-page Back; Telegram's Back would only bounce back to it.
+  const hideBack = isRoot || (!onboardedAt && isOnboardingRoute(location.pathname));
 
   useEffect(() => {
-    if (isRoot) {
+    if (hideBack) {
       telegram.backButton.hide();
       return;
     }
@@ -62,7 +76,7 @@ export function AppLayout() {
     return () => {
       off();
     };
-  }, [telegram, isRoot, isInitialEntry, navigate]);
+  }, [telegram, hideBack, isInitialEntry, navigate]);
 
   const showNav = !NO_NAV.some((pattern) => pattern.test(location.pathname));
   return (
@@ -76,7 +90,7 @@ export function AppLayout() {
       }}
     >
       <main className="mx-auto max-w-md">
-        <Outlet />
+        {mustOnboard ? <Navigate to={ONBOARDING_PATH} replace state={FIRST_ENTRY_STATE} /> : <Outlet />}
       </main>
       {showNav ? <BottomNav /> : null}
     </div>

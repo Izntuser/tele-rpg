@@ -1,0 +1,47 @@
+{
+  "character": {
+    "loading": "Loading your character…",
+    "error": "Could not load your character.",
+    "retry": "Try again",
+    "attributes": "Attributes",
+    "attributeLevel": "Lv {{level}}"
+  },
+  "home": {
+    "goals": "I want to improve",
+    "wishlist": "My wishlist"
+  },
+  "goals": {
+    "title": "I want to improve",
+    "subtitle": "Your companion sees these goals when creating quests for you.",
+    "label": "New goal",
+    "placeholder": "e.g. Read more books",
+    "attribute": "Attribute (optional)",
+    "add": "Add goal",
+    "empty": "No goals yet",
+    "archived": "Archived",
+    "archive": "Archive",
+    "restore": "Restore",
+    "delete": "Delete",
+    "deleteTitle": "Delete this goal?",
+    "limit": "You have reached the maximum number of goals.",
+    "error": "Something went wrong. Please try again."
+  },
+  "wishlist": {
+    "title": "My wishlist",
+    "subtitle": "Rewards you would love to get. Your companion may turn them into shop rewards.",
+    "label": "New wish",
+    "placeholder": "e.g. Breakfast in bed",
+    "description": "Details (optional)",
+    "add": "Add wish",
+    "empty": "Your wishlist is empty",
+    "archived": "Archived",
+    "offered": "In the shop",
+    "archive": "Archive",
+    "restore": "Restore",
+    "delete": "Delete",
+    "deleteTitle": "Delete this wish?",
+    "limit": "You have reached the maximum number of wishes.",
+    "linked": "This wish is already a shop reward. Archive it instead.",
+    "error": "Something went wrong. Please try again."
+  }
+}

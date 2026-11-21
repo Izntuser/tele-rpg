@@ -11,7 +11,7 @@ import { App } from './App';
 import { Providers } from './providers';
 import { createTestRouter } from './router';
 
-function auth(locale: 'en' | 'uk' = 'en', startParam: string | null = null): AuthResponse {
+function auth(locale: 'en' | 'uk' = 'en', startParam: string | null = null, onboarded = true): AuthResponse {
   return {
     jwt: 'j',
     token_type: 'bearer',
@@ -25,18 +25,23 @@ function auth(locale: 'en' | 'uk' = 'en', startParam: string | null = null): Aut
       avatar_url: null,
       locale,
       timezone: 'UTC',
-      onboarded_at: null,
+      onboarded_at: onboarded ? '2026-01-15T12:00:00Z' : null,
     },
   };
 }
 
 function renderShell(
   path: string,
-  { locale, startParam, telegram }: { locale?: 'en' | 'uk'; startParam?: string | null; telegram?: MockAdapterOptions } = {},
+  {
+    locale,
+    startParam,
+    telegram,
+    onboarded = true,
+  }: { locale?: 'en' | 'uk'; startParam?: string | null; telegram?: MockAdapterOptions; onboarded?: boolean } = {},
 ) {
   const fail = () => Promise.reject(new Error('unused'));
   const api: ApiClient = {
-    login: () => Promise.resolve(auth(locale, startParam ?? null)),
+    login: () => Promise.resolve(auth(locale, startParam ?? null, onboarded)),
     request: fail,
     get: fail,
     post: fail,
@@ -64,8 +69,6 @@ afterEach(() => {
 
 const ROUTES: [string, string][] = [
   ['/', 'page-home'],
-  ['/onboarding', 'page-onboarding'],
-  ['/onboarding/goals', 'page-onboarding'],
   ['/invite/tok', 'page-invite'],
   ['/quests', 'page-quests'],
   ['/quests/new', 'page-quest-new'],
@@ -113,7 +116,7 @@ describe('bottom nav', () => {
   });
 
   test('is hidden during onboarding', async () => {
-    renderShell('/onboarding');
+    renderShell('/onboarding', { onboarded: false });
     await screen.findByTestId('page-onboarding');
     expect(screen.queryByRole('navigation')).toBeNull();
   });
@@ -216,7 +219,8 @@ describe('theme, locale and deeplinks', () => {
 
   test('the UI follows the user locale', async () => {
     renderShell('/', { locale: 'uk' });
-    expect(await screen.findByTestId('user-greeting')).toHaveTextContent('Привіт, Bob');
+    // setLocale runs in an effect after the first render; wait for it instead of racing it.
+    await waitFor(() => expect(screen.getByTestId('user-greeting')).toHaveTextContent('Привіт, Bob'));
     expect(screen.getByTestId('nav-home')).toHaveTextContent('Головна');
   });
 

@@ -1,6 +1,11 @@
-import { USERS, expect, test } from './fixtures/telegram';
+import { USERS, expect, onboardViaApi, test } from './fixtures/telegram';
 
 test.use({ viewport: { width: 390, height: 844 } });
+
+// These specs are about the shell, not onboarding: user A already has a character (S05).
+test.beforeEach(async ({ request }) => {
+  await onboardViaApi(request, 'A');
+});
 
 const TABS = [
   { key: 'home', path: '/', page: 'page-home' },

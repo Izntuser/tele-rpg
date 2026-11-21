@@ -21,7 +21,7 @@ const AUTH: AuthResponse = {
     avatar_url: null,
     locale: 'en',
     timezone: 'UTC',
-    onboarded_at: null,
+    onboarded_at: '2026-01-15T12:00:00Z',
   },
 };
 

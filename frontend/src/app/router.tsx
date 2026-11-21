@@ -1,12 +1,11 @@
 import { Navigate, createBrowserRouter, createMemoryRouter, type RouteObject } from 'react-router';
 
 import { CompanionPage } from '../features/companion/pages/CompanionPage';
+import { GoalsPage } from '../features/goals/pages/GoalsPage';
 import { HomePage } from '../features/home/pages/HomePage';
 import { InvitePage } from '../features/invitations/pages/InvitePage';
 import { NotificationsPage } from '../features/notifications/pages/NotificationsPage';
 import { OnboardingPage } from '../features/onboarding/pages/OnboardingPage';
-import { GoalsPage } from '../features/profile/pages/GoalsPage';
-import { WishlistPage } from '../features/profile/pages/WishlistPage';
 import { QuestDetailPage } from '../features/quests/pages/QuestDetailPage';
 import { QuestNewPage } from '../features/quests/pages/QuestNewPage';
 import { QuestsPage } from '../features/quests/pages/QuestsPage';
@@ -16,6 +15,7 @@ import { ShopManagePage } from '../features/shop/pages/ShopManagePage';
 import { ShopPage } from '../features/shop/pages/ShopPage';
 import { JournalPage } from '../features/stats/pages/JournalPage';
 import { StatsPage } from '../features/stats/pages/StatsPage';
+import { WishlistPage } from '../features/wishlist/pages/WishlistPage';
 import { AppLayout } from './layout/AppLayout';
 
 /** Every ARCHITECTURE section 6 route; an unknown path redirects to Home. */
