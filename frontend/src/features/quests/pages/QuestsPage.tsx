@@ -10,6 +10,7 @@ import { InvitePanel } from '../../partnership/InvitePanel';
 import { CreateQuestSheet, EMPTY_FORM, type QuestForm } from '../CreateQuestSheet';
 import { bucketQuests, questPath, useQuestList, useTemplateList, type QuestBuckets } from '../api';
 import { QuestCard } from '../components/QuestCard';
+import { RecurringTab } from '../components/RecurringTab';
 
 const TABS = ['active', 'offers', 'recurring', 'assigned', 'toConfirm', 'completed'] as const;
 type Tab = (typeof TABS)[number];
@@ -101,6 +102,8 @@ export function QuestsPage({ creating = false }: { creating?: boolean }) {
               <p role="status" aria-live="polite" className="text-sm text-muted">
                 {t('loading')}
               </p>
+            ) : tab === 'recurring' ? (
+              <RecurringTab templates={buckets.recurring} />
             ) : items.length ? (
               items.map((q) => <QuestCard key={`${'partnership_id' in q ? 't' : 'o'}${q.id}`} quest={q} />)
             ) : (

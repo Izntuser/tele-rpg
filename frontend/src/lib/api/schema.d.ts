@@ -527,6 +527,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quest-templates/{template_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause Quest Template
+         * @description Creator: stop generating new occurrences of a recurring quest.
+         */
+        post: operations["pause_quest_template_api_quest_templates__template_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest-templates/{template_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Quest Template
+         * @description Creator: restart generation; the current period's occurrence is created at once.
+         */
+        post: operations["resume_quest_template_api_quest_templates__template_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quests": {
         parameters: {
             query?: never;
@@ -1799,6 +1839,18 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /**
+         * StreakOut
+         * @description Consecutive completed days of a daily quest (display only).
+         */
+        StreakOut: {
+            /** Current */
+            current: number;
+            /** Best */
+            best: number;
+            /** Last Completed Date */
+            last_completed_date: string | null;
+        };
         /** SubmissionOut */
         SubmissionOut: {
             /** Id */
@@ -1863,6 +1915,7 @@ export interface components {
             version: number;
             pending_revision: components["schemas"]["RevisionOut"] | null;
             last_declined_revision: components["schemas"]["RevisionOut"] | null;
+            streak?: components["schemas"]["StreakOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -1892,6 +1945,7 @@ export interface components {
             version: number;
             pending_revision: components["schemas"]["RevisionOut"] | null;
             last_declined_revision: components["schemas"]["RevisionOut"] | null;
+            streak?: components["schemas"]["StreakOut"] | null;
             /**
              * Created At
              * Format: date-time
@@ -2884,6 +2938,68 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_quest_template_api_quest_templates__template_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_quest_template_api_quest_templates__template_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
             };
             /** @description Validation Error */
             422: {

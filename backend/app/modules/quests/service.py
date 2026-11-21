@@ -37,7 +37,13 @@ from app.modules.notifications.service import enqueue, quest_deep_link
 from app.modules.partnerships.models import Partnership
 from app.modules.partnerships.service import find_active
 from app.modules.quests import state
-from app.modules.quests.models import QuestOccurrence, QuestRevision, QuestSubmission, QuestTemplate
+from app.modules.quests.models import (
+    QuestOccurrence,
+    QuestRevision,
+    QuestStreak,
+    QuestSubmission,
+    QuestTemplate,
+)
 from app.modules.quests.occurrences import ensure_occurrence
 from app.modules.quests.schemas import (
     MAX_OPEN_TEMPLATES,
@@ -49,6 +55,7 @@ from app.modules.quests.schemas import (
     QuestUpdate,
     RevisionOut,
     Role,
+    StreakOut,
     SubmissionOut,
     TemplateDetail,
     TemplateOut,
@@ -703,6 +710,42 @@ async def cancel(
     await session.commit()
 
 
+# --- pause / resume --------------------------------------------------------------------------
+
+
+async def set_paused(session: AsyncSession, user: User, template_id: int, *, paused: bool) -> None:
+    """Creator only, recurring quests only: pause stops the scheduler from generating new
+    occurrences (an existing active one stays playable); resume restarts generation and
+    creates the current period's occurrence right away (never earlier ones)."""
+    locked = await _lock(session, user, template_id=template_id)
+    template = locked.template
+    if locked.role != "gm":
+        raise WrongRoleError
+    if template.recurrence == Recurrence.ONCE:
+        raise QuestStateError("a one-time quest cannot be paused")
+    action: state.Action = "pause" if paused else "resume"
+    try:
+        template.status = state.next_template_status(template.status, action)
+    except state.InvalidTransitionError as exc:
+        raise _transition_error(exc) from None
+    if not paused:
+        assignee = await session.get(User, template.assignee_id)
+        assert assignee is not None
+        if assignee.deleted_at is None:
+            await ensure_occurrence(session, template, assignee.timezone)
+    revision = await session.get(QuestRevision, template.current_revision_id)
+    assert revision is not None
+    _event(
+        session,
+        user.id,
+        "quest_paused" if paused else "quest_resumed",
+        template,
+        None,
+        QuestTerms.model_validate(revision.terms),
+    )
+    await session.commit()
+
+
 # --- read models -----------------------------------------------------------------------------
 
 
@@ -766,6 +809,16 @@ async def _template_out(
     # the current revision itself.
     if declined is not None and declined.version < version:
         declined = None
+    streak: StreakOut | None = None
+    if template.recurrence == Recurrence.DAILY:
+        row = await session.get(QuestStreak, template.id)
+        streak = (
+            StreakOut(
+                current=row.current, best=row.best, last_completed_date=row.last_completed_date
+            )
+            if row is not None
+            else StreakOut(current=0, best=0, last_completed_date=None)
+        )
     return TemplateOut(
         id=template.id,
         partnership_id=template.partnership_id,
@@ -780,6 +833,7 @@ async def _template_out(
         last_declined_revision=RevisionOut.model_validate(declined)
         if declined is not None
         else None,
+        streak=streak,
         created_at=template.created_at,
     )
 

@@ -30,9 +30,18 @@
   "forMe": "Від напарника мені",
   "xp": "{{amount}} XP",
   "revisionPending": "Запропоновано зміни",
-  "status": { "paused": "На паузі" },
-  "recurrence": { "once": "Одноразово", "daily": "Щодня", "weekly": "Щотижня" },
-  "confirmation": { "manual": "Підтверджує Game Master", "auto": "Виконано після здачі" },
+  "status": {
+    "paused": "На паузі"
+  },
+  "recurrence": {
+    "once": "Одноразово",
+    "daily": "Щодня",
+    "weekly": "Щотижня"
+  },
+  "confirmation": {
+    "manual": "Підтверджує Game Master",
+    "auto": "Виконано після здачі"
+  },
   "terms": {
     "recurrence": "Повторення",
     "confirmation": "Підтвердження",
@@ -138,5 +147,18 @@
     "toConfirm": "Чекають мого підтвердження",
     "empty": "Нічого не заплановано. Загляни у вкладку «Квести».",
     "more": "ще {{count}}"
+  },
+  "recurring": {
+    "streak_one": "серія {{count}} день",
+    "streak_few": "серія {{count}} дні",
+    "streak_many": "серія {{count}} днів",
+    "streak_other": "серія {{count}} дня",
+    "best_one": "рекорд {{count}}",
+    "best_few": "рекорд {{count}}",
+    "best_many": "рекорд {{count}}",
+    "best_other": "рекорд {{count}}",
+    "pause": "Призупинити",
+    "resume": "Відновити",
+    "pausedHint": "Призупинено: нові квести не створюються, доки не відновите."
   }
 }

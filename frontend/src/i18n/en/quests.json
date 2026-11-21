@@ -30,9 +30,18 @@
   "forMe": "From my companion to me",
   "xp": "{{amount}} XP",
   "revisionPending": "Revision proposed",
-  "status": { "paused": "Paused" },
-  "recurrence": { "once": "One time", "daily": "Daily", "weekly": "Weekly" },
-  "confirmation": { "manual": "Game Master confirms", "auto": "Completes on submit" },
+  "status": {
+    "paused": "Paused"
+  },
+  "recurrence": {
+    "once": "One time",
+    "daily": "Daily",
+    "weekly": "Weekly"
+  },
+  "confirmation": {
+    "manual": "Game Master confirms",
+    "auto": "Completes on submit"
+  },
   "terms": {
     "recurrence": "Repeats",
     "confirmation": "Confirmation",
@@ -138,5 +147,18 @@
     "toConfirm": "Waiting for my confirmation",
     "empty": "Nothing planned. Check the Quests tab.",
     "more": "{{count}} more"
+  },
+  "recurring": {
+    "streak_one": "{{count}} day streak",
+    "streak_few": "{{count}} day streak",
+    "streak_many": "{{count}} day streak",
+    "streak_other": "{{count}} day streak",
+    "best_one": "best {{count}}",
+    "best_few": "best {{count}}",
+    "best_many": "best {{count}}",
+    "best_other": "best {{count}}",
+    "pause": "Pause",
+    "resume": "Resume",
+    "pausedHint": "Paused: no new quests are created until resumed."
   }
 }
