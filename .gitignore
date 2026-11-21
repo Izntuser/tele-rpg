@@ -12,3 +12,11 @@ test-results/
 playwright-report/
 logs/*.log
 .DS_Store
+backend/openapi.json
+.venv/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+frontend/dist/
+logs/*.pid

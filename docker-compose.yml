@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: telerpg
+      POSTGRES_PASSWORD: telerpg
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db-init.sql:/docker-entrypoint-initdb.d/db-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telerpg -d telerpg_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:
