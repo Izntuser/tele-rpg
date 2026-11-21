@@ -171,6 +171,14 @@ class SubmissionOut(BaseModel):
     reviewed_at: datetime | None
 
 
+class StreakOut(BaseModel):
+    """Consecutive completed days of a daily quest (display only)."""
+
+    current: int
+    best: int
+    last_completed_date: date | None
+
+
 class TemplateOut(BaseModel):
     id: int
     partnership_id: int
@@ -185,6 +193,8 @@ class TemplateOut(BaseModel):
     #: The newest declined revision (a declined offer, or a declined proposal not yet replaced
     #: by a newer accepted revision), with its decline_reason; null otherwise.
     last_declined_revision: RevisionOut | None
+    #: Daily quests only (zeros before the first completion); null for other recurrences.
+    streak: StreakOut | None = None
     created_at: datetime
 
 

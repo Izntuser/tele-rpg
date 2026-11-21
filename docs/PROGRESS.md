@@ -95,3 +95,9 @@ changed outside list: shop/pages/InventoryPage.tsx re-exports the inventory page
 ## 2026-11-22 fix/S04-nav-regression
 done: S11 shop switcher was a <nav> of NavLinks (aria-current), so the S04 selector `nav a[aria-current="page"]` counted 2. It is now a div role=group with the same label and links; vitest pins that it is not inside a nav and only one such link exists. Test and e2e untouched.
 verified: lint, pnpm test, e2e @S04 @S11 @P0 @S09 pass against a vite on 3001 (backend on 8000 is the main checkout api). check-stage.sh not run: init.sh refuses while main checkout api/vite hold 8000/3000 and I may not stop them.
+
+## 2026-11-22 S13 DONE (pending review)
+
+done: jobs/runner.py (advisory-locked leader, retrying standby, APScheduler), generate_occurrences, expire_occurrences (+ streak reset via quests/streaks.py, record_completion moved from completion.py), purge_idempotency hourly, POST /quest-templates/{id}/pause|resume (api/routes/quest_templates.py, service.set_paused), TemplateOut.streak, RecurringTab + templatesApi (streak, pause/resume), en/uk strings, tests (13 unit date cases, 13 job/runner, 7 pause/resume, 4 vitest), e2e/recurring.spec.ts + S13.png. DECISIONS 18.
+
+changed outside list: quests/schemas.py, quests/service.py (set_paused, streak in template out), pages/QuestsPage.tsx, i18n en/uk quests.json, schema.d.ts, recurring.test.tsx, DECISIONS, TODO (resolved purge + stale-streak, new scheduler/streak lines). left: runner not started by init.sh, expiry/offer-expiry notifications (TODO). surprising: check-stage.sh not run (main stack holds 8000/3000); e2e ran on own api 8001 + vite 3001 (temp vite config, removed).

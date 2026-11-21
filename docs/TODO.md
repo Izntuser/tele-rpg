@@ -49,12 +49,13 @@
 - GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.
 - quests/service.py _declined_by_template loads all declined revisions per template and picks the last in Python; use DISTINCT ON if revisions grow.
 - Achievements stage: hook achievement checks into quests/completion.complete_occurrence (same transaction).
-- Scheduler stage: run core.idempotency.purge_expired periodically (rows older than 24h are only replaced lazily on reuse today).
 - Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
 - Level-ups only write journal events (level_up, attribute_level_up); add an optional Telegram notification in the notifications stage.
 - Idempotency replay does not re-check authorization: a former member can replay their own cached quest detail (submit/confirm response) until the key expires (24h).
 - Files stage: one quest photo can be reused across several submissions; decide whether an attachment may be linked to only one submission.
-- S13 test_step 4: quest_streak.current only resets at the next completion, so after a missed day the stale value is shown; derive or reset it (e.g. by the expiry job) when a period is missed.
+- Scheduler: no journal event or notification when an occurrence expires, a template's offer or an invitation expires (partnership_invitation.pending past expires_at); init.sh and docker-compose do not start `python -m app.jobs.runner` yet (run it next to uvicorn).
+- Streaks: a day that was never generated (paused, or the template created mid-day after a skipped day) does not break the streak; a late confirm after a break restarts current at 1 even if the confirmed day was consecutive with the last completed one.
+- Weekly quests have no streak; the Recurring tab shows one only for daily quests.
 - S14/frontend: render the new journal/notification type quest_revision_superseded (GM's pending proposal dropped by the player's submit).
 - user.tg_user_id: add a CHECK (tg_user_id > 0 OR (deleted_at IS NOT NULL AND tg_user_id = -id)) so the partial unique index cannot be bypassed (S08 review).
 - core/idempotency.py claim(): the row-is-None branch retries recursively without bound; cap at one retry or return 409 (S08 review).

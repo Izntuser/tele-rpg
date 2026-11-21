@@ -24,10 +24,7 @@ its pending revision / submission -> wallet -> character -> character attribute 
 With an ``Idempotency-Key`` the ``idempotency_key`` row is claimed first (``core.idempotency``).
 """
 
-from datetime import date, timedelta
-
 from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import clock
@@ -48,11 +45,10 @@ from app.modules.journal.service import record_event
 from app.modules.notifications.service import enqueue, quest_deep_link
 from app.modules.partnerships.models import Partnership
 from app.modules.progression import service as progression
-from app.modules.quests import service, state
+from app.modules.quests import service, state, streaks
 from app.modules.quests.models import (
     QuestOccurrence,
     QuestRevision,
-    QuestStreak,
     QuestSubmission,
     QuestTemplate,
 )
@@ -111,30 +107,6 @@ async def _ensure_payable(
             raise service.PartnershipInactiveError
 
 
-async def _update_streak(session: AsyncSession, template: QuestTemplate, day: date) -> None:
-    """Daily quests only: consecutive completed days (by scheduled date). Completing an older
-    day late (a slow review) never moves the streak backwards."""
-    await session.execute(
-        insert(QuestStreak)
-        .values(template_id=template.id, current=0, best=0)
-        .on_conflict_do_nothing(index_elements=[QuestStreak.template_id])
-    )
-    streak = await session.scalar(
-        select(QuestStreak)
-        .where(QuestStreak.template_id == template.id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    )
-    assert streak is not None
-    last = streak.last_completed_date
-    if last is not None and day <= last:
-        return
-    consecutive = last is not None and last + timedelta(days=1) == day
-    streak.current = streak.current + 1 if consecutive else 1
-    streak.best = max(streak.best, streak.current)
-    streak.last_completed_date = day
-
-
 async def complete_occurrence(
     session: AsyncSession,
     *,
@@ -185,7 +157,7 @@ async def complete_occurrence(
     except progression.NoCharacterError:  # pragma: no cover - players are onboarded
         raise service.QuestStateError("the player has no character") from None
     if template.recurrence == Recurrence.DAILY:
-        await _update_streak(session, template, occurrence.scheduled_date)
+        await streaks.record_completion(session, template.id, occurrence.scheduled_date)
 
     wallet = await session.get(Wallet, ledger.wallet_id)
     assert wallet is not None
