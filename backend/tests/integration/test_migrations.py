@@ -22,7 +22,7 @@ from app.modules.common.enums import ALL_ENUMS
 from tests.conftest import TEST_DATABASE_URL, alembic_config
 from tests.db_guard import assert_disposable_db
 
-HEAD = "0004"
+HEAD = "0005"
 
 EXPECTED_TABLES = {
     "user",
@@ -81,7 +81,6 @@ EXPECTED_CHECKS = {
 }
 
 EXPECTED_UNIQUES = {
-    "uq_user_tg_user_id",
     "uq_character_user_id",
     "uq_partnership_user_a_id_user_b_id",
     "uq_partnership_invitation_token_hash",
@@ -97,6 +96,7 @@ EXPECTED_UNIQUES = {
 
 # name -> fragments that must appear in pg_indexes.indexdef
 EXPECTED_PARTIAL_UNIQUE_INDEXES = {
+    "ux_user_tg_user_id_live": ["UNIQUE", "(tg_user_id)", "tg_user_id > 0"],
     "ux_partnership_active_user_a": ["UNIQUE", "(user_a_id)", "status = 'active'"],
     "ux_partnership_active_user_b": ["UNIQUE", "(user_b_id)", "status = 'active'"],
     "ux_partnership_invitation_pending_creator": ["UNIQUE", "(creator_id)", "'pending'"],
@@ -292,6 +292,25 @@ def test_0004_adds_ledger_constraints_and_indexes() -> None:
             r[0] for r in rows("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
         }
         assert "ix_gold_transaction_wallet_id" not in index_names
+    finally:
+        command.upgrade(cfg, "head")
+
+
+def test_0005_makes_tg_user_id_unique_only_among_live_ids() -> None:
+    assert rows("SELECT version_num FROM alembic_version") == [(HEAD,)]
+    assert "uq_user_tg_user_id" not in constraints("u")
+    indexdefs = dict(rows("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public'"))
+    assert "(tg_user_id)" in indexdefs["ix_user_tg_user_id"]
+    assert "UNIQUE" not in indexdefs["ix_user_tg_user_id"]
+    cfg = alembic_config()
+    try:
+        command.downgrade(cfg, "0004")
+        assert "uq_user_tg_user_id" in constraints("u")
+        index_names = {
+            r[0] for r in rows("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")
+        }
+        assert "ux_user_tg_user_id_live" not in index_names
+        assert "ix_user_tg_user_id" not in index_names
     finally:
         command.upgrade(cfg, "head")
 

@@ -13,8 +13,10 @@ Protocol, all inside the command's own transaction:
 
 Keys are scoped per user (primary key ``(user_id, key)``), so two users can never collide.
 A key is bound to one request: reusing it for another endpoint or another body is refused
-(``IdempotencyKeyReusedError``, 422). Stored responses expire after ``TTL`` (24h); an expired
-row is replaced on the next claim and ``purge_expired`` deletes the rest.
+(``IdempotencyKeyReusedError``, 422). Stored responses expire after ``TTL`` (24h): an expired
+row is never replayed (the next claim takes it over) and ``purge_expired`` deletes the rest.
+Account deletion removes the deleted user's rows and their companions' rows, since a stored
+quest response can carry the deleted user's free text (``users.account``).
 """
 
 import hashlib
@@ -102,35 +104,44 @@ class Claim:
 async def claim(
     session: AsyncSession, *, user_id: int, key: str, endpoint: str, request_hash: str
 ) -> Claim | Replay:
-    """Claim ``key`` for this request, or return the stored response of its first use."""
+    """Claim ``key`` for this request, or return the stored response of its first use.
+
+    A stored row older than ``TTL`` counts as absent: it is taken over (overwritten in place)
+    instead of replayed, so expiry holds even if ``purge_expired`` never runs.
+    """
     now = clock.now()
-    await session.execute(
-        delete(IdempotencyKey).where(
-            IdempotencyKey.user_id == user_id,
-            IdempotencyKey.key == key,
-            IdempotencyKey.created_at <= now - TTL,
-        )
-    )
+    fresh = {
+        "endpoint": endpoint[:255],
+        "response": {"state": _IN_PROGRESS, "request_hash": request_hash},
+        "created_at": now,
+    }
     inserted = await session.scalar(
         insert(IdempotencyKey)
-        .values(
-            user_id=user_id,
-            key=key,
-            endpoint=endpoint[:255],
-            response={"state": _IN_PROGRESS, "request_hash": request_hash},
-            created_at=now,
-        )
+        .values(user_id=user_id, key=key, **fresh)
         .on_conflict_do_nothing(index_elements=[IdempotencyKey.user_id, IdempotencyKey.key])
         .returning(IdempotencyKey.key)
     )
     if inserted is not None:
         return Claim(user_id=user_id, key=key, request_hash=request_hash)
+    # The row exists and its first transaction has ended (the insert waited for it). Lock it
+    # so two retries of an expired key cannot both take it over.
     row = await session.scalar(
         select(IdempotencyKey)
         .where(IdempotencyKey.user_id == user_id, IdempotencyKey.key == key)
+        .with_for_update()
         .execution_options(populate_existing=True)
     )
-    assert row is not None
+    if row is None:  # pragma: no cover - deleted (purge / account deletion) in between
+        return await claim(
+            session, user_id=user_id, key=key, endpoint=endpoint, request_hash=request_hash
+        )
+    if row.created_at <= now - TTL:
+        await session.execute(
+            update(IdempotencyKey)
+            .where(IdempotencyKey.user_id == user_id, IdempotencyKey.key == key)
+            .values(**fresh)
+        )
+        return Claim(user_id=user_id, key=key, request_hash=request_hash)
     stored = row.response
     if row.endpoint != endpoint[:255] or stored.get("request_hash") != request_hash:
         raise IdempotencyKeyReusedError

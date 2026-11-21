@@ -18,6 +18,7 @@ from app.modules.economy.models import GoldTransaction
 from app.modules.progression.models import XpTransaction
 from app.modules.quests.models import QuestSubmission
 from app.modules.users.models import User
+from tests import factories
 from tests.integration.completion_support import (
     active_quest,
     app_client,
@@ -161,6 +162,73 @@ async def test_expired_keys_run_again(
     # The stored response is gone, so the repeat is a real (refused) second confirm.
     assert (await act(client, gm, occ, "confirm", "old")).status_code == 409
     assert await count(session, GoldTransaction) == 1
+
+
+async def test_an_expired_stored_response_is_never_replayed(
+    session: AsyncSession, frozen_clock: ModuleType
+) -> None:
+    """Expiry holds without the purge job: an old row is taken over, not replayed."""
+    _, player, _ = await pair(session)
+    session.add(
+        IdempotencyKey(
+            user_id=player.id,
+            key="stale",
+            endpoint="submit",
+            response={
+                "state": "done",
+                "request_hash": "h",
+                "status_code": 200,
+                "body": {"old": True},
+            },
+            created_at=clock.now() - idempotency.TTL - timedelta(seconds=1),
+        )
+    )
+    await session.flush()
+
+    claimed = await idempotency.claim(
+        session, user_id=player.id, key="stale", endpoint="submit", request_hash="h"
+    )
+    assert isinstance(claimed, idempotency.Claim)
+    row = await session.scalar(
+        select(IdempotencyKey)
+        .where(IdempotencyKey.key == "stale")
+        .execution_options(populate_existing=True)
+    )
+    assert row is not None
+    assert row.created_at == clock.now() and row.response["state"] == "in_progress"
+
+
+async def test_account_deletion_drops_the_companions_stored_responses(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    """A stored quest response carries both members' free text; once one member deletes their
+    account, the companion's cached copy is gone and cannot replay it."""
+    gm, player, _ = await pair(session)
+    occ = await active_quest(session, gm, player)
+    stranger = await factories.create_user(session)
+    session.add(
+        IdempotencyKey(
+            user_id=stranger.id, key="unrelated", endpoint="x", response={}, created_at=clock.now()
+        )
+    )
+    await session.flush()
+    gm_id, player_id, stranger_id = ident(gm), ident(player), ident(stranger)
+
+    submitted = await act(client, player, occ, "submit", "s1", {"comment": "my secret note"})
+    assert submitted.status_code == 200
+    confirmed = await act(client, gm, occ, "confirm", "c1")
+    assert confirmed.status_code == 200 and "my secret note" in confirmed.text
+
+    deleted = await client.request(
+        "DELETE", "/api/account", headers=auth(player_id), json={"confirm_text": "DELETE"}
+    )
+    assert deleted.status_code == 204
+    owners = (await session.scalars(select(IdempotencyKey.user_id))).all()
+    assert owners == [stranger_id]
+
+    again = await act(client, gm_id, occ, "confirm", "c1")
+    assert "Idempotent-Replayed" not in again.headers
+    assert again.status_code == 409 and "my secret note" not in again.text
 
 
 async def test_purge_expired(session: AsyncSession, frozen_clock: ModuleType) -> None:

@@ -105,7 +105,8 @@ class DeadlineNotAllowedError(QuestError):
 
 
 class InvalidAttachmentError(QuestError):
-    """``attachment_id`` is not a quest photo uploaded by the submitting assignee."""
+    """``attachment_id`` is not a quest photo uploaded by the submitting assignee for this
+    quest's partnership."""
 
 
 class PhotoRequiredError(QuestError):
@@ -326,7 +327,8 @@ async def _current_revision(session: AsyncSession, template: QuestTemplate) -> Q
     return revision
 
 
-async def _supersede_pending(session: AsyncSession, template: QuestTemplate) -> None:
+async def _supersede_pending(session: AsyncSession, template: QuestTemplate) -> list[QuestRevision]:
+    """Close the template's pending revision(s); returns the ones it superseded."""
     pending = await session.scalars(
         select(QuestRevision)
         .where(
@@ -336,10 +338,12 @@ async def _supersede_pending(session: AsyncSession, template: QuestTemplate) -> 
         .with_for_update()
     )
     now = clock.now()
-    for revision in pending:
+    superseded = list(pending)
+    for revision in superseded:
         revision.status = state.next_revision_status(revision.status, "supersede")
         revision.decided_at = now
     await session.flush()
+    return superseded
 
 
 # Shared with ``quests.completion`` (submit / confirm / request-redo): one lock order, one

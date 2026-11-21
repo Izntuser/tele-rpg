@@ -62,9 +62,16 @@ async def active_quest(session: AsyncSession, gm: User, player: User, **terms: A
     return occurrence_id
 
 
-async def photo(session: AsyncSession, owner: User, kind: FileKind = FileKind.QUEST_PHOTO) -> File:
+async def photo(
+    session: AsyncSession,
+    owner: User,
+    kind: FileKind = FileKind.QUEST_PHOTO,
+    *,
+    partnership: Partnership | None,
+) -> File:
     file = File(
         owner_id=owner.id,
+        partnership_id=partnership.id if partnership is not None else None,
         kind=kind,
         storage_key=f"test/{secrets.token_hex(8)}",
         mime="image/jpeg",

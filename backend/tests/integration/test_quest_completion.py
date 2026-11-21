@@ -116,9 +116,9 @@ async def test_submit_puts_the_quest_in_review_without_paying(
 
 
 async def test_submit_with_my_quest_photo(client: httpx.AsyncClient, session: AsyncSession) -> None:
-    gm, player, _ = await pair(session)
+    gm, player, partnership = await pair(session)
     occ = await active_quest(session, gm, player, photo_required=True)
-    file = await photo(session, player)
+    file = await photo(session, player, partnership=partnership)
 
     response = await post(client, player, f"/quests/{occ}/submit", {"attachment_id": file.id})
     assert response.status_code == 200, response.text
@@ -138,16 +138,27 @@ async def test_photo_required_quest_without_attachment_is_422(
     assert await count(session, QuestSubmission) == 0
 
 
-@pytest.mark.parametrize("whose", ["companion", "missing", "avatar"])
+@pytest.mark.parametrize(
+    "whose", ["companion", "missing", "avatar", "other_partnership", "no_partnership"]
+)
 async def test_attachment_must_be_my_quest_photo(
     client: httpx.AsyncClient, session: AsyncSession, whose: str
 ) -> None:
-    gm, player, _ = await pair(session)
+    gm, player, partnership = await pair(session)
     occ = await active_quest(session, gm, player)
     if whose == "companion":
-        attachment_id = (await photo(session, gm)).id
+        attachment_id = (await photo(session, gm, partnership=partnership)).id
     elif whose == "avatar":
-        attachment_id = (await photo(session, player, FileKind.AVATAR)).id
+        attachment_id = (await photo(session, player, FileKind.AVATAR, partnership=partnership)).id
+    elif whose == "other_partnership":
+        # My own quest photo, but uploaded for an earlier partnership with someone else.
+        stranger = await factories.create_user(session)
+        old = await factories.create_partnership(
+            session, player, stranger, status=PartnershipStatus.ENDED
+        )
+        attachment_id = (await photo(session, player, partnership=old)).id
+    elif whose == "no_partnership":
+        attachment_id = (await photo(session, player, partnership=None)).id
     else:
         attachment_id = 987_654_321
 
@@ -552,8 +563,29 @@ async def test_submit_supersedes_a_pending_revision_of_a_one_time_quest(
         )
     ).all()
     assert statuses == [QuestRevisionStatus.ACCEPTED, QuestRevisionStatus.SUPERSEDED]
+    # The GM learns their proposal was dropped: a shared journal event by the player and a
+    # notification to the GM, with ids and terms only (check_payload: no names, no free text).
+    event = await session.scalar(
+        select(JournalEvent).where(JournalEvent.type == "quest_revision_superseded")
+    )
+    assert event is not None and event.user_id == player.id
+    assert event.payload["occurrence_id"] == occ and event.payload["version"] == 2
+    note = await session.scalar(
+        select(Notification).where(Notification.type == "quest_revision_superseded")
+    )
+    assert note is not None and note.recipient_id == gm.id
+    assert note.payload["revision_id"] == event.payload["revision_id"]
     await post(client, gm, f"/quests/{occ}/confirm")
     assert await wallet_balance(session, player, partnership) == 40
+
+
+async def test_submit_without_a_pending_revision_sends_no_superseded_notice(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    gm, player, _ = await pair(session)
+    occ = await active_quest(session, gm, player)
+    assert (await post(client, player, f"/quests/{occ}/submit")).status_code == 200
+    assert await count(session, Notification, Notification.type == "quest_revision_superseded") == 0
 
 
 async def test_daily_streak_counts_consecutive_completions(

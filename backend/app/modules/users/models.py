@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -20,9 +21,22 @@ from app.modules.common.enums import Attribute, Locale
 
 class User(Base):
     __tablename__ = "user"
+    __table_args__ = (
+        # Partial on purpose (migration 0005): Postgres treats only non-partial unique indexes
+        # as row "keys", so account deletion rewriting tg_user_id to -id is a no-key update
+        # and never conflicts with the FOR KEY SHARE that FK checks take (DECISIONS #16).
+        # Live Telegram ids are positive, deleted rows hold -id (unique by construction).
+        Index(
+            "ux_user_tg_user_id_live",
+            "tg_user_id",
+            unique=True,
+            postgresql_where=text("tg_user_id > 0"),
+        ),
+        Index(None, "tg_user_id"),
+    )
 
     id: Mapped[int] = id_pk()
-    tg_user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    tg_user_id: Mapped[int] = mapped_column(BigInteger)
     tg_username: Mapped[str | None] = mapped_column(String(64))
     display_name: Mapped[str] = mapped_column(String(128))
     avatar_url: Mapped[str | None] = mapped_column(Text)

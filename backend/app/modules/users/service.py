@@ -162,7 +162,7 @@ async def complete_onboarding(
     locked = await session.scalar(
         select(User)
         .where(User.id == user.id)
-        .with_for_update()
+        .with_for_update(key_share=True)
         .execution_options(populate_existing=True)
     )
     if locked is None:  # pragma: no cover - current_user just loaded it
@@ -219,5 +219,10 @@ async def resolve_owner(session: AsyncSession, user: User, who: str) -> int:
 
 
 async def lock_user(session: AsyncSession, user_id: int) -> None:
-    """Serialize a user's writes that check a per-user count (row lock until commit)."""
-    await session.execute(select(User.id).where(User.id == user_id).with_for_update())
+    """Serialize a user's writes that check a per-user count (row lock until commit).
+
+    ``FOR NO KEY UPDATE``: it serializes with other user-row lockers but not with the
+    ``FOR KEY SHARE`` that FK checks take, so it cannot deadlock with quest writes (DECISIONS
+    #16).
+    """
+    await session.execute(select(User.id).where(User.id == user_id).with_for_update(key_share=True))

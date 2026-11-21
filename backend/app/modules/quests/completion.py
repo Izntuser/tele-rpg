@@ -49,7 +49,13 @@ from app.modules.notifications.service import enqueue, quest_deep_link
 from app.modules.partnerships.models import Partnership
 from app.modules.progression import service as progression
 from app.modules.quests import service, state
-from app.modules.quests.models import QuestOccurrence, QuestStreak, QuestSubmission, QuestTemplate
+from app.modules.quests.models import (
+    QuestOccurrence,
+    QuestRevision,
+    QuestStreak,
+    QuestSubmission,
+    QuestTemplate,
+)
 from app.modules.quests.schemas import (
     CompletionOut,
     ConfirmIn,
@@ -295,6 +301,7 @@ async def submit(
             attachment is None
             or attachment.owner_id != user.id
             or attachment.kind != FileKind.QUEST_PHOTO
+            or attachment.partnership_id != template.partnership_id
         ):
             raise service.InvalidAttachmentError
     elif terms.photo_required:
@@ -310,11 +317,23 @@ async def submit(
         review_status=SubmissionReviewStatus.PENDING,
     )
     session.add(submission)
+    superseded: list[QuestRevision] = []
     if template.recurrence == Recurrence.ONCE:
         # The player submitted against the accepted terms; a proposal still pending for this
         # (only) occurrence can no longer apply to it (DECISIONS #16).
-        await service.supersede_pending(session, template)
+        superseded = await service.supersede_pending(session, template)
     await session.flush()
+    for revision in superseded:
+        # Tell the GM their proposal was dropped (journal + notification, no names or text).
+        service.quest_event(
+            session,
+            user.id,
+            "quest_revision_superseded",
+            template,
+            occurrence,
+            terms,
+            {"revision_id": revision.id, "version": revision.version},
+        )
 
     completion: CompletionOut | None = None
     if terms.confirmation == ConfirmationMode.AUTO:

@@ -137,13 +137,21 @@ def companion_of(partnership: Partnership, user_id: int) -> int:
 
 
 async def lock_users(session: AsyncSession, user_ids: Iterable[int]) -> dict[int, User]:
-    """Lock the user rows in ascending id order and return fresh copies of them."""
+    """Lock the user rows in ascending id order and return fresh copies of them.
+
+    ``FOR NO KEY UPDATE``, never plain ``FOR UPDATE``: a quest write that already holds the
+    partnership ``FOR SHARE`` inserts rows referencing these users, and each FK check takes
+    ``FOR KEY SHARE`` on the user row. A full ``FOR UPDATE`` here would make ``leave`` (waiting
+    for the partnership) and that write (waiting for the user row) deadlock. No caller changes
+    a user key column (``tg_user_id``'s unique index is partial, so account deletion's rewrite
+    is not a key update either; migration 0005, DECISIONS #16).
+    """
     users: dict[int, User] = {}
     for user_id in sorted(set(user_ids)):
         user = await session.scalar(
             select(User)
             .where(User.id == user_id)
-            .with_for_update()
+            .with_for_update(key_share=True)
             .execution_options(populate_existing=True)
         )
         if user is not None:

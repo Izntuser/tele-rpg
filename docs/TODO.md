@@ -55,3 +55,7 @@
 - Scheduler stage: run core.idempotency.purge_expired periodically (rows older than 24h are only replaced lazily on reuse today).
 - Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
 - Level-ups only write journal events (level_up, attribute_level_up); add an optional Telegram notification in the notifications stage.
+- Idempotency replay does not re-check authorization: a former member can replay their own cached quest detail (submit/confirm response) until the key expires (24h).
+- Files stage: one quest photo can be reused across several submissions; decide whether an attachment may be linked to only one submission.
+- S13 test_step 4: quest_streak.current only resets at the next completion, so after a missed day the stale value is shown; derive or reset it (e.g. by the expiry job) when a period is missed.
+- S14/frontend: render the new journal/notification type quest_revision_superseded (GM's pending proposal dropped by the player's submit).
