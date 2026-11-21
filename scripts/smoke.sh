@@ -3,6 +3,9 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+API_URL="${API_URL:-http://localhost:8000}"
+WEB_URL="${WEB_URL:-http://localhost:3000}"
+
 fail() { echo "SMOKE FAIL: $1" >&2; exit 1; }
 
 # Same env as init.sh so alembic checks the stack's database.
@@ -12,11 +15,11 @@ done
 export DATABASE_URL="${E2E_DATABASE_URL:-postgresql+asyncpg://telerpg:telerpg@localhost:5432/telerpg_e2e}"
 export APP_ENV=test
 
-health=$(curl -fsS --max-time 5 http://localhost:8000/healthz) || fail "api /healthz unreachable"
+health=$(curl -fsS --max-time 5 $API_URL/healthz) || fail "api /healthz unreachable"
 echo "$health" | grep -q '"db":"ok"' || fail "api /healthz db not ok: $health"
 echo "ok: healthz"
 
-page=$(curl -fsS --max-time 5 http://localhost:3000/) || fail "frontend :3000 unreachable"
+page=$(curl -fsS --max-time 5 $WEB_URL/) || fail "frontend :3000 unreachable"
 echo "$page" | grep -q 'id="root"' || fail "frontend html lacks root div"
 echo "ok: frontend"
 

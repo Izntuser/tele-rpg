@@ -39,6 +39,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           (cd backend && uv sync --frozen)
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

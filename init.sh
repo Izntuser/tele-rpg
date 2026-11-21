@@ -29,24 +29,36 @@ if [ "${SKIP_DOCKER:-0}" != "1" ]; then
   docker compose up -d --wait postgres
 fi
 
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+pnpm install --frozen-lockfile
 (cd backend && uv sync)
 pnpm exec playwright install chromium >/dev/null
 
 (cd backend && uv run alembic upgrade head)
 
 port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
+pid_alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
 
 start() { # name port command...
-  local name=$1 port=$2
+  local name=$1 port=$2 pidfile="logs/$1.pid" pid=""
   shift 2
-  if port_busy "$port"; then
-    echo "$name already listening on :$port"
+  [ -f "$pidfile" ] && pid=$(cat "$pidfile")
+  if pid_alive "$pid"; then
+    echo "$name already running from this checkout (pid $pid)"
     return 0
   fi
+  if [ -f "$pidfile" ]; then
+    echo "removing stale $pidfile (pid ${pid:-?} not running)"
+    rm -f "$pidfile"
+  fi
+  if port_busy "$port"; then
+    echo "ERROR: port :$port is held by a process that is not this checkout's $name:" >&2
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
+    echo "Stop it (another worktree's stack?) or free the port, then re-run init.sh." >&2
+    exit 1
+  fi
   nohup "$@" >"logs/$name.log" 2>&1 </dev/null &
-  echo $! >"logs/$name.pid"
-  echo "started $name (pid $(cat "logs/$name.pid"))"
+  echo $! >"$pidfile"
+  echo "started $name (pid $!)"
 }
 
 wait_for() { # url
