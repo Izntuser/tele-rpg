@@ -382,7 +382,7 @@
         "The provider can refund before fulfilled, and the buyer only while purchased. A refund writes exactly one credit with key refund:{purchase_id} and restores quantity, and a refund to a frozen wallet still credits it.",
         "Parallel purchases of the last unit produce exactly one sale, and the ledger invariant holds after a mix of purchases and refunds. Every transition writes a journal event and enqueues a notification."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

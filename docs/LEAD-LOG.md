@@ -86,3 +86,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T23:18 REVIEW S10 -> stage-reviewer + stage-reviewer(opus,security; codex unavailable) (round 2, @69bafe6; only stage-reviewer runs suite: shared test DB)
 2026-11-21T23:19 REVIEW S10 stage-reviewer(opus,security) round 2: APPROVE (read-only; awaiting stage-reviewer)
 2026-11-21T23:22 REVIEW S10 stage-reviewer round 2: APPROVE
+2026-11-21T23:37 MERGED S10 (check-stage --mark passed on main; S01/S03-S09 recheck passed; 2 review rounds; codex unavailable -> opus security; lesson: parallel reviewers must not both run suites, shared telerpg_test)
+2026-11-21T23:37 DISPATCH S11 -> stage-worker(sonnet) (medium, normal, ui, shop UI P0)
