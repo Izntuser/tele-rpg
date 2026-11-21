@@ -38,8 +38,11 @@
     ],
     "deny": [
       "Read(./.env)",
-      "Read(./.env.*)",
-      "Edit(./.env*)",
+      "Edit(./.env)",
+      "Read(./.env.local)",
+      "Edit(./.env.local)",
+      "Read(**/.env)",
+      "Edit(**/.env)",
       "Edit(./scripts/check-stage.sh)",
       "Edit(./scripts/block-stage.sh)",
       "Edit(./scripts/stages.schema.json)",
@@ -52,5 +55,7 @@
       "Bash(sudo *)"
     ]
   },
-  "worktree": { "baseRef": "head" }
+  "worktree": {
+    "baseRef": "head"
+  }
 }
