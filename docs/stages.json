@@ -276,7 +276,7 @@
         "GET /quests?role=player|gm&status=… returns the right occurrences for each tab. In the authz matrix, non-participants get 404 and wrong-role actions (creator accepting, assignee editing) get 403 or 409.",
         "Each transition writes a journal_event (journal.service.record_event) and enqueues a notification (notifications.service.enqueue) in the same transaction, and a rolled-back transaction leaves neither row."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

@@ -53,3 +53,5 @@
 - S09: recurring offers have no occurrence until accepted; the Offers tab must merge GET /quests?role=player&status=offered with GET /quest-templates?role=player&status=offered&recurrence=daily|weekly.
 - Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
 - GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.
+- quests/service.py _declined_by_template loads all declined revisions per template and picks the last in Python; use DISTINCT ON if revisions grow.
+- Recurring offers have no offer deadline (accept deadline check is one-time only); re-check in S08/S09.

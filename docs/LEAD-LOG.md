@@ -54,3 +54,11 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T19:03 REVIEW S06 stage-reviewer(opus,security) round 2: APPROVE (3 TODOs; awaiting stage-reviewer)
 2026-11-21T19:07 REVIEW S06 stage-reviewer round 2: APPROVE
 2026-11-21T19:10 MERGED S06 (check-stage --mark passed on main; S01/S03/S04/S05 recheck passed; 2 review rounds)
+2026-11-21T19:11 DISPATCH S07 -> stage-worker(opus) (high, normal, quest offer backend)
+2026-11-21T19:28 REVIEW S07 -> stage-reviewer (round 1, @d45e615)
+2026-11-21T19:33 REVIEW S07 stage-reviewer: REQUEST CHANGES (pending revision acceptable on cancelled/closed quest)
+2026-11-21T19:33 DECISION S07: accept one-time quest active occurrence taking new revision terms (DECISIONS #15) and /quest-templates/* routes as gap-fill
+2026-11-21T19:33 DISPATCH S07 -> stage-worker(opus) (round 2: closed-quest revisions)
+2026-11-21T19:39 REVIEW S07 -> stage-reviewer (round 2, @285a7eb)
+2026-11-21T19:43 REVIEW S07 stage-reviewer round 2: APPROVE (2 TODOs)
+2026-11-21T19:48 MERGED S07 (check-stage --mark passed on main; S01/S03-S06 recheck passed; 2 review rounds)
