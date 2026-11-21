@@ -153,6 +153,23 @@ export async function resetDatabase(request: APIRequestContext): Promise<void> {
   expect(response.status(), 'POST /api/test/reset (is the stack APP_ENV=test?)').toBe(204);
 }
 
+/**
+ * Completes onboarding for `who` through the real API (creates the character), so a spec that
+ * is not about onboarding lands on Home instead of the onboarding redirect.
+ */
+export async function onboardViaApi(
+  request: APIRequestContext,
+  who: UserKey = 'A',
+  body: Record<string, unknown> = {},
+): Promise<void> {
+  const jwt = await apiLogin(request, who);
+  const response = await request.post('/api/character/onboarding/complete', {
+    headers: { Authorization: `Bearer ${jwt}` },
+    data: { name: USERS[who].first_name, timezone: 'UTC', goals: [], ...body },
+  });
+  expect(response.status(), await response.text()).toBe(200);
+}
+
 export const test = base.extend<{
   resetDb: void;
   telegram: (who: UserKey | TelegramTestUser, options?: SignOptions & { initData?: string }) => Promise<void>;

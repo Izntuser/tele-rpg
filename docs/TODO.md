@@ -18,7 +18,6 @@
 - anyone with a local DB from 603d5ff should rebuild it (downgrade base && upgrade head) to get ck_reward_quantity_remaining_within_limit.
 - core/config.py: custom-error-type fallback drops ctx and downgrades a mixed error list entirely; cosmetic.
 - prod: login rate limit keys on request.client.host; run uvicorn with --proxy-headers and --forwarded-allow-ips limited to Railway's proxy range (never '*', which lets any client spoof X-Forwarded-For and dodge the limit), or all users share one 30/min login bucket.
-- /auth/telegram creates only the user row; /auth/me returns character=null until S05 onboarding creates the character (+6 attribute rows).
 - InsecureKeyLengthWarning in pytest: DEV_JWT_SECRET (and .env.example JWT_SECRET) is 24 bytes; consider a >=32-byte dev default.
 - auth: consider a shorter login max_age for initData than 24h to narrow the replay window.
 - POST /api/test/reset takes a write-rate-limit token before reset_all() clears the limits; harmless today.
@@ -28,5 +27,9 @@
 - BottomSheet/ConfirmSheet: add a focus trap and restore focus on close; consider the shadcn Dialog primitive.
 - ARCHITECTURE.md:281 says notifications use `startapp=inv_<id>`, but lib/deeplink.ts maps inv_ to `/` (deeplink.test.ts:17 pins it); the notifications stage must resolve this.
 - shell.test.tsx "no native dialogs" test only renders a placeholder Settings page; strengthen it once real pages exist.
-- AppLayout first-entry check relies on location.state {deeplink: true}; any future replace-redirect at app start (e.g. onboarding) must set the same flag or use a shared helper, else Back exits the app.
 - shell.test.tsx safe-area test: move viewport.mockRestore() and CSS var reset into afterEach so a failing assertion can't leak state.
+- POST /character/avatar (custom avatar upload) is not built; onboarding uses the Telegram photo_url. Needs the files/StorageBackend stage.
+- Onboarding drops a q_/r_ start param for a not-yet-onboarded user (only invite_ survives); consider resuming it after onboarding.
+- Onboarding has no "Invite companion" step yet (ARCHITECTURE s6); the partnership stage should add it after Goals/Timezone.
+- Settings stage: edit locale/timezone via PATCH /character and update the AUTH_QUERY_KEY user (as OnboardingPage does) so AppLayout switches language.
+- Any new replace-redirect at app start should reuse features/onboarding/redirect.ts FIRST_ENTRY_STATE so Telegram Back goes Home.

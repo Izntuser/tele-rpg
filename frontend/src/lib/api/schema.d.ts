@@ -58,10 +58,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Character */
+        get: operations["get_character_api_character_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Character
+         * @description Edit name, nickname, bio, locale and timezone. Any other field (``total_xp``,
+         *     ``level``, ``gold`` ...) is ignored.
+         */
+        patch: operations["patch_character_api_character_patch"];
+        trace?: never;
+    };
+    "/api/character/onboarding/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Onboarding
+         * @description Create the character with its 6 attributes and the chosen goals, set the timezone and
+         *     mark the user onboarded. 409 if already onboarded.
+         */
+        post: operations["complete_onboarding_api_character_onboarding_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Goals
+         * @description My goals (active and archived), or the active companion's active goals (403 when there
+         *     is no active partnership).
+         */
+        get: operations["list_goals_api_goals_get"];
+        put?: never;
+        /** Create Goal */
+        post: operations["create_goal_api_goals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{goal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Goal */
+        delete: operations["delete_goal_api_goals__goal_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Goal */
+        patch: operations["update_goal_api_goals__goal_id__patch"];
+        trace?: never;
+    };
+    "/api/wishlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Items
+         * @description My items (all statuses), or the active companion's non-archived items (403 when there
+         *     is no active partnership).
+         */
+        get: operations["list_items_api_wishlist_get"];
+        put?: never;
+        /** Create Item */
+        post: operations["create_item_api_wishlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/wishlist/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Item */
+        delete: operations["delete_item_api_wishlist__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Item */
+        patch: operations["update_item_api_wishlist__item_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Attribute
+         * @enum {string}
+         */
+        Attribute: "physical" | "intellectual" | "discipline" | "social" | "creativity" | "wellbeing";
+        /** AttributeOut */
+        AttributeOut: {
+            attribute: components["schemas"]["Attribute"];
+            /** Xp */
+            xp: number;
+            /** Level */
+            level: number;
+            /** Xp Into Level */
+            xp_into_level: number;
+            /** Xp For Next Level */
+            xp_for_next_level: number;
+        };
         /** AuthOut */
         AuthOut: {
             /** Jwt */
@@ -80,6 +220,38 @@ export interface components {
             /** Start Param */
             start_param: string | null;
         };
+        /** CharacterOut */
+        CharacterOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Nickname */
+            nickname: string | null;
+            /** Bio */
+            bio: string | null;
+            /** Avatar Url */
+            avatar_url: string | null;
+            /** Level */
+            level: number;
+            /** Total Xp */
+            total_xp: number;
+            /** Xp Into Level */
+            xp_into_level: number;
+            /** Xp For Next Level */
+            xp_for_next_level: number;
+            /** Xp To Next Level */
+            xp_to_next_level: number;
+            /** Attributes */
+            attributes: components["schemas"]["AttributeOut"][];
+            /** Gold */
+            gold: number;
+            locale: components["schemas"]["Locale"];
+            /** Timezone */
+            timezone: string;
+            /** Onboarded At */
+            onboarded_at: string | null;
+        };
         /** CharacterSummary */
         CharacterSummary: {
             /** Id */
@@ -91,6 +263,22 @@ export interface components {
             /** Total Xp */
             total_xp: number;
         };
+        /**
+         * CharacterUpdate
+         * @description PATCH /character. Omitted fields are left alone; ``nickname``/``bio`` accept null or ""
+         *     to clear. ``name``, ``locale`` and ``timezone`` cannot be cleared.
+         */
+        CharacterUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Nickname */
+            nickname?: string | null;
+            /** Bio */
+            bio?: string | null;
+            locale?: components["schemas"]["Locale"] | null;
+            /** Timezone */
+            timezone?: string | null;
+        };
         /** CompanionSummary */
         CompanionSummary: {
             /** Id */
@@ -99,6 +287,47 @@ export interface components {
             display_name: string;
             /** Avatar Url */
             avatar_url: string | null;
+        };
+        /** GoalCreate */
+        GoalCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            attribute?: components["schemas"]["Attribute"] | null;
+        };
+        /** GoalOut */
+        GoalOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            attribute: components["schemas"]["Attribute"] | null;
+            status: components["schemas"]["GoalStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * GoalStatus
+         * @enum {string}
+         */
+        GoalStatus: "active" | "archived";
+        /**
+         * GoalUpdate
+         * @description Omitted fields are left alone; ``description``/``attribute`` accept null to clear.
+         */
+        GoalUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            attribute?: components["schemas"]["Attribute"] | null;
+            status?: components["schemas"]["GoalStatus"] | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -115,6 +344,33 @@ export interface components {
             user: components["schemas"]["UserOut"];
             character: components["schemas"]["CharacterSummary"] | null;
             partnership: components["schemas"]["PartnershipSummary"] | null;
+        };
+        /** OnboardingGoal */
+        OnboardingGoal: {
+            /** Title */
+            title: string;
+            attribute?: components["schemas"]["Attribute"] | null;
+        };
+        /** OnboardingIn */
+        OnboardingIn: {
+            /** Name */
+            name: string;
+            /** Nickname */
+            nickname?: string | null;
+            /** Bio */
+            bio?: string | null;
+            /** Timezone */
+            timezone: string;
+            /**
+             * Goals
+             * @default []
+             */
+            goals: components["schemas"]["OnboardingGoal"][];
+        };
+        /** OnboardingOut */
+        OnboardingOut: {
+            user: components["schemas"]["UserOut"];
+            character: components["schemas"]["CharacterOut"];
         };
         /** PartnershipSummary */
         PartnershipSummary: {
@@ -158,6 +414,42 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** WishlistItemCreate */
+        WishlistItemCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+        };
+        /** WishlistItemOut */
+        WishlistItemOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["WishlistStatus"];
+            /** Linked Reward Id */
+            linked_reward_id: number | null;
+        };
+        /**
+         * WishlistItemUpdate
+         * @description Omitted fields are left alone; ``description`` accepts null to clear.
+         */
+        WishlistItemUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Status */
+            status?: ("open" | "archived") | null;
+        };
+        /**
+         * WishlistStatus
+         * @enum {string}
+         */
+        WishlistStatus: "open" | "offered" | "archived";
     };
     responses: never;
     parameters: never;
@@ -238,6 +530,348 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    get_character_api_character_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+        };
+    };
+    patch_character_api_character_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_onboarding_api_character_onboarding_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_goals_api_goals_get: {
+        parameters: {
+            query?: {
+                user?: "me" | "companion";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_goal_api_goals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_goal_api_goals__goal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_goal_api_goals__goal_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                goal_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_api_wishlist_get: {
+        parameters: {
+            query?: {
+                user?: "me" | "companion";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_item_api_wishlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WishlistItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_item_api_wishlist__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_api_wishlist__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WishlistItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishlistItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

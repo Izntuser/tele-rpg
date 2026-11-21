@@ -8,7 +8,7 @@ import { MockAdapter } from '../lib/telegram';
 import { App } from './App';
 import { Providers } from './providers';
 
-test('renders the placeholder home with the signed-in user', async () => {
+test('renders the home with the signed-in, onboarded user', async () => {
   const fail = () => Promise.reject(new Error('unused'));
   const api: ApiClient = {
     login: vi.fn(() =>
@@ -25,7 +25,7 @@ test('renders the placeholder home with the signed-in user', async () => {
           avatar_url: null,
           locale: 'en' as const,
           timezone: 'UTC',
-          onboarded_at: null,
+          onboarded_at: '2026-01-15T12:00:00Z',
         },
       }),
     ),
