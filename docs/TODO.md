@@ -77,3 +77,8 @@
 - rewards/schemas.py ScheduleIn.scheduled_for has no upper bound (e.g. now + 1 year) (S10 review).
 - S10 tests: forced-interleaving purchase tests call the service and bypass the HTTP Idempotency-Key claim; reward create (lock_user, then partnership) vs leave/account deletion is not pinned by a test (S10 review).
 - ARCHITECTURE.md Purchase step 3 says key purchase:{idempotency_key}; the code uses purchase:{buyer_id}:{key} (S10 review).
+- S11: there is no DELETE /rewards/{id}; the manage screen hides a reward (status=hidden) instead. Add delete if the product wants it.
+- S11: reward image upload and reward deep links (r_<id>) are not in the shop UI (need the files stage and GET /rewards/{id}).
+- S11: the core-loop e2e stops at B's Fulfilled voucher; ARCHITECTURE s10 step 9 (journal shows every event) waits for the journal UI stage.
+- S11: e2e user B has Telegram language_code uk, so B's UI is Ukrainian unless the spec sets B's locale (PATCH /api/character) or injects language_code en before B's first login.
+- S11: purchased vouchers are refundable by the buyer in the UI; no way yet for the provider to see/refund frozen vouchers of an ended partnership except the requests queue (shown there while status is purchased/requested/scheduled).

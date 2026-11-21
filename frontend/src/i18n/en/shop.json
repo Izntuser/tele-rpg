@@ -1,0 +1,92 @@
+{
+  "title": "Shop",
+  "balance": "Balance",
+  "error": "Could not load the shop.",
+  "retry": "Try again",
+  "nav": { "label": "Shop sections", "shop": "Shop", "inventory": "Inventory", "manage": "Manage" },
+  "unpaired": {
+    "title": "The shop needs a companion",
+    "hint": "Invite someone to trade rewards with."
+  },
+  "empty": {
+    "title": "Nothing to buy yet",
+    "hint": "Your companion has not added any rewards."
+  },
+  "unlimited": "Unlimited",
+  "left": "Left: {{count}}",
+  "soldOut": "Sold out",
+  "cooldown": "Available again {{date}}",
+  "needGold": "Not enough gold: {{missing}} more needed.",
+  "buy": "Buy",
+  "buyTitle": "Buy {{title}}?",
+  "buyBody": "This costs {{price}} gold. You have {{gold}}.",
+  "buyConfirm": "Buy",
+  "bought": "{{title}} is yours. Balance: {{balance}} gold.",
+  "errors": {
+    "conflict": "That is not possible right now. The shop has changed; try again.",
+    "generic": "Something went wrong. Try again."
+  },
+  "inventory": {
+    "title": "Inventory",
+    "empty": { "title": "No vouchers yet", "hint": "Buy a reward in the shop and it shows up here." },
+    "status": {
+      "purchased": "Ready to use",
+      "requested": "Requested",
+      "scheduled": "Scheduled",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "frozen": "partnership ended",
+    "scheduledFor": "Planned for {{date}}",
+    "fulfilledAt": "Delivered {{date}}",
+    "disputeUntil": "You can dispute until {{date}}",
+    "request": "Request",
+    "dispute": "Dispute",
+    "refund": "Refund",
+    "disputeTitle": "Dispute this reward?",
+    "disputeBody": "{{title}} goes back to Requested. No gold changes hands.",
+    "disputeConfirm": "Dispute",
+    "refundTitle": "Refund this reward?",
+    "refundBody": "{{title}} is cancelled and the gold goes back to your balance.",
+    "refundConfirm": "Refund"
+  },
+  "manage": {
+    "title": "Manage shop",
+    "requests": "Requests",
+    "requestsEmpty": "No open requests.",
+    "schedule": "Schedule",
+    "reschedule": "Reschedule",
+    "fulfill": "Mark as delivered",
+    "refundBody": "{{title}} is cancelled and the gold goes back to the buyer.",
+    "scheduleTitle": "Schedule {{title}}",
+    "scheduleWhen": "When",
+    "scheduleNote": "Note (optional)",
+    "scheduleSave": "Schedule",
+    "schedulePast": "Pick a time in the future.",
+    "myRewards": "My rewards",
+    "add": "Add reward",
+    "edit": "Edit",
+    "hide": "Hide",
+    "show": "Show",
+    "empty": { "title": "No rewards yet", "hint": "Add something your companion can spend gold on." },
+    "status": { "active": "Active", "hidden": "Hidden", "sold_out": "Sold out" },
+    "wishes": "Companion wishes",
+    "wishesEmpty": "No open wishes.",
+    "fromWish": "Make a reward"
+  },
+  "form": {
+    "createTitle": "New reward",
+    "editTitle": "Edit reward",
+    "title": "Title",
+    "description": "Description (optional)",
+    "price": "Price in gold",
+    "quantity": "Quantity limit",
+    "cooldown": "Cooldown (days)",
+    "unlimited": "Unlimited",
+    "none": "None",
+    "hidden": "Hidden from the shop",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
+}
