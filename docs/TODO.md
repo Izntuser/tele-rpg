@@ -44,3 +44,6 @@
 - Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
 - Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; later stages must keep notification and journal payloads free of names.
 - Rewards stage: decide whether a creator editing/re-hiding a reward while the partnership is ended should clear reward.hidden_by_partnership_end (today it stays set, so re-pair restores it).
+- Rewards stage: hidden_by_partnership_end must stay out of every request schema, and any creator status change must clear it.
+- main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
+- test_health.py asserts Referrer-Policy only on the fallback; add /invite/<x> and an asset path.

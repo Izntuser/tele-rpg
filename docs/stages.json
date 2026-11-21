@@ -241,7 +241,7 @@
         "/settings changes the language (UI re-renders in uk) and the timezone. Leave partnership and delete account sit behind a ConfirmSheet with typed confirmation, and the Companion page shows the partner's profile, attributes, goals and wishlist.",
         "pnpm e2e --grep @S06 uses two browser contexts: A creates an invite, B opens with startapp=invite_<token> and accepts, and both see each other on Companion. The test saves docs/screens/S06.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

@@ -45,3 +45,12 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-21T18:23 REVIEW S05 stage-reviewer(opus,security): APPROVE (5 TODOs; awaiting stage-reviewer)
 2026-11-21T18:25 REVIEW S05 stage-reviewer: APPROVE (round 1)
 2026-11-21T18:28 MERGED S05 (check-stage --mark passed on main; S01/S03/S04 recheck passed; 1 review round)
+2026-11-21T18:28 DISPATCH S06 -> stage-worker(opus) (medium, sensitive, ui, partnership)
+2026-11-21T18:49 REVIEW S06 -> stage-reviewer + stage-reviewer(opus,security; codex unavailable) (round 1, @1bac03a)
+2026-11-21T18:52 REVIEW S06 stage-reviewer(opus,security): APPROVE (6 TODOs incl. hidden-reward restore, Referrer-Policy; awaiting stage-reviewer)
+2026-11-21T18:55 REVIEW S06 stage-reviewer: REQUEST CHANGES (re-pair restores creator-hidden rewards)
+2026-11-21T18:55 DISPATCH S06 -> stage-worker(opus) (round 2: reward restore, referrer)
+2026-11-21T19:02 REVIEW S06 -> stage-reviewer + stage-reviewer(opus,security) (round 2, @2adbf8d)
+2026-11-21T19:03 REVIEW S06 stage-reviewer(opus,security) round 2: APPROVE (3 TODOs; awaiting stage-reviewer)
+2026-11-21T19:07 REVIEW S06 stage-reviewer round 2: APPROVE
+2026-11-21T19:10 MERGED S06 (check-stage --mark passed on main; S01/S03/S04/S05 recheck passed; 2 review rounds)
