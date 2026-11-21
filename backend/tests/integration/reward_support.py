@@ -9,11 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import clock
+from app.modules.common.enums import RewardStatus
 from app.modules.economy.models import Wallet
 from app.modules.journal.models import JournalEvent
 from app.modules.notifications.models import Notification
+from app.modules.rewards.models import Reward, RewardPurchase
+from app.modules.rewards.service import VOID_STATUSES
 from tests import factories
-from tests.integration.completion_support import auth
+from tests.integration.completion_support import auth, count
 
 _keys = itertools.count(1)
 
@@ -103,3 +106,23 @@ async def balance(session: AsyncSession, user_id: int, partnership_id: int) -> i
     )
     assert value is not None
     return value
+
+
+async def assert_quantity_consistent(s: AsyncSession, reward_id: int) -> None:
+    """``quantity_remaining == max(0, quantity_limit - live purchases)``; none left means
+    ``sold_out`` (unless hidden). A limit lowered below the units sold leaves 0, never more."""
+    reward = await s.get(Reward, reward_id, populate_existing=True)
+    assert reward is not None
+    live = await count(
+        s,
+        RewardPurchase,
+        RewardPurchase.reward_id == reward_id,
+        RewardPurchase.status.not_in(VOID_STATUSES),
+    )
+    if reward.quantity_limit is not None:
+        assert reward.quantity_remaining == max(0, reward.quantity_limit - live)
+        if reward.status != RewardStatus.HIDDEN:
+            expected = (
+                RewardStatus.SOLD_OUT if reward.quantity_remaining == 0 else RewardStatus.ACTIVE
+            )
+            assert reward.status == expected

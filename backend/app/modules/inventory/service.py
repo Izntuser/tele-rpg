@@ -240,5 +240,5 @@ async def refund(session: AsyncSession, user: User, purchase_id: int) -> Purchas
     purchase.refunded_at = clock.now()
     purchase.refunded_by = user.id
     if locked.reward is not None:
-        restore_unit(locked.reward)
+        await restore_unit(session, locked.reward)
     return await _finish(session, user, locked, "reward_refunded", {"by": locked.actor})

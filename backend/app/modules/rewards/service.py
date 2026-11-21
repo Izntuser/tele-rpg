@@ -231,14 +231,30 @@ def purchase_out(purchase: RewardPurchase, viewer_id: int, partnership: Partners
     )
 
 
-def restore_unit(reward: Reward) -> None:
-    """Give one unit back to a (locked) reward after a refund; a sold-out reward is active
-    again. A hidden reward stays hidden (re-pairing decides, ``partnerships._restore_rewards``)."""
-    if reward.quantity_limit is None or reward.quantity_remaining is None:
+async def _live_purchases(session: AsyncSession, reward_id: int) -> int:
+    sold = await session.scalar(
+        select(func.count())
+        .select_from(RewardPurchase)
+        .where(
+            RewardPurchase.reward_id == reward_id,
+            RewardPurchase.status.not_in(VOID_STATUSES),
+        )
+    )
+    return sold or 0
+
+
+async def restore_unit(session: AsyncSession, reward: Reward) -> None:
+    """Recount a (locked) reward's remaining units after a refund: ``max(0, limit - live
+    purchases)``, never ``remaining + 1``, so a limit lowered below the units sold stays
+    honoured. A sold-out reward with a free unit is active again; a hidden reward stays hidden
+    (re-pairing decides, ``partnerships._restore_rewards``). Call after the purchase is void."""
+    if reward.quantity_limit is None:
         return
-    reward.quantity_remaining = min(reward.quantity_limit, reward.quantity_remaining + 1)
-    if reward.status == RewardStatus.SOLD_OUT and reward.quantity_remaining > 0:
-        reward.status = RewardStatus.ACTIVE
+    await session.flush()
+    remaining = max(0, reward.quantity_limit - await _live_purchases(session, reward.id))
+    reward.quantity_remaining = remaining
+    if reward.status in (RewardStatus.SOLD_OUT, RewardStatus.ACTIVE):
+        reward.status = RewardStatus.SOLD_OUT if remaining <= 0 else RewardStatus.ACTIVE
 
 
 def _effective_status(availability: str, remaining: int | None) -> RewardStatus:
@@ -447,15 +463,8 @@ async def update(
             reward.quantity_limit = None
             reward.quantity_remaining = None
         else:
-            sold = await session.scalar(
-                select(func.count())
-                .select_from(RewardPurchase)
-                .where(
-                    RewardPurchase.reward_id == reward.id,
-                    RewardPurchase.status.not_in(VOID_STATUSES),
-                )
-            )
-            reward.quantity_remaining = max(0, data.quantity_limit - (sold or 0))
+            sold = await _live_purchases(session, reward.id)
+            reward.quantity_remaining = max(0, data.quantity_limit - sold)
             reward.quantity_limit = data.quantity_limit
     availability = data.status if "status" in sent and data.status else _availability(reward)
     reward.status = _effective_status(availability, reward.quantity_remaining)

@@ -42,6 +42,7 @@ from tests.integration.completion_support import (
     auth,
     count,
 )
+from tests.integration.reward_support import assert_quantity_consistent
 
 Sessions = async_sessionmaker[AsyncSession]
 
@@ -86,21 +87,6 @@ async def purchase(sessions: Sessions, buyer_id: int, reward_id: int, key: str) 
 
 async def refund(sessions: Sessions, user_id: int, purchase_id: int) -> Any:
     return await as_user(sessions, user_id, lambda s, u: inventory.refund(s, u, purchase_id))
-
-
-async def assert_quantity_consistent(s: AsyncSession, reward_id: int) -> None:
-    reward = await s.get(Reward, reward_id, populate_existing=True)
-    assert reward is not None
-    live = await count(
-        s,
-        RewardPurchase,
-        RewardPurchase.reward_id == reward_id,
-        RewardPurchase.status.not_in(rewards.VOID_STATUSES),
-    )
-    if reward.quantity_limit is not None:
-        assert reward.quantity_remaining == reward.quantity_limit - live
-        if reward.quantity_remaining == 0 and reward.status != RewardStatus.HIDDEN:
-            assert reward.status == RewardStatus.SOLD_OUT
 
 
 async def test_parallel_purchases_of_the_last_unit_sell_once(

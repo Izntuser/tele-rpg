@@ -20,8 +20,10 @@ from tests.integration.completion_support import assert_ledger_invariants, auth,
 from tests.integration.reward_support import (
     Shop,
     act,
+    assert_quantity_consistent,
     balance,
     bought,
+    buy,
     create_reward,
     events,
     notifications,
@@ -299,6 +301,59 @@ async def test_refund_happens_once(client: httpx.AsyncClient, session: AsyncSess
     reward = await session.get(Reward, v["reward_id"], populate_existing=True)
     assert reward is not None and reward.quantity_remaining == 3
     assert await balance(session, s.buyer, s.partnership) == 500
+
+
+async def _sell(
+    client: httpx.AsyncClient, session: AsyncSession, limit: int, sold: int
+) -> tuple[Shop, int, list[dict[str, Any]]]:
+    s = await shop(session, balance=1000)
+    rid = (await create_reward(client, s.provider, price=100, quantity_limit=limit))["id"]
+    vouchers = [await bought(client, s.buyer, rid) for _ in range(sold)]
+    return s, rid, vouchers
+
+
+async def _lower_limit(client: httpx.AsyncClient, s: Shop, rid: int, limit: int) -> dict[str, Any]:
+    r = await client.patch(
+        f"/api/rewards/{rid}", json={"quantity_limit": limit}, headers=auth(s.provider)
+    )
+    assert r.status_code == 200, r.text
+    data: dict[str, Any] = r.json()
+    return data
+
+
+async def test_refund_after_the_limit_was_lowered_does_not_oversell(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    """Limit 5, 5 sold, limit lowered to 3: a refund leaves 4 live against 3, so nothing is
+    free; the reward stays sold out and the next purchase is refused."""
+    s, rid, vouchers = await _sell(client, session, limit=5, sold=5)
+    assert (await _lower_limit(client, s, rid, 3))["status"] == "sold_out"
+    assert (await act(client, s.provider, vouchers[0]["id"], "refund")).status_code == 200
+    reward = await session.get(Reward, rid, populate_existing=True)
+    assert reward is not None
+    assert reward.quantity_remaining == 0 and reward.status == RewardStatus.SOLD_OUT
+    await assert_quantity_consistent(session, rid)
+    assert (await buy(client, s.buyer, rid)).status_code == 409
+    await assert_quantity_consistent(session, rid)
+    await assert_ledger_invariants(session)
+
+
+async def test_refund_below_a_lowered_limit_frees_a_unit(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    """Limit 5, 3 sold, limit lowered to 3 (sold out): a refund leaves 2 live against 3, so
+    exactly one unit is free again."""
+    s, rid, vouchers = await _sell(client, session, limit=5, sold=3)
+    assert (await _lower_limit(client, s, rid, 3))["status"] == "sold_out"
+    assert (await act(client, s.buyer, vouchers[0]["id"], "refund")).status_code == 200
+    reward = await session.get(Reward, rid, populate_existing=True)
+    assert reward is not None
+    assert reward.quantity_remaining == 1 and reward.status == RewardStatus.ACTIVE
+    await assert_quantity_consistent(session, rid)
+    assert (await buy(client, s.buyer, rid)).status_code == 201
+    await assert_quantity_consistent(session, rid)
+    assert (await buy(client, s.buyer, rid)).status_code == 409
+    await assert_ledger_invariants(session)
 
 
 async def test_refund_to_a_frozen_wallet_still_credits_it(

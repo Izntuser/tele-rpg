@@ -66,9 +66,14 @@
 - Quest UI: QuestActions/QuestDetailPage only allow accepting a revision on an active occurrence; DECISIONS #15 also allows active/paused templates whose latest recurring occurrence is in_review/completed (S09 review).
 - api/router.py: /quests/estimate only beats /quests/{id} because routes load by file name (presets < quests); make the order explicit (S09 review).
 - S10: when a provider deletes their account (or a partnership ends), requested/scheduled vouchers can be refunded only by the provider, so a deleted provider's vouchers stay open forever; consider auto-refunding open vouchers in end_partnership / account deletion.
-- S10: a reward created from a wishlist item copies the companion's item title/description into reward text, which account deletion keeps (reward text is kept, TODO above); decide whether the wishlist owner's deletion should scrub it.
+- S10: a reward created from a wishlist item copies the companion's item title/description into reward text, which account deletion keeps (reward text is kept, TODO above); the same goes for reward_purchase.reward_snapshot (title/description frozen at purchase); decide whether the wishlist owner's deletion should scrub both.
 - S10: reward/voucher notifications have deep_link NULL; define r_<id> (reward or purchase?) in lib/deeplink.ts and set it in rewards.service.voucher_event (notifications stage).
 - S10: POST /rewards/{id}/image (reward image upload) is not built; needs the files stage (reward_image kind, partnership check).
 - S10: there is no GET /inventory/{id} or GET /rewards/{id}; the shop UI stage may need them for deep links.
 - S14/frontend: render journal/notification types reward_created, reward_purchased, reward_requested, reward_scheduled, reward_fulfilled, reward_disputed, reward_refunded (category rewards).
 - Idempotency replay of POST /rewards/{id}/purchase returns the stored voucher (24h) even if it was refunded since; clients must refetch /inventory for the current state.
+- users/account.py _scrub locks every provider reward_purchase row (no schedule_note IS NOT NULL filter) before the reward rows, while refund locks reward then purchase; can deadlock once reward images exist. Add the filter and lock rewards first (S10 review).
+- Notifications are still enqueued to deleted users (e.g. a buyer's refund notifies the deleted provider with the reward title); skip deleted recipients in enqueue/voucher_event (S10 review).
+- rewards/schemas.py ScheduleIn.scheduled_for has no upper bound (e.g. now + 1 year) (S10 review).
+- S10 tests: forced-interleaving purchase tests call the service and bypass the HTTP Idempotency-Key claim; reward create (lock_user, then partnership) vs leave/account deletion is not pinned by a test (S10 review).
+- ARCHITECTURE.md Purchase step 3 says key purchase:{idempotency_key}; the code uses purchase:{buyer_id}:{key} (S10 review).
