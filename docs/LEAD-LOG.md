@@ -97,3 +97,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T00:23 REVIEW S04-repair stage-reviewer: APPROVE
 2026-11-22T00:29 MERGED S04-repair (check-stage S04/S09/S11 pass on main)
 2026-11-22T00:29 DISPATCH S13 -> stage-worker(sonnet) (medium, normal, ui, scheduler)
+2026-11-22T00:42 REVIEW S13 -> stage-reviewer (round 1, @710c179; worker ran dod pieces by hand, ports held)
+2026-11-22T00:45 REVIEW S13 stage-reviewer: APPROVE (round 1; runner lock-loss notes as TODO)
