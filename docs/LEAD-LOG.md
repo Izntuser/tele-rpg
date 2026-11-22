@@ -114,3 +114,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T08:50 DISPATCH S14 -> stage-worker(opus) (high, normal, ui, bot+notifications)
 2026-11-22T09:21 REVIEW S14 -> stage-reviewer (round 1, @22bac63)
 2026-11-22T09:26 REVIEW S14 stage-reviewer: APPROVE (round 1; 4 TODOs incl. webhook secret in access log, can_message default)
+2026-11-22T09:27 PENDING-MARK S14 (merged @88dd1de; main api predates S14 routes; awaiting user restart)
