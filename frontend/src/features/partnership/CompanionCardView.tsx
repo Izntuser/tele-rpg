@@ -6,7 +6,7 @@ import type { CompanionCard } from './api';
 /** Avatar, character name (or display name), nickname and level of another user. */
 export function CompanionCardView({ card, testId }: { card: CompanionCard; testId?: string }) {
   const { t } = useTranslation();
-  const name = card.character_name ?? card.display_name;
+  const name = card.character_name || card.display_name || '?';
   return (
     <div data-testid={testId} className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
       <FileAvatar name={name} fileId={card.avatar_file_id} src={card.avatar_url} size="lg" />

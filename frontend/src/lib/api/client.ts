@@ -65,6 +65,9 @@ async function readBody(response: Response): Promise<unknown> {
   }
 }
 
+/** `ApiError.detail` of a successful response whose body was not JSON. */
+export const NOT_JSON = 'Unexpected non-JSON response';
+
 function errorDetail(body: unknown): unknown {
   if (body && typeof body === 'object' && 'detail' in body) {
     return (body as { detail: unknown }).detail;
@@ -159,6 +162,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     if (response.ok && opts.responseType === 'blob') return (await response.blob()) as T;
     const body = await readBody(response);
     if (!response.ok) throw new ApiError(response.status, errorDetail(body));
+    // Every endpoint answers JSON (or 204). A 2xx with a text body is not our API (a tunnel or
+    // proxy page, a dev-server fallback): callers would read fields off a string.
+    if (typeof body === 'string') throw new ApiError(response.status, NOT_JSON);
     return body as T;
   }
 

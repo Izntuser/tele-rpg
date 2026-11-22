@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ApiError, NoInitDataError, createApiClient } from './client';
+import { ApiError, NOT_JSON, NoInitDataError, createApiClient } from './client';
 
 type Call = { url: string; init: RequestInit };
 
@@ -48,6 +48,7 @@ function fakeServer() {
     const auth = new Headers(init.headers).get('Authorization') ?? '';
     if (!valid.has(auth.replace('Bearer ', ''))) return json(401, { detail: 'Not authenticated' });
     if (url === '/api/empty') return new Response(null, { status: 204 });
+    if (url === '/api/html') return new Response('<html>tunnel page</html>', { status: 200 });
     if (url === '/api/fail') return json(409, { detail: 'conflict' });
     return json(200, { ok: true, url });
   });
@@ -76,6 +77,13 @@ describe('api client', () => {
   afterEach(() => {
     localStorage.clear();
     sessionStorage.clear();
+  });
+
+  test('a 2xx with a non-JSON body is an error, not data', async () => {
+    const error = await client.get('/html').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).detail).toBe(NOT_JSON);
+    await expect(client.get('/empty')).resolves.toBeUndefined();
   });
 
   test('logs in with initData in the JSON body, then sends the JWT as a Bearer header', async () => {

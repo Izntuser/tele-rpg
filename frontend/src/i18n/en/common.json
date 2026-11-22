@@ -1,5 +1,10 @@
 {
   "app": { "title": "Modern Life RPG" },
+  "error": {
+    "title": "Something went wrong",
+    "hint": "The app hit an unexpected problem. Reload to try again.",
+    "reload": "Reload"
+  },
   "auth": {
     "signingIn": "Signing in…",
     "openFromTelegram": "Open this app from Telegram to play.",
