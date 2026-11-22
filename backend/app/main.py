@@ -15,6 +15,7 @@ from app.api.routes.tg_webhook import tg_router
 from app.bot.dispatcher import close_bot, get_bot, setup_webhook
 from app.core.config import get_settings
 from app.core.db import make_engine
+from app.core.logging import configure_logging
 from app.storage.guard import check_storage_volume
 
 log = logging.getLogger(__name__)
@@ -35,10 +36,12 @@ def _dist_dir() -> Path:
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    configure_logging(settings)
     if settings.app_env == "prod":
         check_storage_volume(settings.storage_dir, allow_ephemeral=settings.storage_allow_ephemeral)
         try:
             await setup_webhook(get_bot(), settings)
+            log.info("telegram webhook set")
         except Exception:
             log.exception("setting the Telegram webhook failed")
     try:

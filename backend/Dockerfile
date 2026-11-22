@@ -22,4 +22,4 @@ RUN mkdir -p /data/files
 EXPOSE 8000
 # Railway terminates TLS at its proxy: trust X-Forwarded-* (request.client is the login rate-limit
 # key). The container is only reachable through that proxy. the scheduler overrides it with a dashboard start command.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --log-config uvicorn_log.json --proxy-headers --forwarded-allow-ips='*'"]
