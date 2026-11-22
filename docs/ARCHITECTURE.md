@@ -377,6 +377,42 @@ gen:api   (cd backend && uv run python -m app.export_openapi) && openapi-typescr
 e2e       playwright test   (playwright.config.ts starts api with APP_ENV=test + vite preview; saves docs/screens/<id>.png)
 ```
 
+### Running live from Telegram
+
+`scripts/live.sh start|stop|status|logs|check` runs a second stack next to the test stack
+(`init.sh`, 8000/3000): uvicorn on `LIVE_API_PORT` (8010), vite on `LIVE_WEB_PORT` (3010, proxies
+`/api` and `/healthz` to the live API via `API_PROXY_TARGET`/`VITE_DEV_PORT`), the bot and the
+scheduler, with `APP_ENV=development`. `check` validates only. `start` and `check` refuse:
+an unset `DATABASE_URL`; `DATABASE_URL` equal to `E2E_DATABASE_URL` or ending in `_e2e`; a scheme
+other than `postgresql+asyncpg://`; port 6543 (Supabase transaction pooler); an unset or fake
+`TG_BOT_TOKEN`; an unset `JWT_SECRET`, the dev default or one shorter than 32 characters
+(`openssl rand -hex 32`); non-numeric ports, ports outside 1024-65535, 8000/3000 (test stack) or
+`LIVE_API_PORT == LIVE_WEB_PORT`. `/api/test/reset` answers 404 outside `APP_ENV=test`.
+
+`.env` format: plain `KEY=VALUE` lines read by a line parser, never sourced, so there is no shell
+expansion (`$`, `&`, backticks, `$(...)` are literal). Blank lines and `#` lines are skipped, an
+optional `export ` prefix is accepted, one matching pair of surrounding single or double quotes is
+stripped, inline comments are not supported. Only known keys are read (database/e2e URLs, `TG_*`,
+`PUBLIC_BASE_URL`, `JWT_*`, `DB_POOL_SIZE`, `STORAGE_DIR`, `IMAGE_PROCESS_CONCURRENCY`,
+`SENTRY_DSN`, `FRONTEND_DIST`, `LIVE_*_PORT`); `APP_ENV` is forced to `development`.
+
+Secrets: never printed. The DB password is masked (everything between `user:` and the last `@`),
+xtrace is switched off while secrets are parsed or compared (so `bash -x` does not leak them), and
+child processes get them through the environment, not argv. `stop`/`start` verify a pidfile's pid
+with `ps -o command=` against the expected service (uvicorn `app.main:app` with the live port, vite,
+`app.bot.polling`, `app.jobs.runner`); a mismatch means pid reuse: the pidfile is dropped and
+nothing is killed. If `start` fails partway (port busy, migration error, health timeout) the
+services it started are stopped. `init.sh` migrates the dev DB only when `DATABASE_URL` is local and
+unsets `VITE_DEV_PORT`/`API_PROXY_TARGET` before starting the test stack.
+Then: `ngrok http 3010`, set the URL in BotFather (Main App, Menu Button, Direct Link) and
+`PUBLIC_BASE_URL`, `live.sh stop && live.sh start`.
+
+Supabase notes: the URL must be `postgresql+asyncpg://` (Supabase shows `postgresql://`). The direct
+host (`db.<ref>.supabase.co:5432`) is IPv6-only; on an IPv4 network use the session pooler
+(`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.<ref>`). Never the transaction pooler
+(port 6543): asyncpg prepared statements and the session-level advisory lock (scheduler) break
+there. URL-encode special characters in the password (`@` is `%40`, `/` is `%2F`).
+
 ## 9. Open questions for the client
 
 1. Bot usernames and the Mini App short name for dev and prod. These are needed for deep links (`TG_BOT_USERNAME`, `TG_APP_SHORT_NAME`).
