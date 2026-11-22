@@ -17,6 +17,7 @@ def test_dockerfile_cmd_serves_behind_the_proxy_on_port() -> None:
     assert "uvicorn app.main:app" in cmd
     assert "${PORT" in cmd
     assert "--proxy-headers" in cmd
+    assert "--log-config uvicorn_log.json" in cmd
     assert "--forwarded-allow-ips" in cmd
 
 

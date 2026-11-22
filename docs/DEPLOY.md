@@ -175,6 +175,8 @@ curl -s "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"   # url ends with /
 
 Then send `/start` to the prod bot, open the app from the menu button, log in, create a quest. Check the scheduler logs for `leader lock acquired`.
 
+Logs are single-line JSON in prod (INFO to stdout), so Railway colours levels correctly and `@level:"error"` now shows only real errors; successful scheduler job runs are not logged.
+
 ## 8. Proxy notes
 
 Railway terminates TLS at its proxy. The image `CMD` runs uvicorn with `--proxy-headers --forwarded-allow-ips='*'` so `request.client` (the login rate-limit key) is the real client IP, not the proxy's. Trade-off: with `*` the app trusts `X-Forwarded-For` from any peer, but the container is only reachable through Railway's proxy, and the worst a spoofed header does is rotate the login rate-limit bucket (login still needs valid signed initData). Upload and write limits are per user, not per IP. The webhook route and SPA fallback use only paths, so they are unaffected.

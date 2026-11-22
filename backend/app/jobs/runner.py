@@ -23,6 +23,7 @@ from app.bot.dispatcher import close_bot
 from app.core import idempotency
 from app.core.config import get_settings
 from app.core.db import make_engine
+from app.core.logging import configure_logging
 from app.db.session import make_sessionmaker
 from app.jobs import expire_occurrences, generate_occurrences, notification_jobs
 
@@ -159,7 +160,7 @@ class Runner:
 
 
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    configure_logging()
     engine = make_engine()
     runner = Runner(engine, make_sessionmaker(engine))
     loop = asyncio.get_running_loop()

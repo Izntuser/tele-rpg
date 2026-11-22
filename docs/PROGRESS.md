@@ -159,3 +159,6 @@ left: user must create the volume at /data/files before first deploy; Railway Ia
 
 ## 2026-11-22 deploy review round 2
 Storage guard now keys off RAILWAY_VOLUME_MOUNT_PATH == STORAGE_DIR (mismatch / no volume on Railway fail; off Railway only warns on non-mount). Tests, Dockerfile comment, DEPLOY.md (root dir, guard, pre-deploy, no-overlap note) updated.
+
+## 2026-11-22 fix(logging)
+Shared app/core/logging.py configure_logging (api lifespan, scheduler, dev bot): JSON to stdout in prod, dev split stdout/stderr, apscheduler at WARNING, uvicorn routed via root; Dockerfile CMD uses backend/uvicorn_log.json (stdout) for pre-lifespan lines. Tests in tests/unit/test_logging.py. Docker image not built; uvicorn CLI run in dev mode verified. Smoke not run.
