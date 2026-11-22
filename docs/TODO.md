@@ -96,5 +96,5 @@
 - notifications/dispatcher.py: post-commit send holds a pooled connection and row lock across each send (up to 10 s); move to a background task with its own session and an overall timeout; add a tg_user_id > 0 guard before send_message (S14 review).
 - tg_webhook.py: read the body with a size cap instead of reading it all before the 1 MB check (S14 review).
 - S15: no journal event is written for "companion connected" (partnership accept) or for the GM's confirm action (only the player's quest_completed); the journal page already has strings for partnership_accepted/ended.
-- S15: achievement toasts only cover unlocks seen change during an app session (no web storage by S03 rule); unlocks earned while the app was closed show in the journal and on Stats, not as a toast. A server-side "seen_at" on achievement_unlock would fix it.
+- S15: achievement toasts only cover unlocks that happen during an app session (no web storage by S03 rule); unlocks earned while the app was closed show in the journal and on Stats, not as a toast. A server-side "seen_at" on achievement_unlock would fix it.
 - S15: achievements are evaluated in a global before_commit listener on every Session (achievements/service.py); jobs that record events also evaluate, which is intended, but keep it in mind for long batch jobs.
