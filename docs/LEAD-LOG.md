@@ -112,3 +112,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T02:37 PENDING-MARK S12 (merged @fb0edc6; main api pid 14907 predates S12 routes; awaiting user restart)
 2026-11-22T08:50 MERGED S12 (check-stage --mark passed on main after user restart; S01/S03-S11/S13 recheck passed; 2 review rounds; codex unavailable -> opus security)
 2026-11-22T08:50 DISPATCH S14 -> stage-worker(opus) (high, normal, ui, bot+notifications)
+2026-11-22T09:21 REVIEW S14 -> stage-reviewer (round 1, @22bac63)
+2026-11-22T09:26 REVIEW S14 stage-reviewer: APPROVE (round 1; 4 TODOs incl. webhook secret in access log, can_message default)
