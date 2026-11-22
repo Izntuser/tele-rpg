@@ -28,6 +28,7 @@ or the pre-deploy step fails and the release never starts.
 **Both services**
 
 - Variable `RAILWAY_DOCKERFILE_PATH=backend/Dockerfile` (Railway's documented way to use a Dockerfile outside the repo root; the build context stays the repo root, which the Dockerfile expects).
+- Root Directory: leave empty (the build context must be the repo root; `RAILWAY_DOCKERFILE_PATH=backend/Dockerfile` is relative to it).
 - Source: this repo, branch `main` (connect it last, step 5).
 - Replicas: **1**. The scheduler takes a Postgres advisory lock, so extra replicas would only idle. The API keeps in-process state (image-decode semaphores, rate limiters, the post-commit notification dispatcher), so a second replica would split it.
 
@@ -37,7 +38,8 @@ or the pre-deploy step fails and the release never starts.
 - Pre-deploy command: `alembic upgrade head`.
 - Healthcheck path: `/healthz`, timeout `60`.
 - Restart policy: On Failure, max retries `10`.
-- Volume mounted at `/data/files`. **Nothing in Railway enforces this any more.** Without the volume, uploads silently disappear on every redeploy. **Verify the volume exists and its mount path is exactly `/data/files` before the first deploy.** As a backstop the api refuses to start with `APP_ENV=prod` if `STORAGE_DIR` is missing, not writable or not a mount point (escape hatch: `STORAGE_ALLOW_EPHEMERAL=true`, which accepts losing uploads; leave it unset). A failed start shows as a crash loop with `StorageVolumeError` in the logs.
+- Volume mounted at `/data/files`. **Nothing in Railway enforces this any more.** Without the volume, uploads silently disappear on every redeploy. **Verify the volume exists and its mount path is exactly `/data/files` before the first deploy.** As a backstop the api refuses to start with `APP_ENV=prod` unless Railway's `RAILWAY_VOLUME_MOUNT_PATH` (set automatically when a volume is attached) equals `STORAGE_DIR`. A volume attached at the wrong path makes the api refuse to start, with an error naming both paths; no volume at all gives "no Railway volume attached". `STORAGE_DIR` must also exist and be writable (escape hatch: `STORAGE_ALLOW_EPHEMERAL=true`, which accepts losing uploads; leave it unset). A failed start shows as a crash loop with `StorageVolumeError` in the logs.
+- The pre-deploy migration runs in a separate container without the volume, which is fine: it only touches the database.
 - Networking: Generate Domain.
 
 **scheduler**
@@ -86,6 +88,8 @@ scheduler = (1 + SCHEDULER_MAX_CONCURRENT_JOBS)     # leader lock + jobs
           + 1                                       # new instance's try_lead while the old one runs
 peak      = api + scheduler
 ```
+
+Because a service with a volume cannot have two deployments mounted at once, the old and new api do not actually overlap on redeploy (expect brief downtime instead); the numbers above are kept as a safe overestimate.
 
 Defaults with `APP_ENV=prod` (nothing set): `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=0`, `SCHEDULER_MAX_CONCURRENT_JOBS=2` (dev and test default to 10/10):
 
@@ -149,7 +153,7 @@ Both services refuse to start with `APP_ENV=prod` unless: real `TG_BOT_TOKEN`, `
 | `DB_MAX_OVERFLOW` | leave unset (prod default `0`) | unused | api only |
 | `SCHEDULER_MAX_CONCURRENT_JOBS` | unused | leave unset (default `2`) | scheduler only, see Connection budget |
 | `STORAGE_DIR` | optional | optional | defaults to `/data/files` in the image; only api has the volume |
-| `STORAGE_ALLOW_EPHEMERAL` | leave unset | unused | `true` skips the api's mounted-volume check (uploads then lost on redeploy) |
+| `STORAGE_ALLOW_EPHEMERAL` | leave unset | unused | `true` skips the api's check that `RAILWAY_VOLUME_MOUNT_PATH` equals `STORAGE_DIR` (uploads then lost on redeploy) |
 | `RAILWAY_DOCKERFILE_PATH` | `backend/Dockerfile` | `backend/Dockerfile` | build setting, see Dashboard settings |
 | `SENTRY_DSN` | optional | optional | |
 | `PORT` | set by Railway | unused | |

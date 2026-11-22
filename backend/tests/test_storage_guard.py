@@ -24,15 +24,46 @@ def test_unwritable_dir_fails(tmp_path: Path) -> None:
         tmp_path.chmod(0o700)
 
 
-def test_plain_dir_fails_unless_ephemeral_allowed(tmp_path: Path) -> None:
-    with pytest.raises(StorageVolumeError, match="not a mounted volume"):
-        check_storage_volume(str(tmp_path))
-    check_storage_volume(str(tmp_path), allow_ephemeral=True)
+@pytest.fixture(autouse=True)
+def _clean_railway_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for k in [k for k in os.environ if k.startswith("RAILWAY_")]:
+        monkeypatch.delenv(k)
 
 
-def test_mount_passes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(os.path, "ismount", lambda p: p == str(tmp_path))
+def test_volume_path_matches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(tmp_path))
     check_storage_volume(str(tmp_path))
+
+
+def test_volume_path_differs_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sub = tmp_path / "files"
+    sub.mkdir()
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", str(tmp_path))
+    with pytest.raises(StorageVolumeError) as exc:
+        check_storage_volume(str(sub))
+    assert str(tmp_path) in str(exc.value)
+    assert str(sub) in str(exc.value)
+
+
+def test_on_railway_without_volume_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    with pytest.raises(StorageVolumeError, match="no Railway volume attached"):
+        check_storage_volume(str(tmp_path))
+
+
+def test_not_on_railway_plain_dir_only_warns(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level("WARNING"):
+        check_storage_volume(str(tmp_path))
+    assert "not a mount point" in caplog.text
+
+
+def test_ephemeral_bypass(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    check_storage_volume(str(tmp_path), allow_ephemeral=True)
+    monkeypatch.setenv("RAILWAY_VOLUME_MOUNT_PATH", "/elsewhere")
+    check_storage_volume(str(tmp_path), allow_ephemeral=True)
 
 
 async def test_prod_lifespan_fails_fast_without_volume(
@@ -47,6 +78,8 @@ async def test_prod_lifespan_fails_fast_without_volume(
     monkeypatch.setenv("PUBLIC_BASE_URL", "https://example.com")
     monkeypatch.setenv("STORAGE_DIR", str(tmp_path))
     monkeypatch.delenv("STORAGE_ALLOW_EPHEMERAL", raising=False)
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    monkeypatch.delenv("RAILWAY_VOLUME_MOUNT_PATH", raising=False)
     get_settings.cache_clear()
     try:
         with pytest.raises(StorageVolumeError):

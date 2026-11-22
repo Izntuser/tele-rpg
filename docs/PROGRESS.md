@@ -156,3 +156,6 @@ Prod DB_MAX_OVERFLOW default is now 0 (peak 13, ~2 left for manual access; DEPLO
 ## 2026-11-22 TOOLING Railway: dashboard-only setup (Config as Code deprecated)
 Removed railway/*.json and the vendored schema; test_deploy_config now checks .dockerignore, Dockerfile CMD (PORT, proxy headers), STORAGE_DIR, pinned uv; dropped jsonschema dev deps. DEPLOY.md rewritten for dashboard settings + RAILWAY_DOCKERFILE_PATH. New api prod startup guard (app/storage/guard.py, STORAGE_ALLOW_EPHEMERAL) replaces requiredMountPath. ARCHITECTURE s8 updated.
 left: user must create the volume at /data/files before first deploy; Railway IaC to be revisited.
+
+## 2026-11-22 deploy review round 2
+Storage guard now keys off RAILWAY_VOLUME_MOUNT_PATH == STORAGE_DIR (mismatch / no volume on Railway fail; off Railway only warns on non-mount). Tests, Dockerfile comment, DEPLOY.md (root dir, guard, pre-deploy, no-overlap note) updated.
