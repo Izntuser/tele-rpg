@@ -157,3 +157,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T23:22 REVIEW TOOL-logging stage-reviewer: REQUEST CHANGES (webhook secret in uvicorn access logs) -> round 2 stage-worker(sonnet)
 2026-11-22T23:27 REVIEW TOOL-logging -> stage-reviewer (round 2, @73d2772)
 2026-11-22T23:31 REVIEW TOOL-logging stage-reviewer round 2: APPROVE (vitest 249, pytest 1483)
+2026-11-22T23:34 MERGED TOOL-logging (lint, 1483 pytest, 249 vitest, smoke green on main); user to rotate TG_WEBHOOK_SECRET after deploy
