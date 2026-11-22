@@ -135,3 +135,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T19:58 REVIEW TOOL-live-stack -> stage-reviewer (round 2, @bc19be0 on fix/live-hardening-2)
 2026-11-22T20:04 REVIEW TOOL-live-stack stage-reviewer round 2: APPROVE (full start/status/stop/rollback exercised on throwaway DB; 4 TODOs)
 2026-11-22T20:09 MERGED TOOL-live-stack (pnpm test + smoke green on main; 2 review rounds)
+2026-11-22T20:31 DISPATCH TOOL-railway-deploy -> stage-worker(sonnet) (user request: Railway deploy prep)
