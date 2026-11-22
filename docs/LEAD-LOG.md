@@ -121,3 +121,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T10:59 DISPATCH S15 -> stage-worker(opus) (high, normal, resume partial WIP)
 2026-11-22T11:23 REVIEW S15 -> stage-reviewer (round 1, @909be06 on worktree-agent-a6d9b6467e8d786de; worker could not use old worktree)
 2026-11-22T11:31 REVIEW S15 stage-reviewer: APPROVE (round 1; 5 minor TODOs)
+2026-11-22T11:34 PENDING-MARK S15 (merged @39f4178; main api pid 55955 started 09:35 predates S15 routes (/api/achievements 404); @P0/@P1 e2e fail on toast; awaiting user restart)
