@@ -129,3 +129,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T14:13 REVIEW BUGFIX-avatar-name -> stage-reviewer (round 2, @977794a on worktree-agent-ac69ebd36ca4fc333)
 2026-11-22T14:16 REVIEW BUGFIX-avatar-name stage-reviewer round 2: APPROVE (2 optional TODOs)
 2026-11-22T14:20 MERGED BUGFIX-avatar-name (pnpm test 247 vitest + 1415 pytest green on main; e2e not verified: running API uses the real bot token from .env, e2e signs with the fake token unless TG_BOT_TOKEN is exported; loading .env denied)
+2026-11-22T19:41 DISPATCH TOOL-live-stack -> stage-worker(sonnet) (user request: live dev stack on DATABASE_URL)
