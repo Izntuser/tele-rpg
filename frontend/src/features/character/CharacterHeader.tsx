@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 
-import { Avatar } from '../../components/game/Avatar';
 import { GoldBadge } from '../../components/game/GoldBadge';
 import { XpBar } from '../../components/game/XpBar';
+import { FileAvatar } from '../files/components';
 import type { Character } from './api';
 
 /** Avatar, name, level with XP bar, and gold of the active wallet. */
@@ -12,7 +12,7 @@ export function CharacterHeader({ character }: { character: Character }) {
       data-testid="character-header"
       className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4"
     >
-      <Avatar name={character.name} src={character.avatar_url} size="lg" />
+      <FileAvatar name={character.name} fileId={character.avatar_file_id} src={character.avatar_url} size="lg" />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

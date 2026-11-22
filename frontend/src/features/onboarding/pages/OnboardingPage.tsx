@@ -4,13 +4,13 @@ import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
-import { Avatar } from '../../../components/game/Avatar';
 import type { AttributeKey } from '../../../components/game/chips';
 import { cn } from '../../../components/ui/cn';
 import type { AuthResponse } from '../../../lib/api/client';
 import type { components } from '../../../lib/api/schema';
 import { AUTH_QUERY_KEY } from '../../auth/AuthProvider';
 import { useAuth, useCurrentUser } from '../../auth/context';
+import { AvatarPicker } from '../../character/AvatarPicker';
 import { UserGreeting } from '../../auth/UserGreeting';
 import { CHARACTER_QUERY_KEY } from '../../character/api';
 import { GOALS_QUERY_KEY } from '../../goals/api';
@@ -175,7 +175,7 @@ export function OnboardingPage() {
         {stepKey === 'character' ? (
           <>
             <div className="flex items-center gap-3">
-              <Avatar name={name || user.display_name} src={user.avatar_url} size="lg" />
+              <AvatarPicker name={name || user.display_name} fileId={user.avatar_file_id} fallbackUrl={user.avatar_url} />
               <div className="flex flex-col">
                 <UserGreeting />
                 <p className="text-sm text-muted">{t('character.avatarHint')}</p>

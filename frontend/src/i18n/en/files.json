@@ -1,0 +1,30 @@
+{
+  "photo": {
+    "choose": "Add a photo",
+    "replace": "Change photo",
+    "remove": "Remove photo",
+    "uploading": "Uploading…",
+    "uploaded": "Photo attached",
+    "required": "This quest needs a photo.",
+    "alt": "Photo proof",
+    "loading": "Loading photo…",
+    "unavailable": "Photo unavailable"
+  },
+  "avatar": {
+    "change": "Change avatar",
+    "label": "Avatar"
+  },
+  "rewardImage": {
+    "label": "Reward picture",
+    "change": "Change picture",
+    "add": "Add picture",
+    "saved": "Picture saved",
+    "alt": "Picture of {{title}}"
+  },
+  "errors": {
+    "type": "Only JPEG, PNG, WebP or HEIC photos.",
+    "size": "The photo is larger than 10 MB.",
+    "rate": "Too many uploads. Try again in a minute.",
+    "generic": "Upload failed. Try again."
+  }
+}

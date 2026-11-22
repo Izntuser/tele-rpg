@@ -9,6 +9,7 @@ import { ApiError } from '../../../lib/api/client';
 import { useCharacter } from '../../character/api';
 import { buyBlock, usePurchase, useRewards, type PurchaseResult, type Reward } from '../api';
 import { LoadError, ShopFrame, useFormatDate } from '../components/ShopFrame';
+import { RewardImage } from '../RewardImageField';
 
 function RewardCard({ reward, gold, onBuy }: { reward: Reward; gold: number | undefined; onBuy: () => void }) {
   const { t } = useTranslation('shop');
@@ -24,6 +25,7 @@ function RewardCard({ reward, gold, onBuy }: { reward: Reward; gold: number | un
           : null;
   return (
     <li data-testid="reward-card" className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3">
+      {reward.image_file_id != null ? <RewardImage reward={reward} className="h-36 w-full rounded-lg" /> : null}
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 flex-1 break-words font-semibold">{reward.title}</p>
         <GoldBadge amount={reward.price} />

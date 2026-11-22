@@ -24,20 +24,17 @@
 - ARCHITECTURE.md:281 says notifications use `startapp=inv_<id>`, but lib/deeplink.ts maps inv_ to `/` (deeplink.test.ts:17 pins it); the notifications stage must resolve this.
 - shell.test.tsx "no native dialogs" test only renders a placeholder Settings page; strengthen it once real pages exist.
 - shell.test.tsx safe-area test: move viewport.mockRestore() and CSS var reset into afterEach so a failing assertion can't leak state.
-- POST /character/avatar (custom avatar upload) is not built; onboarding uses the Telegram photo_url. Needs the files/StorageBackend stage.
 - Onboarding drops a q_/r_ start param for a not-yet-onboarded user (only invite_ survives); consider resuming it after onboarding.
 - Any new replace-redirect at app start should reuse features/onboarding/redirect.ts FIRST_ENTRY_STATE so Telegram Back goes Home.
 - common/validation.py: bidi blocklist misses U+200E/U+200F/U+061C; reject all Cf/Zl/Zp (except ZWJ) and U+2028/U+2029 in single-line fields.
 - validation.py timezone: legacy aliases (Factory, EST, GMT+0, Cuba) are accepted; consider restricting to canonical Area/City zones.
 - Onboarding is one stepped page, ARCHITECTURE.md:290 describes sub-routes; record in DECISIONS or align.
-- Files stage: account deletion deletes the user's `file` rows but not the stored bytes; delete them through StorageBackend.
 - core/config.py: add a prod guard requiring TG_BOT_USERNAME and TG_APP_SHORT_NAME (POST /partnership/invitations answers 503 in prod without them).
 - TelegramAdapter: add openTelegramLink/switchInlineQuery so InvitePanel shares through Telegram natively (today an https://t.me/share/url link).
 - Companion page: add recent shared activity and life balance + suggestions (ARCHITECTURE s6) in the journal/stats stages.
 - Notifications stage: render partnership_accepted / partnership_ended (stored with category quests; consider a dedicated category).
 - partnership_invitation rows past expires_at stay `pending` (accept/preview treat them as expired); a scheduler job could mark them `expired`.
 - InvitePanel/useInvitePreview: preview is a POST (token in the body), so it takes a write rate-limit token per view.
-- Account deletion removes File rows but not the stored bytes (users/account.py:182); the files stage must delete the bytes too.
 - Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
 - Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; journal/notification payloads must stay free of names and free text (journal.service.check_payload rejects name keys; write every new event through record_event/enqueue).
 - main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
@@ -52,7 +49,6 @@
 - Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
 - Level-ups only write journal events (level_up, attribute_level_up); add an optional Telegram notification in the notifications stage.
 - Idempotency replay does not re-check authorization: a former member can replay their own cached quest detail (submit/confirm response) until the key expires (24h).
-- Files stage: one quest photo can be reused across several submissions; decide whether an attachment may be linked to only one submission.
 - Scheduler: no journal event or notification when an occurrence expires, a template's offer or an invitation expires (partnership_invitation.pending past expires_at); init.sh and docker-compose do not start `python -m app.jobs.runner` yet (run it next to uvicorn).
 - Streaks: a day that was never generated (paused, or the template created mid-day after a skipped day) does not break the streak; a late confirm after a break restarts current at 1 even if the confirmed day was consecutive with the last completed one.
 - Weekly quests have no streak; the Recurring tab shows one only for daily quests.
@@ -60,7 +56,6 @@
 - user.tg_user_id: add a CHECK (tg_user_id > 0 OR (deleted_at IS NOT NULL AND tg_user_id = -id)) so the partial unique index cannot be bypassed (S08 review).
 - core/idempotency.py claim(): the row-is-None branch retries recursively without bound; cap at one retry or return 409 (S08 review).
 - ARCHITECTURE.md user table: tg_user_id is unique only among live ids (partial index, DECISIONS #16); bot lookups by Telegram id must use it (S08 review).
-- S09: quest photo upload is not in the submit form (no files route yet); a photo_required quest cannot be submitted from the UI until the files stage adds an uploader to QuestActions.
 - S09: no edit / propose-revision UI for the GM (PATCH /quests/{id}); detail only shows and decides pending revisions. Pause/resume of recurring quests has no UI or route either.
 - S09: the quests tabs fetch GET /quests and /quest-templates (limit 200) and bucket client-side; add server-side status filters/pagination if lists grow.
 - S09: Companion page "Create quest" shortcut (ARCHITECTURE s6) not wired; /quests/new is reachable from the Quests FAB and duplicate only.
@@ -69,20 +64,23 @@
 - S10: when a provider deletes their account (or a partnership ends), requested/scheduled vouchers can be refunded only by the provider, so a deleted provider's vouchers stay open forever; consider auto-refunding open vouchers in end_partnership / account deletion.
 - S10: a reward created from a wishlist item copies the companion's item title/description into reward text, which account deletion keeps (reward text is kept, TODO above); the same goes for reward_purchase.reward_snapshot (title/description frozen at purchase); decide whether the wishlist owner's deletion should scrub both.
 - S10: reward/voucher notifications have deep_link NULL; define r_<id> (reward or purchase?) in lib/deeplink.ts and set it in rewards.service.voucher_event (notifications stage).
-- S10: POST /rewards/{id}/image (reward image upload) is not built; needs the files stage (reward_image kind, partnership check).
 - S10: there is no GET /inventory/{id} or GET /rewards/{id}; the shop UI stage may need them for deep links.
 - S14/frontend: render journal/notification types reward_created, reward_purchased, reward_requested, reward_scheduled, reward_fulfilled, reward_disputed, reward_refunded (category rewards).
 - Idempotency replay of POST /rewards/{id}/purchase returns the stored voucher (24h) even if it was refunded since; clients must refetch /inventory for the current state.
-- users/account.py _scrub locks every provider reward_purchase row (no schedule_note IS NOT NULL filter) before the reward rows, while refund locks reward then purchase; can deadlock once reward images exist. Add the filter and lock rewards first (S10 review).
 - Notifications are still enqueued to deleted users (e.g. a buyer's refund notifies the deleted provider with the reward title); skip deleted recipients in enqueue/voucher_event (S10 review).
 - rewards/schemas.py ScheduleIn.scheduled_for has no upper bound (e.g. now + 1 year) (S10 review).
 - S10 tests: forced-interleaving purchase tests call the service and bypass the HTTP Idempotency-Key claim; reward create (lock_user, then partnership) vs leave/account deletion is not pinned by a test (S10 review).
 - ARCHITECTURE.md Purchase step 3 says key purchase:{idempotency_key}; the code uses purchase:{buyer_id}:{key} (S10 review).
 - S11: there is no DELETE /rewards/{id}; the manage screen hides a reward (status=hidden) instead. Add delete if the product wants it.
-- S11: reward image upload and reward deep links (r_<id>) are not in the shop UI (need the files stage and GET /rewards/{id}).
+- S11: reward deep links (r_<id>) are not in the shop UI (need GET /rewards/{id}).
 - S11: the core-loop e2e stops at B's Fulfilled voucher; ARCHITECTURE s10 step 9 (journal shows every event) waits for the journal UI stage.
 - S11: e2e user B has Telegram language_code uk, so B's UI is Ukrainian unless the spec sets B's locale (PATCH /api/character) or injects language_code en before B's first login.
 - S11: purchased vouchers are refundable by the buyer in the UI; no way yet for the provider to see/refund frozen vouchers of an ended partnership except the requests queue (shown there while status is purchased/requested/scheduled).
 - jobs/runner.py: the leader never re-checks its lock connection; add a periodic SELECT 1 that steps down on failure so two leaders can't run after a connection drop (S13 review).
 - jobs/runner.py: if pg_advisory_unlock fails, invalidate the connection instead of returning it to the pool still holding the session lock (S13 review).
 - Recurring quests: an assignee changing timezone can produce a second scheduled_date for the same real day (S13 review).
+- S12: a replaced reward image keeps its old file row and bytes (purchase snapshots may still reference it); add a cleanup for images no reward and no snapshot points at.
+- S12: stored bytes are deleted best-effort after commit (account deletion, avatar replace); a crash between commit and delete leaves an orphan blob; add a periodic sweep of storage keys without a file row.
+- S12: uploaded quest photos that are never attached to a submission stay forever; purge unattached quest_photo files older than a day in the scheduler.
+- S12: GET /files/{id} streams full bodies with Cache-Control: private, no-store; consider ETag/Range if photos get large or are viewed often.
+- S12: invitation preview (CompanionCard.avatar_file_id) exposes the inviter's avatar file id to a not-yet-partner, who gets 404 on read; set it to null there if ids should not leak.

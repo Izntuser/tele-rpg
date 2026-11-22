@@ -31,6 +31,8 @@ class CharacterOut(BaseModel):
     nickname: str | None
     bio: str | None
     avatar_url: str | None
+    #: Custom avatar (``GET /files/{id}``); shown instead of ``avatar_url`` when set.
+    avatar_file_id: int | None
     level: int
     total_xp: int
     #: XP earned inside the current level.

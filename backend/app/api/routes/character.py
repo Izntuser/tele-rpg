@@ -1,9 +1,19 @@
 """The caller's own character. There is no route that takes a character or user id: every
 endpoint reads and writes the character of ``CurrentUser`` only."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
+from app.api.routes.files import (
+    UPLOAD_OPENAPI,
+    UPLOAD_RESPONSES,
+    FileOut,
+    StorageDep,
+    file_out,
+    owner_gone,
+    read_image,
+)
 from app.core.deps import CurrentUser, SessionDep
+from app.modules.files import service as files
 from app.modules.users import service
 from app.modules.users.schemas import CharacterOut, CharacterUpdate, OnboardingIn, OnboardingOut
 
@@ -44,3 +54,24 @@ async def complete_onboarding(
         return await service.complete_onboarding(session, user, body)
     except service.AlreadyOnboardedError:
         raise HTTPException(status.HTTP_409_CONFLICT, "Already onboarded") from None
+
+
+@router.post(
+    "/avatar",
+    response_model=FileOut,
+    status_code=status.HTTP_201_CREATED,
+    openapi_extra=UPLOAD_OPENAPI,
+    responses=UPLOAD_RESPONSES,
+)
+async def upload_avatar(
+    request: Request, user: CurrentUser, session: SessionDep, storage: StorageDep
+) -> FileOut:
+    """Upload my avatar (multipart field ``file``; also during onboarding). It replaces the
+    previous custom avatar; ``avatar_file_id`` on ``/character`` and ``/me`` points at it."""
+    image = await read_image(request, user.id)
+    try:
+        file = await files.replace_avatar(session, storage, user.id, image)
+    except files.OwnerGoneError:
+        await session.rollback()
+        raise owner_gone() from None
+    return file_out(file)

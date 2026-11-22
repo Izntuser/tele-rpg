@@ -142,6 +142,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Avatar
+         * @description Upload my avatar (multipart field ``file``; also during onboarding). It replaces the
+         *     previous custom avatar; ``avatar_file_id`` on ``/character`` and ``/me`` points at it.
+         */
+        post: operations["upload_avatar_api_character_avatar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/economy/balance": {
         parameters: {
             query?: never;
@@ -174,6 +195,47 @@ export interface paths {
          * @description My ledger (all my wallets), newest first. Pass ``next_cursor`` for older rows.
          */
         get: operations["list_transactions_api_economy_transactions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Quest Photo
+         * @description Upload a quest photo (multipart field ``file``) for the active partnership; send its
+         *     ``id`` as ``attachment_id`` to ``POST /quests/{id}/submit``.
+         */
+        post: operations["upload_quest_photo_api_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read File
+         * @description Stream a file to its owner or the owner's active partner; 404 for anyone else.
+         */
+        get: operations["read_file_api_files__file_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -877,6 +939,27 @@ export interface paths {
         patch: operations["update_reward_api_rewards__reward_id__patch"];
         trace?: never;
     };
+    "/api/rewards/{reward_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Reward Image
+         * @description Creator: set the reward's picture (multipart field ``file``). Only the two members of
+         *     the partnership can read it, and only while the partnership is active.
+         */
+        post: operations["upload_reward_image_api_rewards__reward_id__image_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rewards/{reward_id}/purchase": {
         parameters: {
             query?: never;
@@ -1009,6 +1092,8 @@ export interface components {
             bio: string | null;
             /** Avatar Url */
             avatar_url: string | null;
+            /** Avatar File Id */
+            avatar_file_id: number | null;
             /** Level */
             level: number;
             /** Total Xp */
@@ -1067,6 +1152,8 @@ export interface components {
             display_name: string;
             /** Avatar Url */
             avatar_url: string | null;
+            /** Avatar File Id */
+            avatar_file_id: number | null;
             /** Character Name */
             character_name: string | null;
             /** Nickname */
@@ -1175,6 +1262,21 @@ export interface components {
             weekly: number;
             /** Monthly */
             monthly: number;
+        };
+        /**
+         * FileKind
+         * @enum {string}
+         */
+        FileKind: "avatar" | "quest_photo" | "reward_image";
+        /** FileOut */
+        FileOut: {
+            /** Id */
+            id: number;
+            kind: components["schemas"]["FileKind"];
+            /** Mime */
+            mime: string;
+            /** Size */
+            size: number;
         };
         /** GoalCreate */
         GoalCreate: {
@@ -1985,6 +2087,8 @@ export interface components {
             display_name: string;
             /** Avatar Url */
             avatar_url: string | null;
+            /** Avatar File Id */
+            avatar_file_id: number | null;
             locale: components["schemas"]["Locale"];
             /** Timezone */
             timezone: string;
@@ -2289,6 +2393,54 @@ export interface operations {
             };
         };
     };
+    upload_avatar_api_character_avatar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileOut"];
+                };
+            };
+            /** @description Larger than 10 MB (or than 40 megapixels) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a JPEG, PNG, WebP or HEIC image (checked by content) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description More than 5 uploads per minute */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_balance_api_economy_balance_get: {
         parameters: {
             query?: never;
@@ -2329,6 +2481,100 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LedgerPage"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_quest_photo_api_files_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileOut"];
+                };
+            };
+            /** @description No active partnership */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Larger than 10 MB (or than 40 megapixels) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a JPEG, PNG, WebP or HEIC image (checked by content) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description More than 5 uploads per minute */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    read_file_api_files__file_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": unknown;
+                    "image/webp": unknown;
+                };
+            };
+            /** @description No such file, or not mine / my active partner's */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -3642,6 +3888,86 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    upload_reward_image_api_rewards__reward_id__image_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reward_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RewardOut"];
+                };
+            };
+            /** @description Not the reward's creator */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a reward of my partnership */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Partnership has ended */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Larger than 10 MB (or than 40 megapixels) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not a JPEG, PNG, WebP or HEIC image (checked by content) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description More than 5 uploads per minute */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

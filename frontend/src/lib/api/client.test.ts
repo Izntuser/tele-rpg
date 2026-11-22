@@ -179,6 +179,26 @@ describe('api client', () => {
     await expect(client.delete('/empty')).resolves.toBeUndefined();
   });
 
+  test('sends FormData as multipart (no JSON Content-Type) with the Bearer header', async () => {
+    const form = new FormData();
+    form.append('file', new Blob(['x'], { type: 'image/jpeg' }), 'a.jpg');
+    await client.post('/files', form);
+    const call = server.calls.at(-1)!;
+    expect(call.init.body).toBe(form);
+    expect(headersOf(call).get('Content-Type')).toBeNull();
+    expect(headersOf(call).get('Authorization')).toBe('Bearer jwt-1');
+  });
+
+  test("responseType 'blob' returns the body as a Blob; errors are still ApiError", async () => {
+    const blob = await client.get<Blob>('/files/1', { responseType: 'blob' });
+    // Node's fetch Response makes a Node Blob (another realm than jsdom's), so check the shape.
+    expect(typeof blob.text).toBe('function');
+    expect(blob.type).toBe('application/json');
+    expect(JSON.parse(await blob.text())).toEqual({ ok: true, url: '/api/files/1' });
+    const error = await client.get('/fail', { responseType: 'blob' }).catch((e: unknown) => e);
+    expect((error as ApiError).status).toBe(409);
+  });
+
   test('logout forgets the token', async () => {
     await client.login();
     expect(client.hasToken()).toBe(true);

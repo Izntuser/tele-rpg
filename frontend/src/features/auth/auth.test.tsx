@@ -19,6 +19,7 @@ const AUTH: AuthResponse = {
     tg_username: 'alice',
     display_name: 'Alice',
     avatar_url: null,
+    avatar_file_id: null,
     locale: 'en',
     timezone: 'UTC',
     onboarded_at: '2026-01-15T12:00:00Z',
