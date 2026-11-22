@@ -108,3 +108,6 @@
 - Bugfix review: doLogin should reject any 2xx body that is not an object with a string jwt (empty/null/non-object JSON still hits a plain TypeError)
 - Bugfix review: character/api.ts uses NOT_JSON for a JSON body missing name; use a distinct "malformed character" detail
 - init.sh and scripts/smoke.sh still source .env as shell (unquoted $/& in a password breaks them); switch to the live.sh line parser.
+- live.sh: start prints "Live stack is up" even if bot/sched died right away (bad token); re-check them after the health waits and fail or warn
+- live.sh: pid_matches for live-web/bot/sched matches any vite/bot/runner process (another worktree or the test stack); tie them to the live port or cwd like live-api
+- live.sh: no automated test for the rollback path or init.sh's local/remote dev-DB branch (checked by hand in review)
