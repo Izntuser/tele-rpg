@@ -14,17 +14,23 @@ DEV_TG_BOT_TOKEN = "123456789:AAFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"
 MIN_PROD_JWT_SECRET_LEN = 32
 MIN_PROD_WEBHOOK_SECRET_LEN = 32
 HIDDEN_INPUT = "[hidden]"
+# Prod defaults sized for a ~15-connection Supabase session pooler (docs/DEPLOY.md budget).
+PROD_DB_POOL_SIZE = 3
+PROD_DB_MAX_OVERFLOW = 1
 
 
 def _translate_sslmode(raw: str) -> str:
     """Rewrite ``sslmode=X`` to ``ssl=X`` in the query (asyncpg has no ``sslmode`` kwarg).
 
     Other params and their order are kept. If ``ssl`` is also present it wins and ``sslmode``
-    is dropped. Text before the ``?`` (including the password) is never touched.
+    is dropped. Credentials are never touched: the query starts at the first ``?`` after the
+    last ``@``, so an unencoded ``?`` in the password does not break it.
     """
-    base, sep, query = raw.partition("?")
+    creds, at, rest = raw.rpartition("@")
+    base, sep, query = rest.partition("?")
     if not sep:
         return raw
+    base = creds + at + base
     pairs = query.split("&")
     has_ssl = any(p.split("=", 1)[0] == "ssl" for p in pairs)
     out: list[str] = []
@@ -95,9 +101,13 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "prod"] = "development"
     database_url: SecretStr = SecretStr(f"{_DB}/telerpg")
     #: Pooled engine of the api process only (the scheduler, healthz and migrations use NullPool).
+    #: 10 in dev/test; PROD_DB_POOL_SIZE when APP_ENV=prod and not set explicitly.
     db_pool_size: int = Field(default=10, ge=1)
-    #: Extra connections above db_pool_size under load; 10 is SQLAlchemy's own default.
+    #: Extra connections above db_pool_size under load; 10 is SQLAlchemy's own default
+    #: (PROD_DB_MAX_OVERFLOW when APP_ENV=prod and not set explicitly).
     db_max_overflow: int = Field(default=10, ge=0)
+    #: Jobs of the scheduler that may hold a DB session at once (each is one NullPool connection).
+    scheduler_max_concurrent_jobs: int = Field(default=2, ge=1)
 
     tg_bot_token: SecretStr = SecretStr(DEV_TG_BOT_TOKEN)
     tg_bot_username: str = ""
@@ -141,6 +151,10 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _prod_guards(self) -> "Settings":
         if self.app_env == "prod":
+            if "db_pool_size" not in self.model_fields_set:
+                self.db_pool_size = PROD_DB_POOL_SIZE
+            if "db_max_overflow" not in self.model_fields_set:
+                self.db_max_overflow = PROD_DB_MAX_OVERFLOW
             errors = []
             jwt = self.jwt_secret.get_secret_value()
             if jwt == DEV_JWT_SECRET or len(jwt) < MIN_PROD_JWT_SECRET_LEN:

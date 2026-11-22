@@ -14,6 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = json.loads((Path(__file__).parent / "fixtures" / "railway.schema.json").read_text())
 
 
+# Note: the vendored schema does not reject unknown keys (additionalProperties is open), so the
+# explicit assertions below, not the schema validation, are what catch a typo'd key.
+
+
 def load(name: str) -> dict[str, Any]:
     data = json.loads((ROOT / "railway" / f"{name}.json").read_text())
     assert isinstance(data, dict)

@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, a
 
 from app.bot.dispatcher import close_bot
 from app.core import idempotency
+from app.core.config import get_settings
 from app.core.db import make_engine
 from app.db.session import make_sessionmaker
 from app.jobs import expire_occurrences, generate_occurrences, notification_jobs
@@ -82,11 +83,16 @@ class Runner:
         jobs: Mapping[str, JobSpec] = DEFAULT_JOBS,
         *,
         retry_seconds: float = RETRY_SECONDS,
+        max_concurrent_jobs: int | None = None,
     ) -> None:
         self._engine = engine
         self._sessions = sessions
         self._jobs = jobs
         self._retry = retry_seconds
+        #: Bounds concurrent DB sessions (NullPool: one connection each) so the 6 jobs that all
+        #: fire at startup do not exhaust a small pooler. The leader-lock connection is separate.
+        limit = max_concurrent_jobs or get_settings().scheduler_max_concurrent_jobs
+        self._slots = asyncio.Semaphore(limit)
         self._stop = asyncio.Event()
         #: True while this runner holds the lock and its scheduler is running.
         self.leading = False
@@ -96,7 +102,7 @@ class Runner:
 
     async def _run_job(self, name: str, spec: JobSpec) -> None:
         try:
-            async with self._sessions() as session:
+            async with self._slots, self._sessions() as session:
                 await spec.fn(session)
         except Exception:
             log.exception("job %s failed", name)

@@ -258,6 +258,12 @@ def test_database_url_is_normalized_to_asyncpg(
             "postgresql+asyncpg://u:sslmode=x@h/d?sslmodeX=1",
         ),
         ("postgresql://u:p@h/d", "postgresql+asyncpg://u:p@h/d"),
+        # an unencoded "?" in the password does not start the query.
+        (
+            "postgresql://u:pa?ss@h/d?sslmode=require",
+            "postgresql+asyncpg://u:pa?ss@h/d?ssl=require",
+        ),
+        ("postgresql://u:pa?sslmode=x@h/d", "postgresql+asyncpg://u:pa?sslmode=x@h/d"),
     ],
 )
 def test_database_url_sslmode_becomes_ssl(
@@ -284,3 +290,34 @@ def test_prod_reports_every_missing_setting(monkeypatch: pytest.MonkeyPatch) -> 
         Settings()
     for needle in ("PUBLIC_BASE_URL", "TG_BOT_USERNAME", "TG_APP_SHORT_NAME"):
         assert needle in str(exc.value)
+
+
+def test_prod_pool_defaults_are_small_unless_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    prod_env(monkeypatch)
+    monkeypatch.delenv("DB_POOL_SIZE", raising=False)
+    monkeypatch.delenv("DB_MAX_OVERFLOW", raising=False)
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (3, 1)
+    monkeypatch.setenv("DB_POOL_SIZE", "10")
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 1)
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "0")
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 0)
+
+
+@pytest.mark.parametrize("env", ["development", "test"])
+def test_non_prod_pool_defaults_stay_10(monkeypatch: pytest.MonkeyPatch, env: str) -> None:
+    monkeypatch.setenv("APP_ENV", env)
+    monkeypatch.delenv("DB_POOL_SIZE", raising=False)
+    monkeypatch.delenv("DB_MAX_OVERFLOW", raising=False)
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 10)
+
+
+def test_scheduler_max_concurrent_jobs_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SCHEDULER_MAX_CONCURRENT_JOBS", raising=False)
+    assert Settings().scheduler_max_concurrent_jobs == 2
+    monkeypatch.setenv("SCHEDULER_MAX_CONCURRENT_JOBS", "0")
+    with pytest.raises(ValidationError):
+        Settings()

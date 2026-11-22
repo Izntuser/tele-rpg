@@ -145,3 +145,7 @@ left: nothing deployed; user follows docs/DEPLOY.md.
 ## 2026-11-22 deploy-prep review fix-up round 2
 Supabase session pooler is now the primary DB path (DEPLOY.md, ARCHITECTURE s8); sslmode=X is translated to ssl=X in the URL normalizer (alembic shares it); new DB_MAX_OVERFLOW setting plus a connection budget in DEPLOY.md; first-deploy order, requiredMountPath, Photos volume note; railway configs validated against the vendored official schema (backend/tests/fixtures/railway.schema.json, fetched 2026-11-22).
 Verified alembic upgrade head in the built image against a throwaway local DB with ?sslmode=disable and ?ssl=disable. Left: nothing known; Supabase pool size and Railway CLI commands in DEPLOY.md must be checked by the user.
+
+## 2026-11-22 deploy-prep connection budget fix
+Scheduler jobs now take turns (SCHEDULER_MAX_CONCURRENT_JOBS, default 2, semaphore in Runner._run_job; leader-lock connection separate). With APP_ENV=prod and DB_POOL_SIZE / DB_MAX_OVERFLOW unset they default to 3 / 1 (dev/test stay 10/10). DEPLOY.md budget recomputed from code: peak 15 at defaults (api 11 + scheduler 4), with scaling guidance. Also: sslmode translation splits after the last "@", test_deploy_config schema caveat comment, DEPLOY.md step 2 note.
+Left: user must check the Supabase pool size; smoke not run here (ports may be held by other stacks).

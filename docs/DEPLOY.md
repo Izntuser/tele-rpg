@@ -10,6 +10,7 @@ Do these in order; the first deploy must see a complete configuration.
 
 1. Railway: New Project, **Empty Project**. Add two **empty services** (not from the repo yet): `api` and `scheduler`.
 2. For each, Settings, "Config-as-code path" (Railway Config File): `/railway/api.json` for `api`, `/railway/scheduler.json` for `scheduler`.
+   If Railway's UI does not show the config-as-code path before a repo is connected, set it right after connecting the repo in step 6 and redeploy.
 3. `api`: Settings, Networking, **Generate Domain**. The scheduler gets no public domain.
 4. `api`: add the volume (section 3).
 5. Set **all variables** on both services (section 4), including `PUBLIC_BASE_URL` via the reference variables below.
@@ -44,28 +45,45 @@ postgresql://postgres.<project-ref>:<URL-ENCODED-PASSWORD>@aws-0-<region>.pooler
 
 ### Connection budget
 
-Postgres connections used per process:
+Supavisor in session mode refuses clients beyond the project's pool size (about 15 on small plans). Count connections from the code, worst case:
 
-| Process | Connections |
-|---|---|
-| `api` pooled engine | up to `DB_POOL_SIZE + DB_MAX_OVERFLOW` |
-| `api` `/healthz` | 1 transient (NullPool, not pooled) |
-| `scheduler` | 1 held for its whole life (leader lock) + about 1 per running job (NullPool); allow 3 in total |
-| `preDeploy` migration | 1 for the few seconds it runs (NullPool) |
+| Process | Connections | Source |
+|---|---|---|
+| `api` pooled engine | up to `DB_POOL_SIZE + DB_MAX_OVERFLOW` per instance | `app/db/session.py` |
+| `api` `/healthz` | 1 transient per instance (NullPool) | `app/main.py` |
+| `preDeploy` migration | 1 for a few seconds (NullPool) | `alembic upgrade head` |
+| `scheduler` leader lock | 1 held for the process lifetime | `try_lead` in `app/jobs/runner.py` |
+| `scheduler` jobs | up to `SCHEDULER_MAX_CONCURRENT_JOBS`, 1 each (NullPool) | semaphore in `Runner._run_job` |
 
-Railway deploys the new `api` while the old one still runs, so for a short time **two api instances** hold connections. Budget:
+The runner registers 6 jobs that all fire at startup; the semaphore makes them take turns, so the scheduler never holds more than `1 + SCHEDULER_MAX_CONCURRENT_JOBS` connections. Railway starts the new instance while the old one still runs, so during a redeploy:
 
 ```
-peak = 2 * (DB_POOL_SIZE + DB_MAX_OVERFLOW)   # old and new api
-     + 2                                        # healthz + migration
-     + 3                                        # scheduler
+api       = 2 * (DB_POOL_SIZE + DB_MAX_OVERFLOW)   # old and new instance
+          + 2                                       # healthz, one per instance
+          + 1                                       # preDeploy migration
+scheduler = (1 + SCHEDULER_MAX_CONCURRENT_JOBS)     # leader lock + jobs
+          + 1                                       # new instance's try_lead while the old one runs
+peak      = api + scheduler
 ```
 
-Worked example with the recommended `api` `DB_POOL_SIZE=4`, `DB_MAX_OVERFLOW=2`: 2 * 6 + 2 + 3 = **17** connections at peak. With `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=1`: 2 * 4 + 5 = **13**.
+Defaults with `APP_ENV=prod` (nothing set): `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=1`, `SCHEDULER_MAX_CONCURRENT_JOBS=2` (dev and test default to 10/10):
 
-Compare the peak with the Supabase pooler's pool size and keep it below, with room for the Supabase dashboard and your own `psql`/`pg_dump`. **Do not trust a number from this document:** check your project's pool size in Supabase, Database, Settings, connection pooling (it depends on plan and compute size; small instances have a small default). If it is about 15, use `3`/`1`; if it is 20 or more, `4`/`2` is fine. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection.
+| Part | Formula | Connections |
+|---|---|---|
+| api pools (old + new) | 2 * (3 + 1) | 8 |
+| api healthz | 2 | 2 |
+| api migration | 1 | 1 |
+| scheduler lock + jobs | 1 + 2 | 3 |
+| scheduler overlap | 1 | 1 |
+| **Peak** | | **15** |
 
-Both settings apply to the **api only**. The scheduler builds its engine with NullPool (`app.core.db.make_engine`), so `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` have no effect there; its footprint is the fixed ~3 above. Set the pool variables per service, not in shared variables: if the scheduler ever moves to a pooled engine it reads its own `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` from its own service variables.
+This is a deliberately pessimistic sum (the migration runs before the new api starts, so the real peak is about 14), and it leaves no headroom for the Supabase dashboard or your own `psql`/`pg_dump`.
+
+**Check your pool size** in Supabase, Database, Settings, connection pooling (it depends on plan and compute size). If it is 15, the defaults fit exactly; for headroom set `SCHEDULER_MAX_CONCURRENT_JOBS=1` (peak 14) or `DB_MAX_OVERFLOW=0` (peak 13). If it is larger, raise the numbers using the formula and keep the peak at or below the pool size minus about 3 for manual access, for example a pool size of 30 allows `DB_POOL_SIZE=6`, `DB_MAX_OVERFLOW=2`, `SCHEDULER_MAX_CONCURRENT_JOBS=3`: 2*8 + 3 + 4 + 1 = 24. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection, and scheduler jobs wait their turn.
+
+**If you set `DB_POOL_SIZE`, `DB_MAX_OVERFLOW` or `SCHEDULER_MAX_CONCURRENT_JOBS` explicitly, you override these defaults and the 15 above no longer holds: recompute the peak with the formula before deploying.** Do not copy the dev values (10/10) into prod: 2 * 20 alone is 40.
+
+`DB_POOL_SIZE` and `DB_MAX_OVERFLOW` apply to the **api only** (the scheduler, healthz and migrations use NullPool). `SCHEDULER_MAX_CONCURRENT_JOBS` applies to the scheduler only. Set them per service, not in shared variables.
 
 ### Appendix: Railway Postgres (optional)
 
@@ -106,8 +124,9 @@ Both services refuse to start with `APP_ENV=prod` unless: real `TG_BOT_TOKEN`, `
 | `TG_WEBHOOK_SECRET` | yes | yes | shared |
 | `JWT_SECRET` | yes | yes | shared |
 | `PUBLIC_BASE_URL` | yes | yes | reference variables above, per service |
-| `DB_POOL_SIZE` | `4` | unused | api only, see Connection budget |
-| `DB_MAX_OVERFLOW` | `2` | unused | api only |
+| `DB_POOL_SIZE` | leave unset (prod default `3`) | unused | api only, see Connection budget |
+| `DB_MAX_OVERFLOW` | leave unset (prod default `1`) | unused | api only |
+| `SCHEDULER_MAX_CONCURRENT_JOBS` | unused | leave unset (default `2`) | scheduler only, see Connection budget |
 | `STORAGE_DIR` | optional | optional | defaults to `/data/files` in the image; only api has the volume |
 | `SENTRY_DSN` | optional | optional | |
 | `PORT` | set by Railway | unused | |
