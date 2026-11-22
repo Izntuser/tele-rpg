@@ -2,13 +2,15 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
-const backend = 'http://127.0.0.1:8000';
+// Defaults serve the test stack (init.sh/e2e); scripts/live.sh overrides both for the live stack.
+const backend = process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000';
+const port = Number(process.env.VITE_DEV_PORT) || 3000;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: true,
-    port: 3000,
+    port,
     strictPort: true,
     // Dev tunnels for opening the Mini App inside Telegram (leading dot = any subdomain).
     allowedHosts: ['.ngrok-free.app', '.trycloudflare.com'],

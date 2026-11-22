@@ -377,6 +377,24 @@ gen:api   (cd backend && uv run python -m app.export_openapi) && openapi-typescr
 e2e       playwright test   (playwright.config.ts starts api with APP_ENV=test + vite preview; saves docs/screens/<id>.png)
 ```
 
+### Running live from Telegram
+
+`scripts/live.sh start|stop|status|logs|check` runs a second stack next to the test stack
+(`init.sh`, 8000/3000): uvicorn on `LIVE_API_PORT` (8010), vite on `LIVE_WEB_PORT` (3010, proxies
+`/api` and `/healthz` to the live API via `API_PROXY_TARGET`/`VITE_DEV_PORT`), the bot and the
+scheduler, with `APP_ENV=development`. Config comes from the repo-root `.env` (real `TG_BOT_TOKEN`,
+`DATABASE_URL`); secrets are never printed, the DB password is masked. `check` validates only; `start`
+refuses an unset or `*_e2e`/`E2E_DATABASE_URL` database, the fake token and a non-`+asyncpg` scheme.
+`/api/test/reset` answers 404 outside `APP_ENV=test`, so the live stack cannot wipe anything.
+Then: `ngrok http 3010`, set the URL in BotFather (Main App, Menu Button, Direct Link) and
+`PUBLIC_BASE_URL`, `live.sh stop && live.sh start`.
+
+Supabase notes: the URL must be `postgresql+asyncpg://` (Supabase shows `postgresql://`). The direct
+host (`db.<ref>.supabase.co:5432`) is IPv6-only; on an IPv4 network use the session pooler
+(`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.<ref>`). Never the transaction pooler
+(port 6543): asyncpg prepared statements and the session-level advisory lock (scheduler) break
+there. URL-encode special characters in the password (`@` is `%40`, `/` is `%2F`).
+
 ## 9. Open questions for the client
 
 1. Bot usernames and the Mini App short name for dev and prod. These are needed for deep links (`TG_BOT_USERNAME`, `TG_APP_SHORT_NAME`).
