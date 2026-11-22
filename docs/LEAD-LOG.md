@@ -136,3 +136,12 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T20:04 REVIEW TOOL-live-stack stage-reviewer round 2: APPROVE (full start/status/stop/rollback exercised on throwaway DB; 4 TODOs)
 2026-11-22T20:09 MERGED TOOL-live-stack (pnpm test + smoke green on main; 2 review rounds)
 2026-11-22T20:31 DISPATCH TOOL-railway-deploy -> stage-worker(sonnet) (user request: Railway deploy prep)
+2026-11-22T20:36 REVIEW TOOL-railway-deploy -> stage-reviewer (round 1, @2566b72)
+2026-11-22T20:42 REVIEW TOOL-railway-deploy stage-reviewer: REQUEST CHANGES (Supabase primary, sslmode crash, pool limits, first-deploy order, stale docs) -> round 2 stage-worker(sonnet)
+2026-11-22T20:47 REVIEW TOOL-railway-deploy -> stage-reviewer (round 2, @625d265)
+2026-11-22T20:52 REVIEW TOOL-railway-deploy stage-reviewer round 2: REQUEST CHANGES (scheduler connection budget wrong: 6 jobs fire at once -> peaks exceed ~15 pooler). Rounds exhausted; follow-up task TOOL-db-budget dispatched on the same branch instead of blocking (non-stage tooling)
+2026-11-22T20:52 DISPATCH TOOL-db-budget -> stage-worker(sonnet) (cap scheduler DB concurrency)
+2026-11-22T20:57 REVIEW TOOL-db-budget -> stage-reviewer (@33f4cec)
+2026-11-22T21:01 REVIEW TOOL-db-budget stage-reviewer: REQUEST CHANGES (prod overflow 0 for headroom; healthz NullPool DoS; try_lead crash) -> stage-worker(sonnet) round 2
+2026-11-22T21:09 REVIEW TOOL-db-budget -> stage-reviewer (round 2, @c9f13ba)
+2026-11-22T21:13 REVIEW TOOL-db-budget stage-reviewer round 2: APPROVE except DEPLOY.md:84 prose (14->12), fixed by lead on main (docs only)
