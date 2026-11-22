@@ -62,6 +62,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Achievements */
+        get: operations["list_achievements_api_achievements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/telegram": {
         parameters: {
             query?: never;
@@ -400,6 +417,28 @@ export interface paths {
          *     wallet (frozen or not) and the unit back to the reward.
          */
         post: operations["refund_voucher_api_inventory__purchase_id__refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Journal
+         * @description ``scope=me``: everything I recorded (private included). ``scope=shared``: the shared
+         *     events of my active partnership by either of us (empty without one). Pass ``next_cursor``
+         *     back as ``cursor`` for older events.
+         */
+        get: operations["list_journal_api_journal_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1099,6 +1138,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stats
+         * @description My counts, XP and quests per day, Gold earned/spent and rewards for the period.
+         */
+        get: operations["get_stats_api_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/life-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Life Balance
+         * @description Per-attribute activity scores against the owner's targets, with suggestions (403 for
+         *     ``user=companion`` without an active partnership).
+         */
+        get: operations["get_life_balance_api_stats_life_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/life-balance/targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Targets */
+        get: operations["get_targets_api_stats_life_balance_targets_get"];
+        /**
+         * Put Targets
+         * @description Set my weekly XP targets (0-10000 per attribute); omitted attributes are unchanged.
+         */
+        put: operations["put_targets_api_stats_life_balance_targets_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/wishlist": {
         parameters: {
             query?: never;
@@ -1149,6 +1250,26 @@ export interface components {
             /** Reactivated */
             reactivated: boolean;
         };
+        /** AchievementOut */
+        AchievementOut: {
+            /** Code */
+            code: string;
+            /** Icon */
+            icon: string;
+            /** Target */
+            target: number;
+            /** Progress */
+            progress: number;
+            /** Unlocked At */
+            unlocked_at: string | null;
+        };
+        /** AchievementsOut */
+        AchievementsOut: {
+            /** Definitions */
+            definitions: components["schemas"]["AchievementOut"][];
+            /** Unlocks */
+            unlocks: components["schemas"]["UnlockOut"][];
+        };
         /** ActivePartnershipOut */
         ActivePartnershipOut: {
             /** Id */
@@ -1173,6 +1294,18 @@ export interface components {
             xp_into_level: number;
             /** Xp For Next Level */
             xp_for_next_level: number;
+        };
+        /** AttributeScoreOut */
+        AttributeScoreOut: {
+            attribute: components["schemas"]["Attribute"];
+            /** Earned Xp */
+            earned_xp: number;
+            /** Weekly Target */
+            weekly_target: number;
+            /** Period Target */
+            period_target: number;
+            /** Score */
+            score: number;
         };
         /** AuthOut */
         AuthOut: {
@@ -1358,6 +1491,16 @@ export interface components {
          * @enum {string}
          */
         ConfirmationMode: "manual" | "auto";
+        /** DayValue */
+        DayValue: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Value */
+            value: number;
+        };
         /** DeclineIn */
         DeclineIn: {
             /** Reason */
@@ -1485,12 +1628,69 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** JournalEventOut */
+        JournalEventOut: {
+            /** Id */
+            id: number;
+            /** Type */
+            type: string;
+            /**
+             * Actor
+             * @enum {string}
+             */
+            actor: "me" | "companion";
+            visibility: components["schemas"]["JournalVisibility"];
+            /** Entity Type */
+            entity_type: string | null;
+            /** Entity Id */
+            entity_id: number | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** JournalPage */
+        JournalPage: {
+            /** Items */
+            items: components["schemas"]["JournalEventOut"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+        };
+        /**
+         * JournalVisibility
+         * @enum {string}
+         */
+        JournalVisibility: "private" | "shared";
         /** LedgerPage */
         LedgerPage: {
             /** Items */
             items: components["schemas"]["TransactionOut"][];
             /** Next Cursor */
             next_cursor: string | null;
+        };
+        /** LifeBalanceOut */
+        LifeBalanceOut: {
+            /**
+             * Period
+             * @enum {string}
+             */
+            period: "7d" | "30d";
+            /**
+             * User
+             * @enum {string}
+             */
+            user: "me" | "companion";
+            /** Attributes */
+            attributes: components["schemas"]["AttributeScoreOut"][];
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionOut"][];
+            /** Balanced */
+            balanced: boolean;
         };
         /**
          * Locale
@@ -2144,6 +2344,49 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** StatsOut */
+        StatsOut: {
+            /**
+             * Period
+             * @enum {string}
+             */
+            period: "7d" | "30d" | "all";
+            /**
+             * Since
+             * Format: date
+             */
+            since: string;
+            /** Quests Completed */
+            quests_completed: number;
+            /** Quests Completed Total */
+            quests_completed_total: number;
+            /** Quests Completed Week */
+            quests_completed_week: number;
+            /** Quests Completed Month */
+            quests_completed_month: number;
+            /** Xp Total */
+            xp_total: number;
+            /** Xp Period */
+            xp_period: number;
+            /** Gold Earned */
+            gold_earned: number;
+            /** Gold Spent */
+            gold_spent: number;
+            /** Gold Earned Total */
+            gold_earned_total: number;
+            /** Gold Spent Total */
+            gold_spent_total: number;
+            /** Gold Balance */
+            gold_balance: number;
+            /** Rewards Purchased */
+            rewards_purchased: number;
+            /** Rewards Fulfilled */
+            rewards_fulfilled: number;
+            /** Xp Per Day */
+            xp_per_day: components["schemas"]["DayValue"][];
+            /** Quests Per Day */
+            quests_per_day: components["schemas"]["DayValue"][];
+        };
         /**
          * StreakOut
          * @description Consecutive completed days of a daily quest (display only).
@@ -2192,6 +2435,34 @@ export interface components {
             comment?: string | null;
             /** Attachment Id */
             attachment_id?: number | null;
+        };
+        /** SuggestionOut */
+        SuggestionOut: {
+            attribute: components["schemas"]["Attribute"];
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "no_activity" | "below_target";
+            /** Score */
+            score: number;
+        };
+        /**
+         * TargetsIn
+         * @description Weekly XP targets to set; attributes left out keep their current target.
+         */
+        TargetsIn: {
+            /** Targets */
+            targets: {
+                [key: string]: number;
+            };
+        };
+        /** TargetsOut */
+        TargetsOut: {
+            /** Targets */
+            targets: {
+                [key: string]: number;
+            };
         };
         /** TelegramAuthIn */
         TelegramAuthIn: {
@@ -2277,6 +2548,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** UnlockOut */
+        UnlockOut: {
+            /** Code */
+            code: string;
+            /**
+             * Unlocked At
+             * Format: date-time
+             */
+            unlocked_at: string;
         };
         /** UnreadCountOut */
         UnreadCountOut: {
@@ -2463,6 +2744,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_achievements_api_achievements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AchievementsOut"];
                 };
             };
         };
@@ -3107,6 +3408,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_journal_api_journal_get: {
+        parameters: {
+            query?: {
+                scope?: "me" | "shared";
+                cursor?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalPage"];
                 };
             };
             /** @description Validation Error */
@@ -4409,6 +4743,122 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_stats_api_stats_get: {
+        parameters: {
+            query?: {
+                period?: "7d" | "30d" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_life_balance_api_stats_life_balance_get: {
+        parameters: {
+            query?: {
+                period?: "7d" | "30d";
+                user?: "me" | "companion";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeBalanceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_targets_api_stats_life_balance_targets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetsOut"];
+                };
+            };
+        };
+    };
+    put_targets_api_stats_life_balance_targets_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TargetsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
