@@ -111,3 +111,6 @@
 - live.sh: start prints "Live stack is up" even if bot/sched died right away (bad token); re-check them after the health waits and fail or warn
 - live.sh: pid_matches for live-web/bot/sched matches any vite/bot/runner process (another worktree or the test stack); tie them to the live port or cwd like live-api
 - live.sh: no automated test for the rollback path or init.sh's local/remote dev-DB branch (checked by hand in review)
+- Deploy review: healthz engine has no connect timeout (asyncpg default 60 s = Railway healthcheckTimeout); add connect_args timeout ~5 s and/or asyncio.timeout around the check, since checks are now serialized
+- Deploy review: test_health covers only the success path; add cached-failure 503 and recovery-after-2s tests
+- Deploy review: test_jobs try_lead retry test should assert (caplog) the DB password never appears in logs

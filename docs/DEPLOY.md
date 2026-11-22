@@ -77,9 +77,9 @@ Defaults with `APP_ENV=prod` (nothing set): `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=0
 | scheduler overlap | 1 | 1 |
 | **Peak** | | **13** |
 
-This is a deliberately pessimistic sum (the migration runs before the new api starts, so the real peak is about 14), and it leaves ~2 for manual access (dashboard/psql/pg_dump).
+This is a deliberately pessimistic sum (the migration runs before the new api starts, so the real peak is about 12), and it leaves ~2 for manual access (dashboard/psql/pg_dump).
 
-**Check your pool size** in Supabase, Database, Settings, connection pooling (it depends on plan and compute size). If it is 15, the defaults leave ~2 for manual access (dashboard/psql/pg_dump); for more headroom set `SCHEDULER_MAX_CONCURRENT_JOBS=1` (peak 12). If it is larger, raise the numbers using the formula and keep the peak at or below the pool size minus about 3 for manual access, for example a pool size of 30 allows `DB_POOL_SIZE=6`, `DB_MAX_OVERFLOW=2`, `SCHEDULER_MAX_CONCURRENT_JOBS=3`: 2*8 + 3 + 4 + 1 = 24. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection, and scheduler jobs wait their turn.
+**Check your pool size** in Supabase, Database, Settings, connection pooling (it depends on plan and compute size). If it is 15, the defaults leave ~2 for manual access (dashboard/psql/pg_dump); for more headroom set `SCHEDULER_MAX_CONCURRENT_JOBS=1` (peak 12). If it is larger, raise the numbers using the formula and keep the peak at or below the pool size minus about 2 for manual access, for example a pool size of 30 allows `DB_POOL_SIZE=6`, `DB_MAX_OVERFLOW=2`, `SCHEDULER_MAX_CONCURRENT_JOBS=3`: 2*8 + 3 + 4 + 1 = 24. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection, and scheduler jobs wait their turn.
 
 **If you set `DB_POOL_SIZE`, `DB_MAX_OVERFLOW` or `SCHEDULER_MAX_CONCURRENT_JOBS` explicitly, you override these defaults and the 13 above no longer holds: recompute the peak with the formula before deploying.** Do not copy the dev values (10/10) into prod: 2 * 20 alone is 40.
 
