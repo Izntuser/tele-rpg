@@ -484,7 +484,7 @@
         "expire_occurrences moves active occurrences past due_at to expired and never touches in_review. The daily streak's current and best values update on confirm, and a missed day resets current.",
         "Pause and resume (creator only) stop and restart generation. pnpm e2e --grep @S13 pauses and resumes a daily quest in the Recurring tab, which shows the streak, and saves docs/screens/S13.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

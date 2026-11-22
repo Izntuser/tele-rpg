@@ -100,3 +100,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T00:42 REVIEW S13 -> stage-reviewer (round 1, @710c179; worker ran dod pieces by hand, ports held)
 2026-11-22T00:45 REVIEW S13 stage-reviewer: APPROVE (round 1; runner lock-loss notes as TODO)
 2026-11-22T00:48 PENDING-MARK S13 (merged; check-stage on main: unit/backend green, @S13 e2e fails because main api (no --reload) predates S13 routes; restart needs user, kill denied by auto mode)
+2026-11-22T01:55 MERGED S13 (check-stage --mark passed on main after user restarted stale stack; S01/S03-S11 recheck passed; 1 review round)
+2026-11-22T01:55 DISPATCH S12 -> stage-worker(opus) (medium, sensitive, ui, files/photo proof)
