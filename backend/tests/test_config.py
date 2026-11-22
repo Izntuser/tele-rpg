@@ -43,6 +43,7 @@ def test_defaults_are_dev_friendly(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.jwt_secret.get_secret_value() == DEV_JWT_SECRET
     assert s.tg_bot_token.get_secret_value() == DEV_TG_BOT_TOKEN
     assert s.db_pool_size == 10
+    assert s.db_max_overflow == 10
     assert s.difficulty_xp == {
         Difficulty.EASY: 20,
         Difficulty.NORMAL: 50,
@@ -212,3 +213,111 @@ def test_redacted_ctx_error_has_no_traceback(monkeypatch: pytest.MonkeyPatch) ->
         assert err.__traceback__ is None
         assert err.__cause__ is None and err.__context__ is None
         assert LEAK_JWT not in str(err) and LEAK_HOOK_SHORT not in str(err)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("postgres://u:p@h:5432/d", "postgresql+asyncpg://u:p@h:5432/d"),
+        ("postgresql://u:p@h:5432/d?x=1", "postgresql+asyncpg://u:p@h:5432/d?x=1"),
+        ("postgresql+asyncpg://u:p@h/d", "postgresql+asyncpg://u:p@h/d"),
+    ],
+)
+def test_database_url_is_normalized_to_asyncpg(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", raw)
+    assert Settings().database_url.get_secret_value() == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "postgres://u:p@h:5432/d?sslmode=require",
+            "postgresql+asyncpg://u:p@h:5432/d?ssl=require",
+        ),
+        ("postgresql://u:p@h/d?sslmode=disable", "postgresql+asyncpg://u:p@h/d?ssl=disable"),
+        (
+            "postgresql+asyncpg://u:p@h/d?x=1&sslmode=require&y=2",
+            "postgresql+asyncpg://u:p@h/d?x=1&ssl=require&y=2",
+        ),
+        ("postgresql://u:p@h/d?ssl=require", "postgresql+asyncpg://u:p@h/d?ssl=require"),
+        # ssl wins when both are present, in either order.
+        (
+            "postgresql://u:p@h/d?sslmode=disable&ssl=require",
+            "postgresql+asyncpg://u:p@h/d?ssl=require",
+        ),
+        (
+            "postgresql://u:p@h/d?ssl=require&sslmode=disable",
+            "postgresql+asyncpg://u:p@h/d?ssl=require",
+        ),
+        # only exact keys are touched; the password may contain "sslmode=".
+        (
+            "postgresql://u:sslmode=x@h/d?sslmodeX=1",
+            "postgresql+asyncpg://u:sslmode=x@h/d?sslmodeX=1",
+        ),
+        ("postgresql://u:p@h/d", "postgresql+asyncpg://u:p@h/d"),
+        # an unencoded "?" in the password does not start the query.
+        (
+            "postgresql://u:pa?ss@h/d?sslmode=require",
+            "postgresql+asyncpg://u:pa?ss@h/d?ssl=require",
+        ),
+        ("postgresql://u:pa?sslmode=x@h/d", "postgresql+asyncpg://u:pa?sslmode=x@h/d"),
+    ],
+)
+def test_database_url_sslmode_becomes_ssl(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", raw)
+    assert Settings().database_url.get_secret_value() == expected
+
+
+def test_db_max_overflow_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "2")
+    assert Settings().db_max_overflow == 2
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "0")
+    assert Settings().db_max_overflow == 0
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "-1")
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_prod_reports_every_missing_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The scheduler builds the same Settings, so it passes (or fails) the same guards."""
+    prod_env(monkeypatch, PUBLIC_BASE_URL="http://x", TG_BOT_USERNAME=None, TG_APP_SHORT_NAME=None)
+    with pytest.raises(ValidationError) as exc:
+        Settings()
+    for needle in ("PUBLIC_BASE_URL", "TG_BOT_USERNAME", "TG_APP_SHORT_NAME"):
+        assert needle in str(exc.value)
+
+
+def test_prod_pool_defaults_are_small_unless_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    prod_env(monkeypatch)
+    monkeypatch.delenv("DB_POOL_SIZE", raising=False)
+    monkeypatch.delenv("DB_MAX_OVERFLOW", raising=False)
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (3, 0)
+    monkeypatch.setenv("DB_POOL_SIZE", "10")
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 0)
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "2")
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 2)
+
+
+@pytest.mark.parametrize("env", ["development", "test"])
+def test_non_prod_pool_defaults_stay_10(monkeypatch: pytest.MonkeyPatch, env: str) -> None:
+    monkeypatch.setenv("APP_ENV", env)
+    monkeypatch.delenv("DB_POOL_SIZE", raising=False)
+    monkeypatch.delenv("DB_MAX_OVERFLOW", raising=False)
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 10)
+
+
+def test_scheduler_max_concurrent_jobs_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SCHEDULER_MAX_CONCURRENT_JOBS", raising=False)
+    assert Settings().scheduler_max_concurrent_jobs == 2
+    monkeypatch.setenv("SCHEDULER_MAX_CONCURRENT_JOBS", "0")
+    with pytest.raises(ValidationError):
+        Settings()

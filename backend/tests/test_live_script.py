@@ -45,6 +45,13 @@ def test_passing_config_masks_password(tmp_path: Path) -> None:
     assert REAL_TOKEN not in r.stdout + r.stderr
 
 
+@pytest.mark.parametrize("scheme", ["postgresql", "postgres"])
+def test_plain_postgres_scheme_passes(tmp_path: Path, scheme: str) -> None:
+    url = GOOD_URL.replace("postgresql+asyncpg", scheme)
+    r = run_check(tmp_path, DATABASE_URL=url, TG_BOT_TOKEN=REAL_TOKEN)
+    assert r.returncode == 0, r.stderr
+
+
 @pytest.mark.parametrize(
     ("env", "message"),
     [
@@ -58,17 +65,7 @@ def test_passing_config_masks_password(tmp_path: Path) -> None:
             "_e2e",
         ),
         ({"DATABASE_URL": GOOD_URL, "TG_BOT_TOKEN": FAKE_TOKEN}, "fake dev token"),
-        (
-            {"DATABASE_URL": GOOD_URL.replace("+asyncpg", ""), "TG_BOT_TOKEN": REAL_TOKEN},
-            "+asyncpg",
-        ),
-        (
-            {
-                "DATABASE_URL": GOOD_URL.replace("postgresql+asyncpg", "postgres"),
-                "TG_BOT_TOKEN": REAL_TOKEN,
-            },
-            "+asyncpg",
-        ),
+        ({"DATABASE_URL": "mysql://u:p@h/db", "TG_BOT_TOKEN": REAL_TOKEN}, "must start with"),
         (
             {"DATABASE_URL": GOOD_URL.replace(":5432", ":6543"), "TG_BOT_TOKEN": REAL_TOKEN},
             "6543",

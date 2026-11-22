@@ -352,12 +352,12 @@ Unpaired users can use profile, goals, wishlist, settings and manage-shop. The Q
 
 | Service | Details |
 |---|---|
-| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app`. Release command `alembic upgrade head`. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
-| `scheduler` | Same image, start command `python -m app.jobs.runner`. |
-| `postgres` | Railway Postgres 17 with built-in backups. |
+| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app`. `preDeployCommand` `alembic upgrade head`, health check `/healthz`, 1 replica. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
+| `scheduler` | Same image, start command `python -m app.jobs.runner`, 1 replica, no health check. |
+| database | Supabase Postgres (not a Railway service), via the session pooler (port 5432, `?ssl=require`); backups on the Supabase side. No Railway Postgres. |
 
 - HTTPS uses the Railway domain [ASSUMPTION: no custom domain initially].
-- Secrets live in Railway variables only.
+- Secrets live in Railway variables only. Config as code: `railway/api.json`, `railway/scheduler.json`. Step-by-step: [DEPLOY.md](DEPLOY.md).
 
 **CI** (`.github/workflows/ci.yml`, on PR and push to main)
 
@@ -384,7 +384,7 @@ e2e       playwright test   (playwright.config.ts starts api with APP_ENV=test +
 `/api` and `/healthz` to the live API via `API_PROXY_TARGET`/`VITE_DEV_PORT`), the bot and the
 scheduler, with `APP_ENV=development`. `check` validates only. `start` and `check` refuse:
 an unset `DATABASE_URL`; `DATABASE_URL` equal to `E2E_DATABASE_URL` or ending in `_e2e`; a scheme
-other than `postgresql+asyncpg://`; port 6543 (Supabase transaction pooler); an unset or fake
+other than `postgresql://`, `postgres://` or `postgresql+asyncpg://`; port 6543 (Supabase transaction pooler); an unset or fake
 `TG_BOT_TOKEN`; an unset `JWT_SECRET`, the dev default or one shorter than 32 characters
 (`openssl rand -hex 32`); non-numeric ports, ports outside 1024-65535, 8000/3000 (test stack) or
 `LIVE_API_PORT == LIVE_WEB_PORT`. `/api/test/reset` answers 404 outside `APP_ENV=test`.
@@ -393,7 +393,7 @@ other than `postgresql+asyncpg://`; port 6543 (Supabase transaction pooler); an 
 expansion (`$`, `&`, backticks, `$(...)` are literal). Blank lines and `#` lines are skipped, an
 optional `export ` prefix is accepted, one matching pair of surrounding single or double quotes is
 stripped, inline comments are not supported. Only known keys are read (database/e2e URLs, `TG_*`,
-`PUBLIC_BASE_URL`, `JWT_*`, `DB_POOL_SIZE`, `STORAGE_DIR`, `IMAGE_PROCESS_CONCURRENCY`,
+`PUBLIC_BASE_URL`, `JWT_*`, `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `STORAGE_DIR`, `IMAGE_PROCESS_CONCURRENCY`,
 `SENTRY_DSN`, `FRONTEND_DIST`, `LIVE_*_PORT`); `APP_ENV` is forced to `development`.
 
 Secrets: never printed. The DB password is masked (everything between `user:` and the last `@`),
@@ -407,9 +407,10 @@ unsets `VITE_DEV_PORT`/`API_PROXY_TARGET` before starting the test stack.
 Then: `ngrok http 3010`, set the URL in BotFather (Main App, Menu Button, Direct Link) and
 `PUBLIC_BASE_URL`, `live.sh stop && live.sh start`.
 
-Supabase notes: the URL must be `postgresql+asyncpg://` (Supabase shows `postgresql://`). The direct
-host (`db.<ref>.supabase.co:5432`) is IPv6-only; on an IPv4 network use the session pooler
-(`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.<ref>`). Never the transaction pooler
+Supabase notes: the app normalizes `postgres://` and `postgresql://` to `postgresql+asyncpg://` and
+`?sslmode=X` to `?ssl=X` (asyncpg has no `sslmode`; `ssl` wins if both are given). The direct
+host (`db.<ref>.supabase.co:5432`) is IPv6-only; use the session pooler
+(`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.<ref>`, `?ssl=require`). Never the transaction pooler
 (port 6543): asyncpg prepared statements and the session-level advisory lock (scheduler) break
 there. URL-encode special characters in the password (`@` is `%40`, `/` is `%2F`).
 

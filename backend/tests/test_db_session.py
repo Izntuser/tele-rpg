@@ -17,6 +17,7 @@ async def test_get_session_uses_configured_pooled_engine() -> None:
             == get_settings().database_url.get_secret_value()
         )
         assert engine.pool.size() == get_settings().db_pool_size  # type: ignore[attr-defined]
+        assert engine.pool._max_overflow == get_settings().db_max_overflow  # type: ignore[attr-defined]
         gen = get_session()
         session = await anext(gen)
         assert isinstance(session, AsyncSession)

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,6 +18,7 @@ from app.core.db import make_engine
 
 log = logging.getLogger(__name__)
 
+_HEALTH_TTL = 2.0  # seconds a /healthz DB result is reused
 _API_PREFIXES = ("api", "healthz", "tg", "docs", "openapi.json")
 # Invite tokens can sit in the SPA route (/invite/<token>); never leak them via Referer.
 _SPA_HEADERS = {"Referrer-Policy": "no-referrer"}
@@ -45,13 +48,25 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(title="tele-rpg", lifespan=lifespan)
     engine = make_engine()
+    # /healthz is public and uses NullPool (one new connection per check): serialize the DB check
+    # and reuse its result for a couple of seconds so parallel requests cannot exhaust the pooler.
+    health_gate = asyncio.Semaphore(1)
+    last_check: tuple[float, bool] = (-_HEALTH_TTL, False)
 
     @app.get("/healthz")
     async def healthz(response: Response) -> dict[str, str]:
-        try:
-            async with engine.connect() as conn:
-                await conn.execute(text("select 1"))
-        except Exception:
+        nonlocal last_check
+        async with health_gate:
+            checked_at, ok = last_check
+            if time.monotonic() - checked_at >= _HEALTH_TTL:
+                try:
+                    async with engine.connect() as conn:
+                        await conn.execute(text("select 1"))
+                    ok = True
+                except Exception:
+                    ok = False
+                last_check = (time.monotonic(), ok)
+        if not ok:
             response.status_code = 503
             return {"status": "error", "db": "error"}
         return {"status": "ok", "db": "ok"}

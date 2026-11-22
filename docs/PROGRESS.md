@@ -136,3 +136,19 @@ not done: live.sh start never run (needs real .env/Supabase).
 - live.sh: env line parser (no expansion), JWT/port refusals, mask to last '@', xtrace off around secrets, pid verification via ps before kill/trust, rollback of services on failed start. init.sh: dev-DB migration only for local DATABASE_URL, unsets VITE_DEV_PORT/API_PROXY_TARGET. Docs updated.
 - Exercised start/stop against a throwaway local DB on ports 8110/3110 (vite not installed in worktree, so the rollback path ran; all processes gone, DB dropped).
 - Left: init.sh/smoke.sh still source .env as shell (TODO).
+
+## 2026-11-22 TOOLING Railway deploy prep (pending review)
+done: railway/api.json + scheduler.json (Dockerfile build, preDeploy alembic, healthcheck, ON_FAILURE, 1 replica), uv pinned 0.13.9, STORAGE_DIR=/data/files + dir in image, root .dockerignore, uvicorn --proxy-headers, Settings normalizes postgres(ql):// to +asyncpg (alembic uses it via Settings), live.sh accepts plain postgresql://, docs/DEPLOY.md, ARCHITECTURE section 8 fixes. JWT prod guard already existed.
+verified: docker build, container /healthz ok + SPA 200 + alembic + runner against local Postgres (APP_ENV=development).
+left: nothing deployed; user follows docs/DEPLOY.md.
+
+## 2026-11-22 deploy-prep review fix-up round 2
+Supabase session pooler is now the primary DB path (DEPLOY.md, ARCHITECTURE s8); sslmode=X is translated to ssl=X in the URL normalizer (alembic shares it); new DB_MAX_OVERFLOW setting plus a connection budget in DEPLOY.md; first-deploy order, requiredMountPath, Photos volume note; railway configs validated against the vendored official schema (backend/tests/fixtures/railway.schema.json, fetched 2026-11-22).
+Verified alembic upgrade head in the built image against a throwaway local DB with ?sslmode=disable and ?ssl=disable. Left: nothing known; Supabase pool size and Railway CLI commands in DEPLOY.md must be checked by the user.
+
+## 2026-11-22 deploy-prep connection budget fix
+Scheduler jobs now take turns (SCHEDULER_MAX_CONCURRENT_JOBS, default 2, semaphore in Runner._run_job; leader-lock connection separate). With APP_ENV=prod and DB_POOL_SIZE / DB_MAX_OVERFLOW unset they default to 3 / 0 (dev/test stay 10/10). DEPLOY.md budget recomputed from code: peak 13 at defaults (api 9 + scheduler 4), with scaling guidance. Also: sslmode translation splits after the last "@", test_deploy_config schema caveat comment, DEPLOY.md step 2 note.
+Left: user must check the Supabase pool size; smoke not run here (ports may be held by other stacks).
+
+## 2026-11-22 deploy-prep connection budget round 2
+Prod DB_MAX_OVERFLOW default is now 0 (peak 13, ~2 left for manual access; DEPLOY.md and tests updated). /healthz serializes its DB check (semaphore) with a 2 s result cache, so parallel calls open at most one connection. Runner survives try_lead errors (logs the exception type only, retries on the retry interval); max_concurrent_jobs=0 is no longer treated as unset (validated >= 1).

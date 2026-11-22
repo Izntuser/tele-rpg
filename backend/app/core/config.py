@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Literal
 
-from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic import Field, SecretStr, ValidationError, field_validator, model_validator
 from pydantic_core import InitErrorDetails, PydanticCustomError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +14,49 @@ DEV_TG_BOT_TOKEN = "123456789:AAFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"
 MIN_PROD_JWT_SECRET_LEN = 32
 MIN_PROD_WEBHOOK_SECRET_LEN = 32
 HIDDEN_INPUT = "[hidden]"
+# Prod defaults sized for a ~15-connection Supabase session pooler (docs/DEPLOY.md budget).
+PROD_DB_POOL_SIZE = 3
+PROD_DB_MAX_OVERFLOW = 0
+
+
+def _translate_sslmode(raw: str) -> str:
+    """Rewrite ``sslmode=X`` to ``ssl=X`` in the query (asyncpg has no ``sslmode`` kwarg).
+
+    Other params and their order are kept. If ``ssl`` is also present it wins and ``sslmode``
+    is dropped. Credentials are never touched: the query starts at the first ``?`` after the
+    last ``@``, so an unencoded ``?`` in the password does not break it.
+    """
+    creds, at, rest = raw.rpartition("@")
+    base, sep, query = rest.partition("?")
+    if not sep:
+        return raw
+    base = creds + at + base
+    pairs = query.split("&")
+    has_ssl = any(p.split("=", 1)[0] == "ssl" for p in pairs)
+    out: list[str] = []
+    for pair in pairs:
+        key, eq, val = pair.partition("=")
+        if key == "sslmode":
+            if has_ssl:
+                continue
+            pair = f"ssl{eq}{val}"
+        out.append(pair)
+    return base + "?" + "&".join(out) if out else base
+
+
+def normalize_database_url(value: Any) -> Any:
+    """postgres(ql):// becomes postgresql+asyncpg:// and ``sslmode`` becomes ``ssl``.
+
+    Anything else is unchanged. Alembic reads the URL from Settings, so it gets the same form.
+    """
+    raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+    if not isinstance(raw, str):
+        return value
+    for prefix in ("postgres://", "postgresql://"):
+        if raw.startswith(prefix):
+            raw = "postgresql+asyncpg://" + raw[len(prefix) :]
+            break
+    return _translate_sslmode(raw)
 
 
 def _redact_validation_error(exc: ValidationError) -> ValidationError:
@@ -57,7 +100,14 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "test", "prod"] = "development"
     database_url: SecretStr = SecretStr(f"{_DB}/telerpg")
+    #: Pooled engine of the api process only (the scheduler, healthz and migrations use NullPool).
+    #: 10 in dev/test; PROD_DB_POOL_SIZE when APP_ENV=prod and not set explicitly.
     db_pool_size: int = Field(default=10, ge=1)
+    #: Extra connections above db_pool_size under load; 10 is SQLAlchemy's own default
+    #: (PROD_DB_MAX_OVERFLOW when APP_ENV=prod and not set explicitly).
+    db_max_overflow: int = Field(default=10, ge=0)
+    #: Jobs of the scheduler that may hold a DB session at once (each is one NullPool connection).
+    scheduler_max_concurrent_jobs: int = Field(default=2, ge=1)
 
     tg_bot_token: SecretStr = SecretStr(DEV_TG_BOT_TOKEN)
     tg_bot_username: str = ""
@@ -68,6 +118,7 @@ class Settings(BaseSettings):
     jwt_ttl_seconds: int = Field(default=24 * 3600, gt=0)
 
     public_base_url: str = "http://localhost:3000"
+    #: A volume mount in prod (the image sets STORAGE_DIR=/data/files).
     storage_dir: str = "./data/files"
     #: Uploads decoded at once per process (each decode can take ~100-200 MB).
     image_process_concurrency: int = Field(default=2, ge=1)
@@ -91,9 +142,19 @@ class Settings(BaseSettings):
             # Raised outside `except` so neither __cause__ nor __context__ keeps the raw input.
             raise redacted
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: Any) -> Any:
+        """Railway and Supabase hand out postgres:// or postgresql://; the app needs asyncpg."""
+        return normalize_database_url(value)
+
     @model_validator(mode="after")
     def _prod_guards(self) -> "Settings":
         if self.app_env == "prod":
+            if "db_pool_size" not in self.model_fields_set:
+                self.db_pool_size = PROD_DB_POOL_SIZE
+            if "db_max_overflow" not in self.model_fields_set:
+                self.db_max_overflow = PROD_DB_MAX_OVERFLOW
             errors = []
             jwt = self.jwt_secret.get_secret_value()
             if jwt == DEV_JWT_SECRET or len(jwt) < MIN_PROD_JWT_SECRET_LEN:
