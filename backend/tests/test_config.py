@@ -297,13 +297,13 @@ def test_prod_pool_defaults_are_small_unless_set(monkeypatch: pytest.MonkeyPatch
     monkeypatch.delenv("DB_POOL_SIZE", raising=False)
     monkeypatch.delenv("DB_MAX_OVERFLOW", raising=False)
     s = Settings()
-    assert (s.db_pool_size, s.db_max_overflow) == (3, 1)
+    assert (s.db_pool_size, s.db_max_overflow) == (3, 0)
     monkeypatch.setenv("DB_POOL_SIZE", "10")
     s = Settings()
-    assert (s.db_pool_size, s.db_max_overflow) == (10, 1)
-    monkeypatch.setenv("DB_MAX_OVERFLOW", "0")
-    s = Settings()
     assert (s.db_pool_size, s.db_max_overflow) == (10, 0)
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "2")
+    s = Settings()
+    assert (s.db_pool_size, s.db_max_overflow) == (10, 2)
 
 
 @pytest.mark.parametrize("env", ["development", "test"])

@@ -91,7 +91,13 @@ class Runner:
         self._retry = retry_seconds
         #: Bounds concurrent DB sessions (NullPool: one connection each) so the 6 jobs that all
         #: fire at startup do not exhaust a small pooler. The leader-lock connection is separate.
-        limit = max_concurrent_jobs or get_settings().scheduler_max_concurrent_jobs
+        limit = (
+            get_settings().scheduler_max_concurrent_jobs
+            if max_concurrent_jobs is None
+            else max_concurrent_jobs
+        )
+        if limit < 1:
+            raise ValueError("max_concurrent_jobs must be at least 1")
         self._slots = asyncio.Semaphore(limit)
         self._stop = asyncio.Event()
         #: True while this runner holds the lock and its scheduler is running.
@@ -114,7 +120,13 @@ class Runner:
     async def run(self) -> None:
         """Block until ``stop()``: wait for the leader lock, run the jobs while holding it."""
         while not self._stop.is_set():
-            conn = await try_lead(self._engine)
+            try:
+                conn = await try_lead(self._engine)
+            except Exception as exc:
+                # e.g. the pooler refused the connection; never log the URL or its password.
+                log.error("leader lock attempt failed (%s); retrying", type(exc).__name__)
+                await self._wait(self._retry)
+                continue
             if conn is None:
                 log.info("another runner holds the leader lock; waiting")
                 await self._wait(self._retry)

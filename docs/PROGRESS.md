@@ -147,5 +147,8 @@ Supabase session pooler is now the primary DB path (DEPLOY.md, ARCHITECTURE s8);
 Verified alembic upgrade head in the built image against a throwaway local DB with ?sslmode=disable and ?ssl=disable. Left: nothing known; Supabase pool size and Railway CLI commands in DEPLOY.md must be checked by the user.
 
 ## 2026-11-22 deploy-prep connection budget fix
-Scheduler jobs now take turns (SCHEDULER_MAX_CONCURRENT_JOBS, default 2, semaphore in Runner._run_job; leader-lock connection separate). With APP_ENV=prod and DB_POOL_SIZE / DB_MAX_OVERFLOW unset they default to 3 / 1 (dev/test stay 10/10). DEPLOY.md budget recomputed from code: peak 15 at defaults (api 11 + scheduler 4), with scaling guidance. Also: sslmode translation splits after the last "@", test_deploy_config schema caveat comment, DEPLOY.md step 2 note.
+Scheduler jobs now take turns (SCHEDULER_MAX_CONCURRENT_JOBS, default 2, semaphore in Runner._run_job; leader-lock connection separate). With APP_ENV=prod and DB_POOL_SIZE / DB_MAX_OVERFLOW unset they default to 3 / 0 (dev/test stay 10/10). DEPLOY.md budget recomputed from code: peak 13 at defaults (api 9 + scheduler 4), with scaling guidance. Also: sslmode translation splits after the last "@", test_deploy_config schema caveat comment, DEPLOY.md step 2 note.
 Left: user must check the Supabase pool size; smoke not run here (ports may be held by other stacks).
+
+## 2026-11-22 deploy-prep connection budget round 2
+Prod DB_MAX_OVERFLOW default is now 0 (peak 13, ~2 left for manual access; DEPLOY.md and tests updated). /healthz serializes its DB check (semaphore) with a 2 s result cache, so parallel calls open at most one connection. Runner survives try_lead errors (logs the exception type only, retries on the retry interval); max_concurrent_jobs=0 is no longer treated as unset (validated >= 1).

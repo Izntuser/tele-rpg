@@ -424,3 +424,38 @@ async def test_a_gap_then_an_expired_day_keeps_the_best_streak(
     frozen_clock.advance(timedelta(days=1))
     await expire_occurrences.run(session)
     assert await streak_of(session, template_id) == (0, 1)
+
+
+async def test_runner_survives_try_lead_errors_and_then_leads(
+    db_engine: AsyncEngine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.jobs import runner as runner_mod
+
+    real = runner_mod.try_lead
+    calls = 0
+
+    async def flaky(engine: AsyncEngine) -> Any:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ConnectionError("postgresql://u:secret@host/db refused")
+        return await real(engine)
+
+    monkeypatch.setattr(runner_mod, "try_lead", flaky)
+    runner = Runner(db_engine, make_sessionmaker(db_engine), {}, retry_seconds=0.05)
+    task = asyncio.create_task(runner.run())
+    try:
+        await eventually(lambda: runner.leading)
+        assert calls == 2
+    finally:
+        runner.stop()
+        await asyncio.wait_for(task, 5)
+
+
+def test_runner_rejects_zero_concurrency_and_honours_explicit_values(
+    db_engine: AsyncEngine,
+) -> None:
+    sessions = make_sessionmaker(db_engine)
+    with pytest.raises(ValueError):
+        Runner(db_engine, sessions, {}, max_concurrent_jobs=0)
+    Runner(db_engine, sessions, {}, max_concurrent_jobs=1)

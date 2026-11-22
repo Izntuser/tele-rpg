@@ -50,7 +50,7 @@ Supavisor in session mode refuses clients beyond the project's pool size (about 
 | Process | Connections | Source |
 |---|---|---|
 | `api` pooled engine | up to `DB_POOL_SIZE + DB_MAX_OVERFLOW` per instance | `app/db/session.py` |
-| `api` `/healthz` | 1 transient per instance (NullPool) | `app/main.py` |
+| `api` `/healthz` | at most 1 transient per instance (NullPool, serialized by a semaphore and a 2 s cache) | `app/main.py` |
 | `preDeploy` migration | 1 for a few seconds (NullPool) | `alembic upgrade head` |
 | `scheduler` leader lock | 1 held for the process lifetime | `try_lead` in `app/jobs/runner.py` |
 | `scheduler` jobs | up to `SCHEDULER_MAX_CONCURRENT_JOBS`, 1 each (NullPool) | semaphore in `Runner._run_job` |
@@ -66,22 +66,22 @@ scheduler = (1 + SCHEDULER_MAX_CONCURRENT_JOBS)     # leader lock + jobs
 peak      = api + scheduler
 ```
 
-Defaults with `APP_ENV=prod` (nothing set): `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=1`, `SCHEDULER_MAX_CONCURRENT_JOBS=2` (dev and test default to 10/10):
+Defaults with `APP_ENV=prod` (nothing set): `DB_POOL_SIZE=3`, `DB_MAX_OVERFLOW=0`, `SCHEDULER_MAX_CONCURRENT_JOBS=2` (dev and test default to 10/10):
 
 | Part | Formula | Connections |
 |---|---|---|
-| api pools (old + new) | 2 * (3 + 1) | 8 |
+| api pools (old + new) | 2 * (3 + 0) | 6 |
 | api healthz | 2 | 2 |
 | api migration | 1 | 1 |
 | scheduler lock + jobs | 1 + 2 | 3 |
 | scheduler overlap | 1 | 1 |
-| **Peak** | | **15** |
+| **Peak** | | **13** |
 
-This is a deliberately pessimistic sum (the migration runs before the new api starts, so the real peak is about 14), and it leaves no headroom for the Supabase dashboard or your own `psql`/`pg_dump`.
+This is a deliberately pessimistic sum (the migration runs before the new api starts, so the real peak is about 14), and it leaves ~2 for manual access (dashboard/psql/pg_dump).
 
-**Check your pool size** in Supabase, Database, Settings, connection pooling (it depends on plan and compute size). If it is 15, the defaults fit exactly; for headroom set `SCHEDULER_MAX_CONCURRENT_JOBS=1` (peak 14) or `DB_MAX_OVERFLOW=0` (peak 13). If it is larger, raise the numbers using the formula and keep the peak at or below the pool size minus about 3 for manual access, for example a pool size of 30 allows `DB_POOL_SIZE=6`, `DB_MAX_OVERFLOW=2`, `SCHEDULER_MAX_CONCURRENT_JOBS=3`: 2*8 + 3 + 4 + 1 = 24. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection, and scheduler jobs wait their turn.
+**Check your pool size** in Supabase, Database, Settings, connection pooling (it depends on plan and compute size). If it is 15, the defaults leave ~2 for manual access (dashboard/psql/pg_dump); for more headroom set `SCHEDULER_MAX_CONCURRENT_JOBS=1` (peak 12). If it is larger, raise the numbers using the formula and keep the peak at or below the pool size minus about 3 for manual access, for example a pool size of 30 allows `DB_POOL_SIZE=6`, `DB_MAX_OVERFLOW=2`, `SCHEDULER_MAX_CONCURRENT_JOBS=3`: 2*8 + 3 + 4 + 1 = 24. A small pool is safe for this app (at most 100 users, one worker); requests only wait briefly for a free connection, and scheduler jobs wait their turn.
 
-**If you set `DB_POOL_SIZE`, `DB_MAX_OVERFLOW` or `SCHEDULER_MAX_CONCURRENT_JOBS` explicitly, you override these defaults and the 15 above no longer holds: recompute the peak with the formula before deploying.** Do not copy the dev values (10/10) into prod: 2 * 20 alone is 40.
+**If you set `DB_POOL_SIZE`, `DB_MAX_OVERFLOW` or `SCHEDULER_MAX_CONCURRENT_JOBS` explicitly, you override these defaults and the 13 above no longer holds: recompute the peak with the formula before deploying.** Do not copy the dev values (10/10) into prod: 2 * 20 alone is 40.
 
 `DB_POOL_SIZE` and `DB_MAX_OVERFLOW` apply to the **api only** (the scheduler, healthz and migrations use NullPool). `SCHEDULER_MAX_CONCURRENT_JOBS` applies to the scheduler only. Set them per service, not in shared variables.
 
@@ -125,7 +125,7 @@ Both services refuse to start with `APP_ENV=prod` unless: real `TG_BOT_TOKEN`, `
 | `JWT_SECRET` | yes | yes | shared |
 | `PUBLIC_BASE_URL` | yes | yes | reference variables above, per service |
 | `DB_POOL_SIZE` | leave unset (prod default `3`) | unused | api only, see Connection budget |
-| `DB_MAX_OVERFLOW` | leave unset (prod default `1`) | unused | api only |
+| `DB_MAX_OVERFLOW` | leave unset (prod default `0`) | unused | api only |
 | `SCHEDULER_MAX_CONCURRENT_JOBS` | unused | leave unset (default `2`) | scheduler only, see Connection budget |
 | `STORAGE_DIR` | optional | optional | defaults to `/data/files` in the image; only api has the volume |
 | `SENTRY_DSN` | optional | optional | |

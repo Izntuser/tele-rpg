@@ -16,7 +16,7 @@ MIN_PROD_WEBHOOK_SECRET_LEN = 32
 HIDDEN_INPUT = "[hidden]"
 # Prod defaults sized for a ~15-connection Supabase session pooler (docs/DEPLOY.md budget).
 PROD_DB_POOL_SIZE = 3
-PROD_DB_MAX_OVERFLOW = 1
+PROD_DB_MAX_OVERFLOW = 0
 
 
 def _translate_sslmode(raw: str) -> str:
