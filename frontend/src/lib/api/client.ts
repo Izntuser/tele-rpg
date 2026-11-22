@@ -99,6 +99,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       method,
       headers: {
         Accept: 'application/json',
+        // ngrok's free tier answers browser requests with an HTML interstitial (200) unless
+        // this header is present; harmless on same-origin requests everywhere else.
+        'ngrok-skip-browser-warning': '1',
         // A multipart body sets its own Content-Type (with the boundary).
         ...(body === undefined || multipart ? {} : { 'Content-Type': 'application/json' }),
         ...headers,

@@ -79,6 +79,14 @@ describe('api client', () => {
     sessionStorage.clear();
   });
 
+  test('sends ngrok-skip-browser-warning on JSON and blob requests', async () => {
+    await client.get('/things');
+    await client.get<Blob>('/files/1', { responseType: 'blob' });
+    const sent = server.calls.filter((c) => c.url !== '/api/auth/telegram');
+    expect(sent).toHaveLength(2);
+    for (const call of sent) expect(headersOf(call).get('ngrok-skip-browser-warning')).toBe('1');
+  });
+
   test('a 2xx with a non-JSON body is an error, not data', async () => {
     const error = await client.get('/html').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);

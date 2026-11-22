@@ -104,3 +104,4 @@
 - S15 review: AchievementToast misses unlocks that land before the first achievements fetch (fold into server-side seen_at TODO)
 - S15 review: stats zone_of silently falls back to UTC on invalid timezone; document or log
 - Fullscreen launch mode: app reads safeAreaInset but not contentSafeAreaInset, so Telegram's fullscreen header buttons would overlap the top header; add content safe-area support before switching BotFather to Fullscreen
+- Dev tunnels: ngrok's free tier answers browser requests with a 200 HTML interstitial, so the client sends `ngrok-skip-browser-warning: 1` on every request and rejects a 2xx non-JSON body (ApiError NOT_JSON) instead of caching it.
