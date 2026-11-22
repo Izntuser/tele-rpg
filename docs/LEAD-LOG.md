@@ -147,3 +147,7 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T21:13 REVIEW TOOL-db-budget stage-reviewer round 2: APPROVE except DEPLOY.md:84 prose (14->12), fixed by lead on main (docs only)
 2026-11-22T21:16 MERGED TOOL-railway-deploy + TOOL-db-budget (lint, 1470 pytest, 249 vitest, smoke green on main)
 2026-11-22T21:23 DISPATCH TOOL-railway-ui -> stage-worker(sonnet) (Config as Code deprecated: dashboard setup)
+2026-11-22T21:30 REVIEW TOOL-railway-ui -> stage-reviewer (@26417d4)
+2026-11-22T21:35 REVIEW TOOL-railway-ui stage-reviewer: REQUEST CHANGES (guard on RAILWAY_VOLUME_MOUNT_PATH not ismount; Root Directory empty; stale comment) -> round 2 stage-worker(sonnet)
+2026-11-22T21:39 REVIEW TOOL-railway-ui -> stage-reviewer (round 2, @8b4c082)
+2026-11-22T21:42 REVIEW TOOL-railway-ui stage-reviewer round 2: APPROVE (vitest 249, pytest 1472)
