@@ -117,6 +117,31 @@ test('@P0 @S11 the core loop: onboard, pair, quest, gold, reward, fulfilled', as
     await pageB.reload();
     await expect(pageB.getByTestId('voucher-group-fulfilled')).toContainText('Movie night');
     await expect(pageB.getByTestId('voucher-status')).toHaveText('Fulfilled');
+
+    // 9. The journal shows every event: the shared scope holds both sides of the loop.
+    await pageB.getByTestId('nav-stats').click();
+    await pageB.getByTestId('stats-journal-link').click();
+    await expect(pageB.getByTestId('page-journal')).toBeVisible();
+    const event = (type: string, actor: 'me' | 'companion') =>
+      pageB.locator(`[data-testid="journal-event"][data-type="${type}"][data-actor="${actor}"]`);
+    await expect(event('quest_completed', 'me')).toContainText('Quest completed: Morning run (+50 XP, +50 Gold)');
+    for (const type of ['quest_accepted', 'quest_submitted', 'reward_purchased', 'reward_requested']) {
+      await expect(event(type, 'me'), type).toHaveCount(1);
+    }
+    await pageB.getByTestId('journal-scope-shared').click();
+    for (const [type, actor] of [
+      ['quest_offered', 'companion'],
+      ['quest_accepted', 'me'],
+      ['quest_submitted', 'me'],
+      ['quest_completed', 'me'],
+      ['reward_created', 'companion'],
+      ['reward_purchased', 'me'],
+      ['reward_requested', 'me'],
+      ['reward_scheduled', 'companion'],
+      ['reward_fulfilled', 'companion'],
+    ] as const) {
+      await expect(event(type, actor), `${type} by ${actor}`).toHaveCount(1);
+    }
   } finally {
     await contextB.close();
   }

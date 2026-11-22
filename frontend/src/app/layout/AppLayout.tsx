@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '../../features/auth/context';
 import { NotificationBell } from '../../features/notifications/NotificationBell';
+import { AchievementToaster } from '../../features/stats/AchievementToast';
 import {
   FIRST_ENTRY_STATE,
   ONBOARDING_PATH,
@@ -113,6 +114,7 @@ export function AppLayout() {
       <main className="mx-auto max-w-md">
         {mustOnboard ? <Navigate to={onboardingTarget} replace state={FIRST_ENTRY_STATE} /> : <Outlet />}
       </main>
+      {showBell ? <AchievementToaster /> : null}
       {showNav ? <BottomNav /> : null}
     </div>
   );

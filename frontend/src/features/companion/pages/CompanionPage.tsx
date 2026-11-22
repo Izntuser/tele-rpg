@@ -5,6 +5,7 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { useCompanion, usePartnership, type CompanionProfile } from '../../partnership/api';
 import { CompanionCardView } from '../../partnership/CompanionCardView';
 import { InvitePanel } from '../../partnership/InvitePanel';
+import { LifeBalanceSection } from '../LifeBalanceSection';
 
 function Profile({ profile }: { profile: CompanionProfile }) {
   const { t } = useTranslation('partnership');
@@ -41,7 +42,9 @@ function Profile({ profile }: { profile: CompanionProfile }) {
         </ul>
       </section>
 
-      <section aria-labelledby="companion-goals" className="flex flex-col gap-2">
+      <LifeBalanceSection />
+
+      <section aria-labelledby="companion-goals"className="flex flex-col gap-2">
         <h2 id="companion-goals" className="text-sm font-semibold text-muted">
           {t('companion.goals')}
         </h2>
