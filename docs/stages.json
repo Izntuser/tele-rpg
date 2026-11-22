@@ -448,7 +448,7 @@
         "Avatar upload (onboarding and character), reward image (manage shop) and quest photo proof (submit form, compressed client-side with browser-image-compression) all work. A photo_required quest cannot be submitted without a photo.",
         "pnpm e2e --grep @S12: B submits a photo-required quest with a fixture image, and A sees the photo on the quest detail page. The test saves docs/screens/S12.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },

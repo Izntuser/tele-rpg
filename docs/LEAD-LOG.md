@@ -110,3 +110,5 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T02:33 REVIEW S12 stage-reviewer(opus,security) round 2: APPROVE (3 TODOs: double-cancel frees semaphore slot early, progressive JPEG memory/CPU, route-level deletion-during-read test; awaiting stage-reviewer)
 2026-11-22T02:37 REVIEW S12 stage-reviewer round 2: APPROVE (fixture isolation verified, suite x2 green)
 2026-11-22T02:37 PENDING-MARK S12 (merged @fb0edc6; main api pid 14907 predates S12 routes; awaiting user restart)
+2026-11-22T08:50 MERGED S12 (check-stage --mark passed on main after user restart; S01/S03-S11/S13 recheck passed; 2 review rounds; codex unavailable -> opus security)
+2026-11-22T08:50 DISPATCH S14 -> stage-worker(opus) (high, normal, ui, bot+notifications)
