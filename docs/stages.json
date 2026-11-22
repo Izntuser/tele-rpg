@@ -570,7 +570,7 @@
         "e2e/core-loop.spec.ts is extended with ARCHITECTURE §10 step 9: the journal shows every event.",
         "e2e/p1-features.spec.ts, tagged @P1 @S15, covers life balance, journal, an achievement toast, photo submit, goals, wishlist→reward, the notification inbox, and switching the language to uk. pnpm e2e --grep @S15 saves docs/screens/S15.png of Stats."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     }

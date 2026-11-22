@@ -122,3 +122,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T11:23 REVIEW S15 -> stage-reviewer (round 1, @909be06 on worktree-agent-a6d9b6467e8d786de; worker could not use old worktree)
 2026-11-22T11:31 REVIEW S15 stage-reviewer: APPROVE (round 1; 5 minor TODOs)
 2026-11-22T11:34 PENDING-MARK S15 (merged @39f4178; main api pid 55955 started 09:35 predates S15 routes (/api/achievements 404); @P0/@P1 e2e fail on toast; awaiting user restart)
+2026-11-22T12:24 MERGED S15 (check-stage --mark passed on main after user restart; S01/S03-S14 recheck passed; screenshots refreshed; 1 review round, 2 worker runs)
