@@ -103,3 +103,4 @@
 - S15 review: journal before_commit listener registered via import side effect at end of journal/service.py; register explicitly at app/session setup
 - S15 review: AchievementToast misses unlocks that land before the first achievements fetch (fold into server-side seen_at TODO)
 - S15 review: stats zone_of silently falls back to UTC on invalid timezone; document or log
+- Fullscreen launch mode: app reads safeAreaInset but not contentSafeAreaInset, so Telegram's fullscreen header buttons would overlap the top header; add content safe-area support before switching BotFather to Fullscreen
