@@ -527,7 +527,7 @@
         "The inbox API supports a cursor list, read, read-all, PATCH preferences and write-access. The UI has the /notifications page, an unread bell in the header, and a notification section in Settings with categories, quiet hours, daily summary and enabling bot messages via requestWriteAccess.",
         "pnpm e2e --grep @S14: after A offers a quest, B sees an inbox item, taps it, and lands on the quest detail. The test saves docs/screens/S14.png."
       ],
-      "passes": false,
+      "passes": true,
       "attempts": 0,
       "blocked_reason": null
     },
