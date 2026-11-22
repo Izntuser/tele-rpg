@@ -114,3 +114,4 @@
 - Deploy review: healthz engine has no connect timeout (asyncpg default 60 s = Railway healthcheckTimeout); add connect_args timeout ~5 s and/or asyncio.timeout around the check, since checks are now serialized
 - Deploy review: test_health covers only the success path; add cached-failure 503 and recovery-after-2s tests
 - Deploy review: test_jobs try_lead retry test should assert (caplog) the DB password never appears in logs
+- Volume guard: _on_railway() matches any RAILWAY_* var (also RAILWAY_TOKEN in CI or railway run); key on RAILWAY_PROJECT_ID/RAILWAY_ENVIRONMENT_ID instead
