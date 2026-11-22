@@ -152,3 +152,10 @@ Left: user must check the Supabase pool size; smoke not run here (ports may be h
 
 ## 2026-11-22 deploy-prep connection budget round 2
 Prod DB_MAX_OVERFLOW default is now 0 (peak 13, ~2 left for manual access; DEPLOY.md and tests updated). /healthz serializes its DB check (semaphore) with a 2 s result cache, so parallel calls open at most one connection. Runner survives try_lead errors (logs the exception type only, retries on the retry interval); max_concurrent_jobs=0 is no longer treated as unset (validated >= 1).
+
+## 2026-11-22 TOOLING Railway: dashboard-only setup (Config as Code deprecated)
+Removed railway/*.json and the vendored schema; test_deploy_config now checks .dockerignore, Dockerfile CMD (PORT, proxy headers), STORAGE_DIR, pinned uv; dropped jsonschema dev deps. DEPLOY.md rewritten for dashboard settings + RAILWAY_DOCKERFILE_PATH. New api prod startup guard (app/storage/guard.py, STORAGE_ALLOW_EPHEMERAL) replaces requiredMountPath. ARCHITECTURE s8 updated.
+left: user must create the volume at /data/files before first deploy; Railway IaC to be revisited.
+
+## 2026-11-22 deploy review round 2
+Storage guard now keys off RAILWAY_VOLUME_MOUNT_PATH == STORAGE_DIR (mismatch / no volume on Railway fail; off Railway only warns on non-mount). Tests, Dockerfile comment, DEPLOY.md (root dir, guard, pre-deploy, no-overlap note) updated.

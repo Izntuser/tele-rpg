@@ -120,6 +120,9 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:3000"
     #: A volume mount in prod (the image sets STORAGE_DIR=/data/files).
     storage_dir: str = "./data/files"
+    #: Prod api only: allow STORAGE_DIR to be a plain directory (not a mounted volume). Uploads are
+    #: then lost on every redeploy; leave unset on Railway.
+    storage_allow_ephemeral: bool = False
     #: Uploads decoded at once per process (each decode can take ~100-200 MB).
     image_process_concurrency: int = Field(default=2, ge=1)
     sentry_dsn: str = ""
