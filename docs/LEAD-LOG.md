@@ -146,3 +146,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T21:09 REVIEW TOOL-db-budget -> stage-reviewer (round 2, @c9f13ba)
 2026-11-22T21:13 REVIEW TOOL-db-budget stage-reviewer round 2: APPROVE except DEPLOY.md:84 prose (14->12), fixed by lead on main (docs only)
 2026-11-22T21:16 MERGED TOOL-railway-deploy + TOOL-db-budget (lint, 1470 pytest, 249 vitest, smoke green on main)
+2026-11-22T21:23 DISPATCH TOOL-railway-ui -> stage-worker(sonnet) (Config as Code deprecated: dashboard setup)
