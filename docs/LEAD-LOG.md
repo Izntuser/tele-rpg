@@ -152,3 +152,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T21:39 REVIEW TOOL-railway-ui -> stage-reviewer (round 2, @8b4c082)
 2026-11-22T21:42 REVIEW TOOL-railway-ui stage-reviewer round 2: APPROVE (vitest 249, pytest 1472)
 2026-11-22T21:45 MERGED TOOL-railway-ui (lint, 1472 pytest, 249 vitest, smoke green on main)
+2026-11-22T23:11 DISPATCH TOOL-logging -> stage-worker(sonnet) (Railway marks stderr INFO as error)
