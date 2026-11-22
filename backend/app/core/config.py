@@ -16,15 +16,41 @@ MIN_PROD_WEBHOOK_SECRET_LEN = 32
 HIDDEN_INPUT = "[hidden]"
 
 
+def _translate_sslmode(raw: str) -> str:
+    """Rewrite ``sslmode=X`` to ``ssl=X`` in the query (asyncpg has no ``sslmode`` kwarg).
+
+    Other params and their order are kept. If ``ssl`` is also present it wins and ``sslmode``
+    is dropped. Text before the ``?`` (including the password) is never touched.
+    """
+    base, sep, query = raw.partition("?")
+    if not sep:
+        return raw
+    pairs = query.split("&")
+    has_ssl = any(p.split("=", 1)[0] == "ssl" for p in pairs)
+    out: list[str] = []
+    for pair in pairs:
+        key, eq, val = pair.partition("=")
+        if key == "sslmode":
+            if has_ssl:
+                continue
+            pair = f"ssl{eq}{val}"
+        out.append(pair)
+    return base + "?" + "&".join(out) if out else base
+
+
 def normalize_database_url(value: Any) -> Any:
-    """postgres:// and postgresql:// become postgresql+asyncpg://; anything else is unchanged."""
+    """postgres(ql):// becomes postgresql+asyncpg:// and ``sslmode`` becomes ``ssl``.
+
+    Anything else is unchanged. Alembic reads the URL from Settings, so it gets the same form.
+    """
     raw = value.get_secret_value() if isinstance(value, SecretStr) else value
     if not isinstance(raw, str):
         return value
     for prefix in ("postgres://", "postgresql://"):
         if raw.startswith(prefix):
-            return "postgresql+asyncpg://" + raw[len(prefix) :]
-    return raw
+            raw = "postgresql+asyncpg://" + raw[len(prefix) :]
+            break
+    return _translate_sslmode(raw)
 
 
 def _redact_validation_error(exc: ValidationError) -> ValidationError:
@@ -68,7 +94,10 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "test", "prod"] = "development"
     database_url: SecretStr = SecretStr(f"{_DB}/telerpg")
+    #: Pooled engine of the api process only (the scheduler, healthz and migrations use NullPool).
     db_pool_size: int = Field(default=10, ge=1)
+    #: Extra connections above db_pool_size under load; 10 is SQLAlchemy's own default.
+    db_max_overflow: int = Field(default=10, ge=0)
 
     tg_bot_token: SecretStr = SecretStr(DEV_TG_BOT_TOKEN)
     tg_bot_username: str = ""

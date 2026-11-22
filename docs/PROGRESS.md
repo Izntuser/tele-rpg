@@ -141,3 +141,7 @@ not done: live.sh start never run (needs real .env/Supabase).
 done: railway/api.json + scheduler.json (Dockerfile build, preDeploy alembic, healthcheck, ON_FAILURE, 1 replica), uv pinned 0.13.9, STORAGE_DIR=/data/files + dir in image, root .dockerignore, uvicorn --proxy-headers, Settings normalizes postgres(ql):// to +asyncpg (alembic uses it via Settings), live.sh accepts plain postgresql://, docs/DEPLOY.md, ARCHITECTURE section 8 fixes. JWT prod guard already existed.
 verified: docker build, container /healthz ok + SPA 200 + alembic + runner against local Postgres (APP_ENV=development).
 left: nothing deployed; user follows docs/DEPLOY.md.
+
+## 2026-11-22 deploy-prep review fix-up round 2
+Supabase session pooler is now the primary DB path (DEPLOY.md, ARCHITECTURE s8); sslmode=X is translated to ssl=X in the URL normalizer (alembic shares it); new DB_MAX_OVERFLOW setting plus a connection budget in DEPLOY.md; first-deploy order, requiredMountPath, Photos volume note; railway configs validated against the vendored official schema (backend/tests/fixtures/railway.schema.json, fetched 2026-11-22).
+Verified alembic upgrade head in the built image against a throwaway local DB with ?sslmode=disable and ?ssl=disable. Left: nothing known; Supabase pool size and Railway CLI commands in DEPLOY.md must be checked by the user.

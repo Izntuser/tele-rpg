@@ -15,7 +15,7 @@ DEV_JWT_SECRET="dev-jwt-secret-change-me"
 # Keys taken from the env file (everything else is ignored): what this script needs plus the
 # Settings fields of backend/app/core/config.py the app reads from the environment.
 # APP_ENV is deliberately absent: the live stack always runs development.
-ENV_KEYS=" DATABASE_URL E2E_DATABASE_URL TG_BOT_TOKEN TG_BOT_USERNAME TG_APP_SHORT_NAME TG_WEBHOOK_SECRET PUBLIC_BASE_URL JWT_SECRET JWT_TTL_SECONDS LIVE_API_PORT LIVE_WEB_PORT DB_POOL_SIZE STORAGE_DIR IMAGE_PROCESS_CONCURRENCY SENTRY_DSN FRONTEND_DIST "
+ENV_KEYS=" DATABASE_URL E2E_DATABASE_URL TG_BOT_TOKEN TG_BOT_USERNAME TG_APP_SHORT_NAME TG_WEBHOOK_SECRET PUBLIC_BASE_URL JWT_SECRET JWT_TTL_SECONDS LIVE_API_PORT LIVE_WEB_PORT DB_POOL_SIZE DB_MAX_OVERFLOW STORAGE_DIR IMAGE_PROCESS_CONCURRENCY SENTRY_DSN FRONTEND_DIST "
 
 # xtrace off while handling secrets; the caller restores it with xt_restore.
 xt_off() { XT_WAS=0; case $- in *x*) XT_WAS=1 ;; esac; { set +x; } 2>/dev/null; }
@@ -77,7 +77,8 @@ check_config() {
   local url="${DATABASE_URL:-}"
   [ -n "$url" ] || fail "DATABASE_URL is not set"
   case "$url" in
-    # The app normalizes postgres:// and postgresql:// to +asyncpg (Settings), so all pass.
+    # The app normalizes postgres:// and postgresql:// to +asyncpg and ?sslmode= to ?ssl=
+    # (Settings), so every form passes; query params are never inspected here.
     postgresql+asyncpg://* | postgresql://* | postgres://*) ;;
     *) fail "DATABASE_URL must start with postgresql://, postgres:// or postgresql+asyncpg://" ;;
   esac

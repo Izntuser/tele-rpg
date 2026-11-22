@@ -1,16 +1,40 @@
 import json
+import shlex
 from pathlib import Path
 from typing import Any
 
+import jsonschema
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+# Vendored copy of https://railway.com/railway.schema.json (redirects to backboard.railway.app),
+# fetched 2026-11-22. Refresh it by re-downloading when Railway changes the schema.
+SCHEMA = json.loads((Path(__file__).parent / "fixtures" / "railway.schema.json").read_text())
 
 
 def load(name: str) -> dict[str, Any]:
     data = json.loads((ROOT / "railway" / f"{name}.json").read_text())
     assert isinstance(data, dict)
     return data
+
+
+@pytest.mark.parametrize("name", ["api", "scheduler"])
+def test_railway_config_matches_the_official_schema(name: str) -> None:
+    jsonschema.validate(load(name), SCHEMA)
+
+
+def test_api_start_command_parses_and_serves_behind_the_proxy() -> None:
+    parts = shlex.split(load("api")["deploy"]["startCommand"])
+    assert parts[:2] == ["sh", "-c"]
+    inner = parts[2]
+    assert "--proxy-headers" in shlex.split(inner)
+    assert "$PORT" in inner or "${PORT" in inner
+
+
+def test_api_requires_the_photos_volume() -> None:
+    assert load("api")["deploy"]["requiredMountPath"] == "/data/files"
 
 
 @pytest.mark.parametrize("name", ["api", "scheduler"])

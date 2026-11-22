@@ -43,6 +43,7 @@ def test_defaults_are_dev_friendly(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.jwt_secret.get_secret_value() == DEV_JWT_SECRET
     assert s.tg_bot_token.get_secret_value() == DEV_TG_BOT_TOKEN
     assert s.db_pool_size == 10
+    assert s.db_max_overflow == 10
     assert s.difficulty_xp == {
         Difficulty.EASY: 20,
         Difficulty.NORMAL: 50,
@@ -227,6 +228,53 @@ def test_database_url_is_normalized_to_asyncpg(
 ) -> None:
     monkeypatch.setenv("DATABASE_URL", raw)
     assert Settings().database_url.get_secret_value() == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "postgres://u:p@h:5432/d?sslmode=require",
+            "postgresql+asyncpg://u:p@h:5432/d?ssl=require",
+        ),
+        ("postgresql://u:p@h/d?sslmode=disable", "postgresql+asyncpg://u:p@h/d?ssl=disable"),
+        (
+            "postgresql+asyncpg://u:p@h/d?x=1&sslmode=require&y=2",
+            "postgresql+asyncpg://u:p@h/d?x=1&ssl=require&y=2",
+        ),
+        ("postgresql://u:p@h/d?ssl=require", "postgresql+asyncpg://u:p@h/d?ssl=require"),
+        # ssl wins when both are present, in either order.
+        (
+            "postgresql://u:p@h/d?sslmode=disable&ssl=require",
+            "postgresql+asyncpg://u:p@h/d?ssl=require",
+        ),
+        (
+            "postgresql://u:p@h/d?ssl=require&sslmode=disable",
+            "postgresql+asyncpg://u:p@h/d?ssl=require",
+        ),
+        # only exact keys are touched; the password may contain "sslmode=".
+        (
+            "postgresql://u:sslmode=x@h/d?sslmodeX=1",
+            "postgresql+asyncpg://u:sslmode=x@h/d?sslmodeX=1",
+        ),
+        ("postgresql://u:p@h/d", "postgresql+asyncpg://u:p@h/d"),
+    ],
+)
+def test_database_url_sslmode_becomes_ssl(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", raw)
+    assert Settings().database_url.get_secret_value() == expected
+
+
+def test_db_max_overflow_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "2")
+    assert Settings().db_max_overflow == 2
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "0")
+    assert Settings().db_max_overflow == 0
+    monkeypatch.setenv("DB_MAX_OVERFLOW", "-1")
+    with pytest.raises(ValidationError):
+        Settings()
 
 
 def test_prod_reports_every_missing_setting(monkeypatch: pytest.MonkeyPatch) -> None:
