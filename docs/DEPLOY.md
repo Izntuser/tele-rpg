@@ -1,30 +1,51 @@
 # Deploy to Railway (Hobby) with Supabase Postgres
 
 Two Railway services from one image (`backend/Dockerfile`, built from the repo root): `api` and `scheduler`.
-The database is Supabase Postgres; there is no Railway Postgres (see the short appendix). Config lives in
-`railway/api.json` and `railway/scheduler.json`.
+The database is Supabase Postgres; there is no Railway Postgres (see the short appendix). Everything is configured
+in the Railway dashboard; the repo holds no Railway config files.
+
+**Why not Config as Code or Infrastructure as Code.** Railway deprecated Config as Code (existing files work until
+2026-12-01; from 2026-08-28 services that never used it cannot opt in), and our services are new. Railway's new
+Infrastructure as Code (`.railway/railway.ts`, `railway config plan/apply`) documents no field for a Dockerfile
+builder or a restart policy as of 2026-11-22, so we do not adopt it now. Revisit when it does.
 
 ## 1. First-deploy order
 
 Do these in order; the first deploy must see a complete configuration.
 
 1. Railway: New Project, **Empty Project**. Add two **empty services** (not from the repo yet): `api` and `scheduler`.
-2. For each, Settings, "Config-as-code path" (Railway Config File): `/railway/api.json` for `api`, `/railway/scheduler.json` for `scheduler`.
-   If Railway's UI does not show the config-as-code path before a repo is connected, set it right after connecting the repo in step 6 and redeploy.
-3. `api`: Settings, Networking, **Generate Domain**. The scheduler gets no public domain.
-4. `api`: add the volume (section 3).
-5. Set **all variables** on both services (section 4), including `PUBLIC_BASE_URL` via the reference variables below.
-6. Only now connect the GitHub repo to each service (Settings, Source) and deploy.
+2. Per-service settings and `RAILWAY_DOCKERFILE_PATH` (list below).
+3. `api`: Settings, Networking, **Generate Domain**; add the volume (section 3). The scheduler gets no domain and no volume.
+4. Set **all variables** on both services (section 4), including `PUBLIC_BASE_URL` via the reference variables below.
+5. Only now connect the GitHub repo to each service (Settings, Source) and deploy.
 
-Why: `preDeployCommand` (`alembic upgrade head`) loads the same prod `Settings` guards as the app, so every prod
+Why: the pre-deploy command (`alembic upgrade head`) loads the same prod `Settings` guards as the app, so every prod
 variable (`DATABASE_URL`, `JWT_SECRET`, `TG_*`, `PUBLIC_BASE_URL`, ...) must already exist before the first deploy,
 or the pre-deploy step fails and the release never starts.
 
-Other settings in the config files:
+### Dashboard settings
 
-- **Exactly 1 replica each** (`numReplicas: 1`; do not scale up). The scheduler takes a Postgres advisory lock, so extra replicas would only idle. The API keeps in-process state (image-decode semaphores, rate limiters, the post-commit notification dispatcher), so a second replica would split that state.
-- `api` runs `alembic upgrade head` as `preDeployCommand` before each release and is health-checked on `/healthz`. `scheduler` has neither.
-- `requiredMountPath: "/data/files"` (api only): Railway refuses to deploy `api` unless a volume is mounted at that path. This turns "forgot the volume, uploads vanish on every deploy" into a failed deploy instead of silent data loss.
+**Both services**
+
+- Variable `RAILWAY_DOCKERFILE_PATH=backend/Dockerfile` (Railway's documented way to use a Dockerfile outside the repo root; the build context stays the repo root, which the Dockerfile expects).
+- Source: this repo, branch `main` (connect it last, step 5).
+- Replicas: **1**. The scheduler takes a Postgres advisory lock, so extra replicas would only idle. The API keeps in-process state (image-decode semaphores, rate limiters, the post-commit notification dispatcher), so a second replica would split it.
+
+**api**
+
+- Custom start command: none (the Dockerfile `CMD` already runs uvicorn on `$PORT` with the proxy headers).
+- Pre-deploy command: `alembic upgrade head`.
+- Healthcheck path: `/healthz`, timeout `60`.
+- Restart policy: On Failure, max retries `10`.
+- Volume mounted at `/data/files`. **Nothing in Railway enforces this any more.** Without the volume, uploads silently disappear on every redeploy. **Verify the volume exists and its mount path is exactly `/data/files` before the first deploy.** As a backstop the api refuses to start with `APP_ENV=prod` if `STORAGE_DIR` is missing, not writable or not a mount point (escape hatch: `STORAGE_ALLOW_EPHEMERAL=true`, which accepts losing uploads; leave it unset). A failed start shows as a crash loop with `StorageVolumeError` in the logs.
+- Networking: Generate Domain.
+
+**scheduler**
+
+- Custom start command: `python -m app.jobs.runner`.
+- No healthcheck, no pre-deploy command.
+- Restart policy: On Failure.
+- No domain, no volume.
 
 ## 2. Database: Supabase (session pooler)
 
@@ -91,7 +112,7 @@ If you do not want Supabase: add the Railway Postgres plugin and set `DATABASE_U
 
 ## 3. Volume and domain
 
-- Volume on `api` only, mount path `/data/files` (the image sets `STORAGE_DIR=/data/files`; `requiredMountPath` enforces it).
+- Volume on `api` only, mount path `/data/files` (the image sets `STORAGE_DIR=/data/files`; the api startup check enforces the mount in prod, see above).
 - Public domain for `api` only (generated in step 3 of the first-deploy order).
 
 ### Photos volume
@@ -128,6 +149,8 @@ Both services refuse to start with `APP_ENV=prod` unless: real `TG_BOT_TOKEN`, `
 | `DB_MAX_OVERFLOW` | leave unset (prod default `0`) | unused | api only |
 | `SCHEDULER_MAX_CONCURRENT_JOBS` | unused | leave unset (default `2`) | scheduler only, see Connection budget |
 | `STORAGE_DIR` | optional | optional | defaults to `/data/files` in the image; only api has the volume |
+| `STORAGE_ALLOW_EPHEMERAL` | leave unset | unused | `true` skips the api's mounted-volume check (uploads then lost on redeploy) |
+| `RAILWAY_DOCKERFILE_PATH` | `backend/Dockerfile` | `backend/Dockerfile` | build setting, see Dashboard settings |
 | `SENTRY_DSN` | optional | optional | |
 | `PORT` | set by Railway | unused | |
 
@@ -150,7 +173,7 @@ Then send `/start` to the prod bot, open the app from the menu button, log in, c
 
 ## 8. Proxy notes
 
-Railway terminates TLS at its proxy. The start command runs uvicorn with `--proxy-headers --forwarded-allow-ips='*'` so `request.client` (the login rate-limit key) is the real client IP, not the proxy's. Trade-off: with `*` the app trusts `X-Forwarded-For` from any peer, but the container is only reachable through Railway's proxy, and the worst a spoofed header does is rotate the login rate-limit bucket (login still needs valid signed initData). Upload and write limits are per user, not per IP. The webhook route and SPA fallback use only paths, so they are unaffected.
+Railway terminates TLS at its proxy. The image `CMD` runs uvicorn with `--proxy-headers --forwarded-allow-ips='*'` so `request.client` (the login rate-limit key) is the real client IP, not the proxy's. Trade-off: with `*` the app trusts `X-Forwarded-For` from any peer, but the container is only reachable through Railway's proxy, and the worst a spoofed header does is rotate the login rate-limit bucket (login still needs valid signed initData). Upload and write limits are per user, not per IP. The webhook route and SPA fallback use only paths, so they are unaffected.
 
 ## 9. Rollback
 

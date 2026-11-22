@@ -352,12 +352,12 @@ Unpaired users can use profile, goals, wishlist, settings and manage-shop. The Q
 
 | Service | Details |
 |---|---|
-| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app`. `preDeployCommand` `alembic upgrade head`, health check `/healthz`, 1 replica. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
+| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app` (image `CMD`). Pre-deploy command `alembic upgrade head`, health check `/healthz`, restart On Failure, 1 replica. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
 | `scheduler` | Same image, start command `python -m app.jobs.runner`, 1 replica, no health check. |
 | database | Supabase Postgres (not a Railway service), via the session pooler (port 5432, `?ssl=require`); backups on the Supabase side. No Railway Postgres. |
 
 - HTTPS uses the Railway domain [ASSUMPTION: no custom domain initially].
-- Secrets live in Railway variables only. Config as code: `railway/api.json`, `railway/scheduler.json`. Step-by-step: [DEPLOY.md](DEPLOY.md).
+- Secrets live in Railway variables only. Services are configured in the Railway dashboard (no `railway/*.json`: Config as Code is deprecated and Infrastructure as Code has no Dockerfile or restart field yet); both set `RAILWAY_DOCKERFILE_PATH=backend/Dockerfile`. The api refuses to start in prod without a mounted volume at `STORAGE_DIR`. Step-by-step: [DEPLOY.md](DEPLOY.md).
 
 **CI** (`.github/workflows/ci.yml`, on PR and push to main)
 
