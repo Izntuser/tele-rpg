@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Literal
 
-from pydantic import Field, SecretStr, ValidationError, model_validator
+from pydantic import Field, SecretStr, ValidationError, field_validator, model_validator
 from pydantic_core import InitErrorDetails, PydanticCustomError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +14,17 @@ DEV_TG_BOT_TOKEN = "123456789:AAFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE"
 MIN_PROD_JWT_SECRET_LEN = 32
 MIN_PROD_WEBHOOK_SECRET_LEN = 32
 HIDDEN_INPUT = "[hidden]"
+
+
+def normalize_database_url(value: Any) -> Any:
+    """postgres:// and postgresql:// become postgresql+asyncpg://; anything else is unchanged."""
+    raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+    if not isinstance(raw, str):
+        return value
+    for prefix in ("postgres://", "postgresql://"):
+        if raw.startswith(prefix):
+            return "postgresql+asyncpg://" + raw[len(prefix) :]
+    return raw
 
 
 def _redact_validation_error(exc: ValidationError) -> ValidationError:
@@ -68,6 +79,7 @@ class Settings(BaseSettings):
     jwt_ttl_seconds: int = Field(default=24 * 3600, gt=0)
 
     public_base_url: str = "http://localhost:3000"
+    #: A volume mount in prod (the image sets STORAGE_DIR=/data/files).
     storage_dir: str = "./data/files"
     #: Uploads decoded at once per process (each decode can take ~100-200 MB).
     image_process_concurrency: int = Field(default=2, ge=1)
@@ -90,6 +102,12 @@ class Settings(BaseSettings):
         if redacted is not None:
             # Raised outside `except` so neither __cause__ nor __context__ keeps the raw input.
             raise redacted
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: Any) -> Any:
+        """Railway and Supabase hand out postgres:// or postgresql://; the app needs asyncpg."""
+        return normalize_database_url(value)
 
     @model_validator(mode="after")
     def _prod_guards(self) -> "Settings":

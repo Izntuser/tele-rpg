@@ -212,3 +212,27 @@ def test_redacted_ctx_error_has_no_traceback(monkeypatch: pytest.MonkeyPatch) ->
         assert err.__traceback__ is None
         assert err.__cause__ is None and err.__context__ is None
         assert LEAK_JWT not in str(err) and LEAK_HOOK_SHORT not in str(err)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("postgres://u:p@h:5432/d", "postgresql+asyncpg://u:p@h:5432/d"),
+        ("postgresql://u:p@h:5432/d?x=1", "postgresql+asyncpg://u:p@h:5432/d?x=1"),
+        ("postgresql+asyncpg://u:p@h/d", "postgresql+asyncpg://u:p@h/d"),
+    ],
+)
+def test_database_url_is_normalized_to_asyncpg(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", raw)
+    assert Settings().database_url.get_secret_value() == expected
+
+
+def test_prod_reports_every_missing_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The scheduler builds the same Settings, so it passes (or fails) the same guards."""
+    prod_env(monkeypatch, PUBLIC_BASE_URL="http://x", TG_BOT_USERNAME=None, TG_APP_SHORT_NAME=None)
+    with pytest.raises(ValidationError) as exc:
+        Settings()
+    for needle in ("PUBLIC_BASE_URL", "TG_BOT_USERNAME", "TG_APP_SHORT_NAME"):
+        assert needle in str(exc.value)

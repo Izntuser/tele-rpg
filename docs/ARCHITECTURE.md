@@ -352,12 +352,12 @@ Unpaired users can use profile, goals, wishlist, settings and manage-shop. The Q
 
 | Service | Details |
 |---|---|
-| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app`. Release command `alembic upgrade head`. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
-| `scheduler` | Same image, start command `python -m app.jobs.runner`. |
+| `api` | Dockerfile `backend/Dockerfile`, multi-stage: builds the frontend with pnpm and copies `dist` into the image. Runs `uvicorn app.main:app`. `preDeployCommand` `alembic upgrade head`, health check `/healthz`, 1 replica. Volume mounted at `/data/files` (`STORAGE_DIR`). The webhook is set on startup with `setWebhook(PUBLIC_BASE_URL/tg/webhook/<secret>)`. |
+| `scheduler` | Same image, start command `python -m app.jobs.runner`, 1 replica, no health check. |
 | `postgres` | Railway Postgres 17 with built-in backups. |
 
 - HTTPS uses the Railway domain [ASSUMPTION: no custom domain initially].
-- Secrets live in Railway variables only.
+- Secrets live in Railway variables only. Config as code: `railway/api.json`, `railway/scheduler.json`. Step-by-step: [DEPLOY.md](DEPLOY.md).
 
 **CI** (`.github/workflows/ci.yml`, on PR and push to main)
 

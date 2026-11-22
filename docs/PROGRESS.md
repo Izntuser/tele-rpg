@@ -136,3 +136,8 @@ not done: live.sh start never run (needs real .env/Supabase).
 - live.sh: env line parser (no expansion), JWT/port refusals, mask to last '@', xtrace off around secrets, pid verification via ps before kill/trust, rollback of services on failed start. init.sh: dev-DB migration only for local DATABASE_URL, unsets VITE_DEV_PORT/API_PROXY_TARGET. Docs updated.
 - Exercised start/stop against a throwaway local DB on ports 8110/3110 (vite not installed in worktree, so the rollback path ran; all processes gone, DB dropped).
 - Left: init.sh/smoke.sh still source .env as shell (TODO).
+
+## 2026-11-22 TOOLING Railway deploy prep (pending review)
+done: railway/api.json + scheduler.json (Dockerfile build, preDeploy alembic, healthcheck, ON_FAILURE, 1 replica), uv pinned 0.13.9, STORAGE_DIR=/data/files + dir in image, root .dockerignore, uvicorn --proxy-headers, Settings normalizes postgres(ql):// to +asyncpg (alembic uses it via Settings), live.sh accepts plain postgresql://, docs/DEPLOY.md, ARCHITECTURE section 8 fixes. JWT prod guard already existed.
+verified: docker build, container /healthz ok + SPA 200 + alembic + runner against local Postgres (APP_ENV=development).
+left: nothing deployed; user follows docs/DEPLOY.md.

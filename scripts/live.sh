@@ -77,10 +77,9 @@ check_config() {
   local url="${DATABASE_URL:-}"
   [ -n "$url" ] || fail "DATABASE_URL is not set"
   case "$url" in
-    postgresql+asyncpg://*) ;;
-    postgresql://* | postgres://*)
-      fail "DATABASE_URL must use the postgresql+asyncpg:// scheme (the app is async; plain postgresql:// or postgres:// would load the sync driver). Change the prefix to postgresql+asyncpg://" ;;
-    *) fail "DATABASE_URL must start with postgresql+asyncpg://" ;;
+    # The app normalizes postgres:// and postgresql:// to +asyncpg (Settings), so all pass.
+    postgresql+asyncpg://* | postgresql://* | postgres://*) ;;
+    *) fail "DATABASE_URL must start with postgresql://, postgres:// or postgresql+asyncpg://" ;;
   esac
   if [ -n "${E2E_DATABASE_URL:-}" ] && [ "$url" = "$E2E_DATABASE_URL" ]; then
     fail "DATABASE_URL equals E2E_DATABASE_URL; the live stack must not use the e2e database"
