@@ -117,3 +117,7 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T09:27 PENDING-MARK S14 (merged @88dd1de; main api predates S14 routes; awaiting user restart)
 2026-11-22T10:08 MERGED S14 (check-stage --mark passed on main after user restart; S01/S03-S13 recheck passed; screenshots refreshed for header bell; 1 review round)
 2026-11-22T10:08 DISPATCH S15 -> stage-worker(opus) (high, normal, ui, insights + P1)
+2026-11-22T10:59 PARTIAL S15 (prior worker session ended; uncommitted backend WIP in worktree agent-a4dd47f9452e0b224, no commits)
+2026-11-22T10:59 DISPATCH S15 -> stage-worker(opus) (high, normal, resume partial WIP)
+2026-11-22T11:23 REVIEW S15 -> stage-reviewer (round 1, @909be06 on worktree-agent-a6d9b6467e8d786de; worker could not use old worktree)
+2026-11-22T11:31 REVIEW S15 stage-reviewer: APPROVE (round 1; 5 minor TODOs)
