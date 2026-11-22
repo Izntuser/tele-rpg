@@ -1,0 +1,146 @@
+{
+  "title": "Статистика",
+  "journalLink": "Журнал пригод",
+  "loading": "Завантаження…",
+  "error": "Не вдалося завантажити статистику.",
+  "retry": "Спробувати ще",
+  "period": {
+    "label": "Період",
+    "7d": "7 днів",
+    "30d": "30 днів",
+    "all": "Увесь час"
+  },
+  "summary": {
+    "title": "Підсумок",
+    "questsCompleted": "Виконано квестів",
+    "questsTotal": "Квестів загалом",
+    "questsWeek": "Цього тижня",
+    "questsMonth": "Цього місяця",
+    "xpPeriod": "Зароблено XP",
+    "xpTotal": "Усього XP",
+    "goldEarned": "Зароблено золота",
+    "goldEarnedTotal": "Усього зароблено золота",
+    "goldSpent": "Витрачено золота",
+    "goldBalance": "Баланс золота",
+    "rewardsPurchased": "Куплено нагород",
+    "rewardsFulfilled": "Отримано нагород"
+  },
+  "charts": {
+    "xpPerDay": "XP за день",
+    "questsPerDay": "Квести за день",
+    "empty": "За цей період ще немає активності.",
+    "day": "{{date}}: {{value}}",
+    "total": "{{total}} за період"
+  },
+  "attributes": {
+    "title": "Прогрес атрибутів",
+    "level": "Рів. {{level}}",
+    "progress": "{{current}} / {{max}} XP до наступного рівня"
+  },
+  "balance": {
+    "title": "Баланс життя",
+    "companionTitle": "Баланс нещодавньої активності",
+    "hint": "Нещодавня активність порівняно з твоїми тижневими цілями. Це прогрес до мети, а не оцінка твого життя.",
+    "companionHint": "Нещодавня активність компаньйона порівняно з його власними цілями.",
+    "radarLabel": "Радар балансу життя: {{summary}}",
+    "scoreItem": "{{attribute}} {{score}}%",
+    "score": "{{score}}%",
+    "earned": "{{earned}} / {{target}} XP",
+    "noTarget": "Без цілі",
+    "balanced": "Чудовий баланс: усі сфери на шляху до цілей.",
+    "companionBalanced": "Нещодавня активність компаньйона гарно збалансована.",
+    "suggestionsTitle": "Ідеї",
+    "suggestion": {
+      "me": {
+        "no_activity": "У сфері «{{attribute}}» за цей період ще нічого не було. Невеликий квест може бути цікавим.",
+        "below_target": "Сфера «{{attribute}}» трохи відстає від цілі. Можливо, попросити такий квест?"
+      },
+      "companion": {
+        "no_activity": "Компаньйон останнім часом не мав активностей у сфері «{{attribute}}». Можна запропонувати такий квест.",
+        "below_target": "Компаньйон нещодавно мав менше активностей у сфері «{{attribute}}». Можна запропонувати такий квест."
+      }
+    },
+    "createQuest": "Створити квест",
+    "editTargets": "Змінити цілі",
+    "loading": "Завантаження балансу життя…",
+    "error": "Не вдалося завантажити баланс життя."
+  },
+  "targets": {
+    "title": "Тижневі цілі XP",
+    "hint": "Скільки XP на тиждень тобі підходить для кожної сфери. 0 означає без цілі.",
+    "field": "Тижнева ціль XP: {{attribute}}",
+    "save": "Зберегти цілі",
+    "invalid": "Цілі числа від 0 до 10000.",
+    "error": "Не вдалося зберегти цілі."
+  },
+  "achievements": {
+    "title": "Досягнення",
+    "count": "Відкрито {{count}} з {{total}}",
+    "locked": "Закрито",
+    "unlocked": "Відкрито",
+    "progress": "{{progress}} / {{target}}",
+    "toast": "Нове досягнення!",
+    "items": {
+      "first_quest": { "title": "Перші кроки", "description": "Виконай свій перший квест." },
+      "quests_10": { "title": "Шукач пригод", "description": "Виконай 10 квестів." },
+      "quests_50": { "title": "Герой королівства", "description": "Виконай 50 квестів." },
+      "level_5": { "title": "Висхідна зірка", "description": "Досягни 5 рівня." },
+      "level_10": { "title": "Досвідчений", "description": "Досягни 10 рівня." },
+      "attribute_5": { "title": "Спеціаліст", "description": "Досягни 5 рівня в будь-якому атрибуті." },
+      "all_attributes": { "title": "Різнобічний", "description": "Виконай квест у кожному з шести атрибутів." },
+      "streak_7": { "title": "У вогні", "description": "Тримай серію щоденного квесту 7 днів." },
+      "gold_100": { "title": "Шукач скарбів", "description": "Зароби 100 золота за квести." },
+      "first_purchase": { "title": "Пригости себе", "description": "Купи свою першу нагороду." },
+      "quest_giver": { "title": "Видавець квестів", "description": "Запропонуй свій перший квест." },
+      "mentor": { "title": "Наставник", "description": "Підтверди 10 квестів, які ти створив." },
+      "shopkeeper": { "title": "Крамар", "description": "Додай першу нагороду до крамниці." },
+      "generous": { "title": "Щедрий", "description": "Видай свою першу нагороду." }
+    }
+  },
+  "journal": {
+    "title": "Журнал пригод",
+    "scopeLabel": "Чиї події",
+    "scope": {
+      "me": "Мої",
+      "shared": "Спільні"
+    },
+    "loading": "Завантаження журналу…",
+    "error": "Не вдалося завантажити журнал.",
+    "retry": "Спробувати ще",
+    "empty": "Журнал порожній",
+    "emptyHint": "Тут записуватиметься твоя пригода.",
+    "loadMore": "Завантажити старіші події",
+    "actor": {
+      "me": "Ти",
+      "companion": "Компаньйон"
+    },
+    "event": {
+      "quest_offered": "Квест запропоновано: {{title}}",
+      "quest_offer_updated": "Пропозицію квесту змінено: {{title}}",
+      "quest_accepted": "Квест прийнято: {{title}}",
+      "quest_declined": "Квест відхилено: {{title}}",
+      "quest_cancelled": "Квест скасовано: {{title}}",
+      "quest_submitted": "Квест надіслано на перевірку: {{title}}",
+      "quest_redo_requested": "Потрібно переробити: {{title}}",
+      "quest_completed": "Квест виконано: {{title}} (+{{xp}} XP, +{{gold}} золота)",
+      "quest_paused": "Повторюваний квест призупинено: {{title}}",
+      "quest_resumed": "Повторюваний квест відновлено: {{title}}",
+      "quest_revision_proposed": "Запропоновано зміну квесту: {{title}}",
+      "quest_revision_accepted": "Зміну квесту прийнято: {{title}}",
+      "quest_revision_declined": "Зміну квесту відхилено: {{title}}",
+      "level_up": "Новий рівень! Тепер рівень {{level}}",
+      "attribute_level_up": "{{attribute}}: досягнуто рівня {{level}}",
+      "reward_created": "Нова нагорода в крамниці: {{title}} ({{price}} золота)",
+      "reward_purchased": "Нагороду куплено: {{title}} ({{price}} золота)",
+      "reward_requested": "Нагороду запитано: {{title}}",
+      "reward_scheduled": "Нагороду заплановано: {{title}}",
+      "reward_fulfilled": "Нагороду видано: {{title}}",
+      "reward_refunded": "Нагороду повернено: {{title}}",
+      "reward_disputed": "Нагороду оскаржено: {{title}}",
+      "achievement_unlocked": "Нове досягнення: {{achievement}}",
+      "partnership_accepted": "Компаньйона під'єднано",
+      "partnership_ended": "Партнерство завершено",
+      "unknown": "Подія пригоди"
+    }
+  }
+}

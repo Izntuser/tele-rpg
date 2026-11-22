@@ -1,5 +1,2 @@
-import { PlaceholderPage } from '../../../components/ui/PlaceholderPage';
-
-export function JournalPage() {
-  return <PlaceholderPage titleKey="pages.journal" testId="page-journal" />;
-}
+/** /stats/journal: the Adventure Journal lives in features/journal. */
+export { JournalPage } from '../../journal/JournalPage';

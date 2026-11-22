@@ -91,7 +91,12 @@ async def post(
 
 
 async def counts(session: AsyncSession) -> tuple[int, int]:
-    journal = await session.scalar(select(func.count()).select_from(JournalEvent))
+    # Achievement unlocks (S15) are not transition events.
+    journal = await session.scalar(
+        select(func.count())
+        .select_from(JournalEvent)
+        .where(JournalEvent.type != "achievement_unlocked")
+    )
     notes = await session.scalar(select(func.count()).select_from(Notification))
     return journal or 0, notes or 0
 
@@ -781,7 +786,14 @@ async def test_each_transition_writes_one_journal_event_and_one_notification(
     await post(client, player, f"/quest-templates/{template_id}/decline")
     steps.append((player, "quest_declined", "quest_template", gm.id))
 
-    events = list(await session.scalars(select(JournalEvent).order_by(JournalEvent.id)))
+    # Achievement unlocks (S15: quest_giver on the first offer) are their own events.
+    events = list(
+        await session.scalars(
+            select(JournalEvent)
+            .where(JournalEvent.type != "achievement_unlocked")
+            .order_by(JournalEvent.id)
+        )
+    )
     notes = list(await session.scalars(select(Notification).order_by(Notification.id)))
     assert [(e.user_id, e.type, e.entity_type) for e in events] == [
         (s[0].id, s[1], s[2]) for s in steps

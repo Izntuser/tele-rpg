@@ -1,0 +1,146 @@
+{
+  "title": "Stats",
+  "journalLink": "Adventure journal",
+  "loading": "Loading…",
+  "error": "Could not load your stats.",
+  "retry": "Try again",
+  "period": {
+    "label": "Period",
+    "7d": "7 days",
+    "30d": "30 days",
+    "all": "All time"
+  },
+  "summary": {
+    "title": "Summary",
+    "questsCompleted": "Quests completed",
+    "questsTotal": "Quests in total",
+    "questsWeek": "This week",
+    "questsMonth": "This month",
+    "xpPeriod": "XP earned",
+    "xpTotal": "Total XP",
+    "goldEarned": "Gold earned",
+    "goldEarnedTotal": "Gold earned in total",
+    "goldSpent": "Gold spent",
+    "goldBalance": "Gold balance",
+    "rewardsPurchased": "Rewards bought",
+    "rewardsFulfilled": "Rewards fulfilled"
+  },
+  "charts": {
+    "xpPerDay": "XP per day",
+    "questsPerDay": "Quests per day",
+    "empty": "No activity in this period yet.",
+    "day": "{{date}}: {{value}}",
+    "total": "{{total}} in this period"
+  },
+  "attributes": {
+    "title": "Attribute progress",
+    "level": "Lv {{level}}",
+    "progress": "{{current}} / {{max}} XP to the next level"
+  },
+  "balance": {
+    "title": "Life balance",
+    "companionTitle": "Recent activity balance",
+    "hint": "Recent activity against your own weekly targets. It shows progress toward a goal, not how well you live.",
+    "companionHint": "Your companion's recent activity against their own targets.",
+    "radarLabel": "Life balance radar: {{summary}}",
+    "scoreItem": "{{attribute}} {{score}}%",
+    "score": "{{score}}%",
+    "earned": "{{earned}} / {{target}} XP",
+    "noTarget": "No target",
+    "balanced": "Nicely balanced: every area is on track.",
+    "companionBalanced": "Your companion's recent activity is nicely balanced.",
+    "suggestionsTitle": "Ideas",
+    "suggestion": {
+      "me": {
+        "no_activity": "No {{attribute}} activity yet in this period. A small {{attribute}} quest could be fun.",
+        "below_target": "{{attribute}} is a little behind your target. Maybe ask for a {{attribute}} quest?"
+      },
+      "companion": {
+        "no_activity": "Your companion has not done any {{attribute}} activities lately. Consider offering a {{attribute}} quest.",
+        "below_target": "Your companion has completed fewer {{attribute}} activities recently. Consider offering a {{attribute}} quest."
+      }
+    },
+    "createQuest": "Create quest",
+    "editTargets": "Edit targets",
+    "loading": "Loading life balance…",
+    "error": "Could not load life balance."
+  },
+  "targets": {
+    "title": "Weekly XP targets",
+    "hint": "How much XP per week feels right for each area. 0 means no target.",
+    "field": "{{attribute}} weekly XP target",
+    "save": "Save targets",
+    "invalid": "Use whole numbers from 0 to 10000.",
+    "error": "Could not save your targets."
+  },
+  "achievements": {
+    "title": "Achievements",
+    "count": "{{count}} of {{total}} unlocked",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "progress": "{{progress}} / {{target}}",
+    "toast": "Achievement unlocked!",
+    "items": {
+      "first_quest": { "title": "First steps", "description": "Complete your first quest." },
+      "quests_10": { "title": "Adventurer", "description": "Complete 10 quests." },
+      "quests_50": { "title": "Hero of the realm", "description": "Complete 50 quests." },
+      "level_5": { "title": "Rising star", "description": "Reach level 5." },
+      "level_10": { "title": "Seasoned", "description": "Reach level 10." },
+      "attribute_5": { "title": "Specialist", "description": "Reach level 5 in any attribute." },
+      "all_attributes": { "title": "Well-rounded", "description": "Complete a quest in all six attributes." },
+      "streak_7": { "title": "On fire", "description": "Keep a daily quest streak for 7 days." },
+      "gold_100": { "title": "Treasure hunter", "description": "Earn 100 Gold from quests." },
+      "first_purchase": { "title": "Treat yourself", "description": "Buy your first reward." },
+      "quest_giver": { "title": "Quest giver", "description": "Offer your first quest." },
+      "mentor": { "title": "Mentor", "description": "Confirm 10 quests you created." },
+      "shopkeeper": { "title": "Shopkeeper", "description": "Put your first reward in the shop." },
+      "generous": { "title": "Generous", "description": "Fulfil your first reward." }
+    }
+  },
+  "journal": {
+    "title": "Adventure journal",
+    "scopeLabel": "Whose events",
+    "scope": {
+      "me": "Mine",
+      "shared": "Shared"
+    },
+    "loading": "Loading the journal…",
+    "error": "Could not load the journal.",
+    "retry": "Try again",
+    "empty": "The journal is empty",
+    "emptyHint": "Your adventure will be written here as you play.",
+    "loadMore": "Load older events",
+    "actor": {
+      "me": "You",
+      "companion": "Companion"
+    },
+    "event": {
+      "quest_offered": "Quest offered: {{title}}",
+      "quest_offer_updated": "Quest offer updated: {{title}}",
+      "quest_accepted": "Quest accepted: {{title}}",
+      "quest_declined": "Quest declined: {{title}}",
+      "quest_cancelled": "Quest cancelled: {{title}}",
+      "quest_submitted": "Quest submitted for review: {{title}}",
+      "quest_redo_requested": "Redo requested: {{title}}",
+      "quest_completed": "Quest completed: {{title}} (+{{xp}} XP, +{{gold}} Gold)",
+      "quest_paused": "Recurring quest paused: {{title}}",
+      "quest_resumed": "Recurring quest resumed: {{title}}",
+      "quest_revision_proposed": "Quest change proposed: {{title}}",
+      "quest_revision_accepted": "Quest change accepted: {{title}}",
+      "quest_revision_declined": "Quest change declined: {{title}}",
+      "level_up": "Level up! Now level {{level}}",
+      "attribute_level_up": "{{attribute}} reached level {{level}}",
+      "reward_created": "New reward in the shop: {{title}} ({{price}} Gold)",
+      "reward_purchased": "Reward bought: {{title}} ({{price}} Gold)",
+      "reward_requested": "Reward requested: {{title}}",
+      "reward_scheduled": "Reward scheduled: {{title}}",
+      "reward_fulfilled": "Reward fulfilled: {{title}}",
+      "reward_refunded": "Reward refunded: {{title}}",
+      "reward_disputed": "Reward disputed: {{title}}",
+      "achievement_unlocked": "Achievement unlocked: {{achievement}}",
+      "partnership_accepted": "Companion connected",
+      "partnership_ended": "Partnership ended",
+      "unknown": "Adventure event"
+    }
+  }
+}
