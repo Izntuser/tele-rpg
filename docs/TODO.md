@@ -98,3 +98,8 @@
 - S15: no journal event is written for "companion connected" (partnership accept) or for the GM's confirm action (only the player's quest_completed); the journal page already has strings for partnership_accepted/ended.
 - S15: achievement toasts only cover unlocks that happen during an app session (no web storage by S03 rule); unlocks earned while the app was closed show in the journal and on Stats, not as a toast. A server-side "seen_at" on achievement_unlock would fix it.
 - S15: achievements are evaluated in a global before_commit listener on every Session (achievements/service.py); jobs that record events also evaluate, which is intended, but keep it in mind for long batch jobs.
+- S15 review: CompanionPage.tsx:47 missing space before className (add prettier to lint?)
+- S15 review: "mentor" achievement (_confirmed_as_gm) counts auto-confirmed quests; should count only explicit GM confirms
+- S15 review: journal before_commit listener registered via import side effect at end of journal/service.py; register explicitly at app/session setup
+- S15 review: AchievementToast misses unlocks that land before the first achievements fetch (fold into server-side seen_at TODO)
+- S15 review: stats zone_of silently falls back to UTC on invalid timezone; document or log
