@@ -77,6 +77,15 @@ test('Avatar falls back to the initial when there is no image or it fails', () =
   expect(screen.getByRole('img', { name: 'alice' })).toHaveTextContent('A');
 });
 
+test('Avatar survives a missing name (shows ?)', () => {
+  const { rerender } = render(<Avatar name={undefined} />);
+  expect(screen.getByRole('img')).toHaveTextContent('?');
+  rerender(<Avatar name={null} src="/x.png" />);
+  expect(document.querySelector('img')).toHaveAttribute('src', '/x.png');
+  rerender(<Avatar name="  " />);
+  expect(screen.getByRole('img')).toHaveTextContent('?');
+});
+
 test('CelebrationOverlay animates and fires confetti normally', () => {
   stubReducedMotion(false);
   const onDone = vi.fn();

@@ -17,11 +17,13 @@ import { JournalPage } from '../features/stats/pages/JournalPage';
 import { StatsPage } from '../features/stats/pages/StatsPage';
 import { WishlistPage } from '../features/wishlist/pages/WishlistPage';
 import { AppLayout } from './layout/AppLayout';
+import { RouteError } from './RouteError';
 
 /** Every ARCHITECTURE section 6 route; an unknown path redirects to Home. */
 export const routes: RouteObject[] = [
   {
     element: <AppLayout />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'onboarding/*', element: <OnboardingPage /> },

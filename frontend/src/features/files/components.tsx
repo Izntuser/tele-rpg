@@ -48,7 +48,7 @@ export function FileAvatar({
   size,
   className,
 }: {
-  name: string;
+  name?: string | null;
   fileId?: number | null;
   src?: string | null;
   size?: 'sm' | 'md' | 'lg';

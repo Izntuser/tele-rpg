@@ -11,12 +11,13 @@ export function Avatar({
   size = 'md',
   className,
 }: {
-  name: string;
+  name?: string | null;
   src?: string | null;
   size?: keyof typeof SIZES;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const label = typeof name === 'string' ? name : '';
   const showImage = Boolean(src) && !failed;
   return (
     <span
@@ -27,10 +28,10 @@ export function Avatar({
       )}
     >
       {showImage ? (
-        <img src={src!} alt={name} onError={() => setFailed(true)} className="size-full object-cover" />
+        <img src={src!} alt={label} onError={() => setFailed(true)} className="size-full object-cover" />
       ) : (
-        <span role="img" aria-label={name}>
-          {name.trim().charAt(0).toUpperCase() || '?'}
+        <span role="img" aria-label={label}>
+          {label.trim().charAt(0).toUpperCase() || '?'}
         </span>
       )}
     </span>

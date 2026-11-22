@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ApiError, NoInitDataError, createApiClient } from './client';
+import { ApiError, NOT_JSON, NoInitDataError, createApiClient } from './client';
 
 type Call = { url: string; init: RequestInit };
 
@@ -48,6 +48,7 @@ function fakeServer() {
     const auth = new Headers(init.headers).get('Authorization') ?? '';
     if (!valid.has(auth.replace('Bearer ', ''))) return json(401, { detail: 'Not authenticated' });
     if (url === '/api/empty') return new Response(null, { status: 204 });
+    if (url === '/api/html') return new Response('<html>tunnel page</html>', { status: 200 });
     if (url === '/api/fail') return json(409, { detail: 'conflict' });
     return json(200, { ok: true, url });
   });
@@ -76,6 +77,33 @@ describe('api client', () => {
   afterEach(() => {
     localStorage.clear();
     sessionStorage.clear();
+  });
+
+  test('sends ngrok-skip-browser-warning on JSON and blob requests', async () => {
+    await client.get('/things');
+    await client.get<Blob>('/files/1', { responseType: 'blob' });
+    const sent = server.calls.filter((c) => c.url !== '/api/auth/telegram');
+    expect(sent).toHaveLength(2);
+    for (const call of sent) expect(headersOf(call).get('ngrok-skip-browser-warning')).toBe('1');
+  });
+
+  test('a 2xx with a non-JSON body is an error, not data', async () => {
+    const error = await client.get('/html').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).detail).toBe(NOT_JSON);
+    await expect(client.get('/empty')).resolves.toBeUndefined();
+  });
+
+  test('an HTML 200 on login is a NOT_JSON error and caches no token', async () => {
+    const html = createApiClient({
+      getInitData: () => 'x',
+      fetch: (async () =>
+        new Response('<html>tunnel page</html>', { status: 200 })) as unknown as typeof fetch,
+    });
+    const error = await html.login().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).detail).toBe(NOT_JSON);
+    expect(html.hasToken()).toBe(false);
   });
 
   test('logs in with initData in the JSON body, then sends the JWT as a Bearer header', async () => {
