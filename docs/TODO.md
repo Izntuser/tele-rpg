@@ -105,3 +105,5 @@
 - S15 review: stats zone_of silently falls back to UTC on invalid timezone; document or log
 - Fullscreen launch mode: app reads safeAreaInset but not contentSafeAreaInset, so Telegram's fullscreen header buttons would overlap the top header; add content safe-area support before switching BotFather to Fullscreen
 - Dev tunnels: ngrok's free tier answers browser requests with a 200 HTML interstitial, so the client sends `ngrok-skip-browser-warning: 1` on every request and rejects a 2xx non-JSON body (ApiError NOT_JSON) instead of caching it.
+- Bugfix review: doLogin should reject any 2xx body that is not an object with a string jwt (empty/null/non-object JSON still hits a plain TypeError)
+- Bugfix review: character/api.ts uses NOT_JSON for a JSON body missing name; use a distinct "malformed character" detail
