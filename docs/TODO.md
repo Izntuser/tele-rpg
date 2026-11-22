@@ -89,3 +89,6 @@
 - S12: frontend compressImage uses useWebWorker: false, so compression runs on the main thread; try the worker build.
 - S12: replaced reward images (row and bytes) are kept until account deletion; the cleanup above must respect purchase snapshots.
 - S12: the 5/min upload rate limiter is in-process; with several API workers the effective limit multiplies; move it to a shared store.
+- storage/images.py:172-175: a second cancel while awaiting the decode thread frees the semaphore slot early; loop `await asyncio.shield(work)` until work.done() and add a double-cancel test (S12 security review).
+- storage/images.py: progressive JPEGs keep full-size coefficient buffers regardless of draft (~120-320 MB at 40 MP) and many-scan files are a CPU DoS; lower the cap for progressive JPEGs or cap scans, and fix the "~100 MB" docstring (S12 security review).
+- test_files.py: add route-level tests for account deletion / partnership end while the upload body is being read; make the semaphore peak assertion `1 <= peak <= limit` (S12 reviews).
