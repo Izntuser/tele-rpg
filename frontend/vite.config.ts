@@ -10,6 +10,8 @@ export default defineConfig({
     host: true,
     port: 3000,
     strictPort: true,
+    // Dev tunnels for opening the Mini App inside Telegram (leading dot = any subdomain).
+    allowedHosts: ['.ngrok-free.app', '.trycloudflare.com'],
     proxy: {
       '/api': backend,
       '/healthz': backend,
