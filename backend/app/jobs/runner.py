@@ -19,10 +19,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[impo
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.bot.dispatcher import close_bot
 from app.core import idempotency
 from app.core.db import make_engine
 from app.db.session import make_sessionmaker
-from app.jobs import expire_occurrences, generate_occurrences
+from app.jobs import expire_occurrences, generate_occurrences, notification_jobs
 
 log = logging.getLogger("app.jobs.runner")
 
@@ -45,11 +46,15 @@ async def _purge_idempotency(session: AsyncSession) -> int:
     return deleted
 
 
-#: Time zones differ by 15-minute steps, so the day / week boundary jobs run that often.
+#: Time zones differ by 15-minute steps, so the day / week boundary jobs (and the 09:00-local
+#: summary) run that often. The outbox sweep is the API post-commit send's fallback (30 s).
 DEFAULT_JOBS: Mapping[str, JobSpec] = {
     "generate_occurrences": JobSpec(generate_occurrences.run, 5 * 60),
     "expire_occurrences": JobSpec(expire_occurrences.run, 5 * 60),
     "purge_idempotency": JobSpec(_purge_idempotency, 60 * 60),
+    "dispatch_outbox": JobSpec(notification_jobs.dispatch_outbox, 30),
+    "deadline_reminders": JobSpec(notification_jobs.deadline_reminders, 5 * 60),
+    "daily_summary": JobSpec(notification_jobs.daily_summary, 5 * 60),
 }
 
 
@@ -145,6 +150,7 @@ async def main() -> None:
     try:
         await runner.run()
     finally:
+        await close_bot()
         await engine.dispose()
 
 

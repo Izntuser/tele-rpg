@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { AuthGate } from '../features/auth/AuthGate';
@@ -103,7 +103,7 @@ describe('bottom nav', () => {
   test('has the five tabs and highlights the active one', async () => {
     renderShell('/quests/9');
     await screen.findByTestId('page-quest-detail');
-    expect(screen.getAllByRole('link')).toHaveLength(5);
+    expect(within(screen.getByRole('navigation')).getAllByRole('link')).toHaveLength(5);
     expect(screen.getByTestId('nav-quests')).toHaveAttribute('aria-current', 'page');
     for (const other of ['home', 'shop', 'stats', 'companion']) {
       expect(screen.getByTestId(`nav-${other}`)).not.toHaveAttribute('aria-current');

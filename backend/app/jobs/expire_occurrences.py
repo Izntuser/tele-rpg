@@ -1,4 +1,5 @@
-"""Move active occurrences past ``due_at`` to ``expired``; a missed daily quest breaks its streak.
+"""Move active occurrences past ``due_at`` to ``expired``; a missed daily quest breaks its streak
+and both members get a ``quest_expired`` notification.
 
 Only ``active`` rows are considered: an occurrence in review is waiting for the creator and is
 never expired. Each occurrence is its own transaction (partnership ``FOR SHARE``, template,
@@ -12,12 +13,35 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import clock
-from app.modules.common.enums import QuestOccurrenceStatus, Recurrence
+from app.modules.common.enums import NotificationCategory, QuestOccurrenceStatus, Recurrence
+from app.modules.notifications.service import enqueue
 from app.modules.partnerships.models import Partnership
 from app.modules.quests import state, streaks
 from app.modules.quests.models import QuestOccurrence, QuestTemplate
 
 log = logging.getLogger(__name__)
+
+
+def _notify_expired(
+    session: AsyncSession, template: QuestTemplate, occurrence: QuestOccurrence
+) -> None:
+    """Both members learn that the deadline passed (in the expiry's own transaction)."""
+    payload = {
+        "occurrence_id": occurrence.id,
+        "template_id": template.id,
+        "title": occurrence.terms_snapshot.get("title", template.title),
+        "recurrence": template.recurrence.value,
+    }
+    for recipient_id in dict.fromkeys((occurrence.assignee_id, template.creator_id)):
+        enqueue(
+            session,
+            recipient_id=recipient_id,
+            type="quest_expired",
+            category=NotificationCategory.QUESTS,
+            entity_type="quest_occurrence",
+            entity_id=occurrence.id,
+            payload=payload,
+        )
 
 
 async def _expire_one(session: AsyncSession, occurrence_id: int) -> bool:
@@ -56,6 +80,7 @@ async def _expire_one(session: AsyncSession, occurrence_id: int) -> bool:
         occurrence.status = state.next_occurrence_status(occurrence.status, "expire")
         if template.recurrence == Recurrence.DAILY:
             await streaks.break_streak(session, template.id, occurrence.scheduled_date)
+        _notify_expired(session, template, occurrence)
         expired = True
     await session.commit()
     return expired

@@ -109,6 +109,13 @@ class Settings(BaseSettings):
                 errors.append(
                     f"TG_WEBHOOK_SECRET must be at least {MIN_PROD_WEBHOOK_SECRET_LEN} characters"
                 )
+            # Invite links and notification buttons are t.me/<bot>/<app> links (DECISIONS 20).
+            if not self.tg_bot_username:
+                errors.append("TG_BOT_USERNAME must be set")
+            if not self.tg_app_short_name:
+                errors.append("TG_APP_SHORT_NAME must be set")
+            if not self.public_base_url.startswith("https://"):
+                errors.append("PUBLIC_BASE_URL must be an https:// URL (the webhook and Mini App)")
             if errors:
                 raise ValueError("; ".join(errors) + " when APP_ENV=prod")
         if set(self.difficulty_xp) != set(Difficulty):

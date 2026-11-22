@@ -1,12 +1,20 @@
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 
 from app.api.router import build_api_router
+from app.api.routes.notifications import dispatch_after_commit
+from app.api.routes.tg_webhook import tg_router
+from app.bot.dispatcher import close_bot, get_bot, setup_webhook
 from app.core.config import get_settings
 from app.core.db import make_engine
+
+log = logging.getLogger(__name__)
 
 _API_PREFIXES = ("api", "healthz", "tg", "docs", "openapi.json")
 # Invite tokens can sit in the SPA route (/invite/<token>); never leak them via Referer.
@@ -20,8 +28,22 @@ def _dist_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    if settings.app_env == "prod":
+        try:
+            await setup_webhook(get_bot(), settings)
+        except Exception:
+            log.exception("setting the Telegram webhook failed")
+    try:
+        yield
+    finally:
+        await close_bot()
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="tele-rpg")
+    app = FastAPI(title="tele-rpg", lifespan=lifespan)
     engine = make_engine()
 
     @app.get("/healthz")
@@ -35,7 +57,9 @@ def create_app() -> FastAPI:
         return {"status": "ok", "db": "ok"}
 
     # Before the SPA catch-all, so /api/* never falls through to index.html.
-    app.include_router(build_api_router())
+    # Every /api request sends the notifications it committed (outbox post-commit hook).
+    app.include_router(build_api_router(), dependencies=[Depends(dispatch_after_commit)])
+    app.include_router(tg_router)
 
     dist = _dist_dir()
     index = dist / "index.html"

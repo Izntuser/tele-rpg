@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '../../features/auth/context';
+import { NotificationBell } from '../../features/notifications/NotificationBell';
 import {
   FIRST_ENTRY_STATE,
   ONBOARDING_PATH,
@@ -16,7 +17,8 @@ import { BottomNav } from './BottomNav';
 /** Full-screen flows that hide the tab bar. */
 const NO_NAV = [/^\/onboarding(\/|$)/, /^\/invite\//];
 
-/** Shell below <AuthGate>: locale, theme, safe areas, deeplink, BackButton and the bottom nav. */
+/** Shell below <AuthGate>: locale, theme, safe areas, deeplink, BackButton, the header bell and
+ * the bottom nav. */
 export function AppLayout() {
   const { state, telegram } = useAuth();
   const navigate = useNavigate();
@@ -91,6 +93,8 @@ export function AppLayout() {
   }, [telegram, hideBack, isInitialEntry, navigate]);
 
   const showNav = !NO_NAV.some((pattern) => pattern.test(location.pathname));
+  // The bell needs an onboarded user (the inbox is theirs); full-screen flows have no header.
+  const showBell = showNav && Boolean(onboardedAt) && !mustOnboard;
   return (
     <div
       className="min-h-screen bg-bg text-fg"
@@ -101,6 +105,11 @@ export function AppLayout() {
         paddingBottom: showNav ? 'calc(var(--nav-height) + var(--safe-bottom))' : 'var(--safe-bottom)',
       }}
     >
+      {showBell ? (
+        <header data-testid="app-header" className="mx-auto flex max-w-md justify-end px-2 pt-1">
+          <NotificationBell />
+        </header>
+      ) : null}
       <main className="mx-auto max-w-md">
         {mustOnboard ? <Navigate to={onboardingTarget} replace state={FIRST_ENTRY_STATE} /> : <Outlet />}
       </main>

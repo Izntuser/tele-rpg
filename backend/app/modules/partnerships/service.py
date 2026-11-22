@@ -38,7 +38,7 @@ from app.modules.common.enums import (
 )
 from app.modules.economy.models import Wallet
 from app.modules.goals.models import DevelopmentGoal
-from app.modules.notifications.models import Notification
+from app.modules.notifications.service import enqueue
 from app.modules.partnerships.models import Partnership, PartnershipInvitation
 from app.modules.partnerships.schemas import (
     LEAVE_CONFIRM_TEXT,
@@ -192,15 +192,14 @@ def _notify(
     partnership_id: int,
     payload: dict[str, str],
 ) -> None:
-    session.add(
-        Notification(
-            recipient_id=recipient_id,
-            type=type_,
-            category=NotificationCategory.QUESTS,
-            entity_type="partnership",
-            entity_id=partnership_id,
-            payload=payload,
-        )
+    enqueue(
+        session,
+        recipient_id=recipient_id,
+        type=type_,
+        category=NotificationCategory.QUESTS,
+        entity_type="partnership",
+        entity_id=partnership_id,
+        payload=payload,
     )
 
 
