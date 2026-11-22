@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, type QueryClient } from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
 import { useEffect, useState } from 'react';
 
 import type { ApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/schema';
+import { AUTH_QUERY_KEY } from '../auth/AuthProvider';
 import { useAuth } from '../auth/context';
 
 export type FileOut = components['schemas']['FileOut'];
@@ -14,6 +15,52 @@ export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/h
 export const ACCEPT_ATTR = ACCEPTED_TYPES.join(',');
 
 export const FILE_KEY = ['file'] as const;
+
+/** Drop every cached file blob (they are kept with staleTime: Infinity). */
+export function clearFileCache(queryClient: QueryClient): void {
+  queryClient.removeQueries({ queryKey: FILE_KEY });
+}
+
+type Identity = { user: number | null; partnership: number | null };
+
+function identityOf(queryKey: readonly unknown[], data: unknown): Partial<Identity> | null {
+  if (queryKey.length === AUTH_QUERY_KEY.length && queryKey.every((part, i) => part === AUTH_QUERY_KEY[i])) {
+    return { user: (data as { user?: { id?: number } } | undefined)?.user?.id ?? null };
+  }
+  if (queryKey.length === 1 && queryKey[0] === 'partnership') {
+    return { partnership: (data as { partnership?: { id?: number } | null } | undefined)?.partnership?.id ?? null };
+  }
+  return null;
+}
+
+/**
+ * Who may read a file depends on who I am and who my companion is. A former partner must not
+ * keep seeing photos from the cache, so cached blobs are dropped whenever the logged-in user or
+ * the active partnership changes (left, ended by the companion, a new one accepted) and when
+ * the session or partnership query is removed (logout, account deletion). Returns unsubscribe.
+ */
+export function watchFileAccess(queryClient: QueryClient): () => void {
+  const known: Identity = { user: null, partnership: null };
+  const seen = { user: false, partnership: false };
+  return queryClient.getQueryCache().subscribe((event) => {
+    const identity = identityOf(event.query.queryKey, event.query.state.data);
+    if (identity === null) return;
+    if (event.type === 'removed') {
+      clearFileCache(queryClient);
+      for (const field of Object.keys(identity) as (keyof Identity)[]) {
+        seen[field] = false;
+        known[field] = null;
+      }
+      return;
+    }
+    if (event.type !== 'updated' || event.action.type !== 'success') return;
+    for (const [field, value] of Object.entries(identity) as [keyof Identity, number | null][]) {
+      if (seen[field] && known[field] !== value) clearFileCache(queryClient);
+      seen[field] = true;
+      known[field] = value;
+    }
+  });
+}
 
 export class UploadRejected extends Error {
   constructor(readonly reason: 'type' | 'size') {

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { AuthProvider } from '../features/auth/AuthProvider';
+import { watchFileAccess } from '../features/files/api';
 import { api as defaultApi, type ApiClient } from '../lib/api/client';
 import { getTelegram, type TelegramAdapter } from '../lib/telegram';
 
@@ -31,6 +32,8 @@ export function Providers({
   useEffect(() => {
     adapter.ready();
   }, [adapter]);
+
+  useEffect(() => watchFileAccess(client), [client]);
 
   return (
     <QueryClientProvider client={client}>

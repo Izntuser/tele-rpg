@@ -7,20 +7,28 @@ Uploads (here, ``/character/avatar`` and ``/rewards/{id}/image``) share ``read_i
    (or the ``file`` part) above 10 MB -> 413, whatever ``Content-Length`` claims;
 3. the bytes are identified by content, never by the client's ``Content-Type`` or file name:
    only JPEG / PNG / WebP / HEIC that Pillow decodes as that format pass, anything else -> 415;
-4. the image is re-encoded from its pixels (EXIF incl. GPS stripped, ``storage.images``).
+4. the image is re-encoded from its pixels (EXIF incl. GPS stripped, ``storage.images``),
+   at most ``IMAGE_PROCESS_CONCURRENCY`` decodes at a time.
+
+The body arrives at the client's speed, so ``read_image`` first ends the transaction that
+``current_user`` opened and gives the DB connection back to the pool: no connection sits idle
+in transaction during the read or the decode. The caller must keep what it needs from the
+user in locals beforehand (the rollback expires the ORM object), and then writes in a fresh,
+short transaction that locks the owner row and re-checks ``deleted_at``
+(``modules.files.service.lock_live_owner``).
 
 ``GET /files/{id}`` needs the bearer token like every other route, so an ``<img src>`` URL is
 useless on its own; the client fetches the bytes and shows a blob URL. Files are served with
 ``Cache-Control: private, no-store`` so a revoked partner keeps no copy in an HTTP cache.
 """
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
 
@@ -37,7 +45,7 @@ from app.storage.images import (
     ImageTooLargeError,
     ProcessedImage,
     UnsupportedImageError,
-    process_image,
+    process_image_bounded,
 )
 
 router = APIRouter(tags=["files"])
@@ -139,12 +147,16 @@ async def _read_file_part(request: Request) -> bytes:
     return data
 
 
-async def read_image(request: Request, user_id: int) -> ProcessedImage:
-    """Rate-limit, read, validate and re-encode the ``file`` part of an upload request."""
+async def read_image(request: Request, session: AsyncSession, user_id: int) -> ProcessedImage:
+    """Rate-limit, read, validate and re-encode the ``file`` part of an upload request.
+
+    Ends ``session``'s transaction first (connection back to the pool, ORM objects expired),
+    so a slow or large body never holds a DB connection; see the module docstring."""
     enforce(upload_limiter, f"user:{user_id}")
+    await session.rollback()
     data = await _read_file_part(request)
     try:
-        return await asyncio.to_thread(process_image, data)
+        return await process_image_bounded(data)
     except ImageTooLargeError:
         raise too_large() from None
     except UnsupportedImageError:
@@ -167,8 +179,8 @@ async def upload_quest_photo(
 ) -> FileOut:
     """Upload a quest photo (multipart field ``file``) for the active partnership; send its
     ``id`` as ``attachment_id`` to ``POST /quests/{id}/submit``."""
-    image = await read_image(request, user.id)
     user_id = user.id
+    image = await read_image(request, session, user_id)
     try:
         await service.lock_live_owner(session, user_id)
     except service.OwnerGoneError:

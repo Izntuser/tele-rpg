@@ -3,7 +3,10 @@ pixels, EXIF/GPS stripped, re-encode), the 5/min upload limit, read authorizatio
 active partner only, 404 for everyone else incl. the former partner), avatar, reward image,
 photo proof on a photo_required quest, and stored bytes removed on account deletion."""
 
+import asyncio
 import io
+import threading
+import time
 from collections.abc import AsyncIterator
 from datetime import timedelta
 from pathlib import Path
@@ -12,10 +15,11 @@ from typing import Any
 import httpx
 import pytest
 from PIL import ExifTags, Image
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core import clock, ratelimit
+from app.core.config import get_settings
 from app.db.session import get_session
 from app.modules.common.enums import FileKind, PartnershipStatus
 from app.modules.files import service as files_service
@@ -25,7 +29,7 @@ from app.storage import images
 from app.storage.base import InvalidKeyError, StoredFileNotFoundError, get_storage, new_key
 from app.storage.local import LocalStorage
 from tests import factories
-from tests.integration.completion_support import active_quest, auth, pair
+from tests.integration.completion_support import active_quest, auth, ident, pair
 
 
 @pytest.fixture(autouse=True)
@@ -47,6 +51,9 @@ async def files_client(
     app = create_app()
 
     async def _session() -> AsyncIterator[AsyncSession]:
+        # Uploads roll the session back before reading the body (no connection held during
+        # the read): release the test's SAVEPOINT first, as if its setup had been committed.
+        await session.commit()
         yield session
 
     app.dependency_overrides[get_session] = _session
@@ -228,6 +235,67 @@ def test_process_rejects_pixel_bombs() -> None:
         images.process_image(bomb)
 
 
+def test_process_rejects_too_many_decoded_pixels() -> None:
+    """Under the 40 MP header cap, but a PNG cannot be decoded scaled down: 25 MP is refused."""
+    big = encoded("PNG", "L", size=(5000, 5000), optimize=True)
+    with pytest.raises(images.ImageTooLargeError):
+        images.process_image(big)
+
+
+def test_process_decodes_large_jpeg_scaled_down() -> None:
+    """A 30 MP JPEG is over MAX_DECODED_PIXELS at full size but is decoded via draft at 1/2."""
+    data = encoded("JPEG", size=(7500, 4000), quality=30)
+    assert 7500 * 4000 > images.MAX_DECODED_PIXELS
+    result = images.process_image(data)
+    assert (result.width, result.height) == (images.MAX_SIDE, 1092)
+    assert result.mime == "image/jpeg"
+
+
+async def test_image_processing_concurrency_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    limit = get_settings().image_process_concurrency
+    assert limit == 2
+    lock = threading.Lock()
+    running = 0
+    peak = 0
+
+    def slow(data: bytes) -> images.ProcessedImage:
+        nonlocal running, peak
+        with lock:
+            running += 1
+            peak = max(peak, running)
+        time.sleep(0.05)
+        with lock:
+            running -= 1
+        return images.ProcessedImage(data, "image/jpeg", "jpg", 1, 1)
+
+    monkeypatch.setattr(images, "process_image", slow)
+    results = await asyncio.gather(*(images.process_image_bounded(b"x") for _ in range(7)))
+    assert len(results) == 7
+    assert peak == limit
+
+
+async def test_cancelled_processing_keeps_its_slot_until_the_thread_ends(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    started = threading.Event()
+    release = threading.Event()
+
+    def blocking(data: bytes) -> images.ProcessedImage:
+        started.set()
+        release.wait(5)
+        return images.ProcessedImage(data, "image/jpeg", "jpg", 1, 1)
+
+    monkeypatch.setattr(images, "process_image", blocking)
+    first = asyncio.create_task(images.process_image_bounded(b"a"))
+    await asyncio.to_thread(started.wait, 5)
+    first.cancel()
+    await asyncio.sleep(0.05)
+    assert not first.done()  # still waiting for its thread, slot held
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+
+
 # --- POST /files ------------------------------------------------------------------------------
 
 
@@ -298,6 +366,116 @@ async def test_oversize_upload_is_413(
     bomb = encoded("PNG", "L", size=(8000, 6000), optimize=True)
     assert (await upload(files_client, player, bomb)).status_code == 413
     assert await session.scalar(select(File.id).where(File.owner_id == player.id)) is None
+
+
+def multipart_chunks(data: bytes, chunk: int = 64 * 1024) -> list[bytes]:
+    boundary = "s12boundary"
+    head = (
+        f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+        'filename="p.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'
+    ).encode()
+    body = head + data + f"\r\n--{boundary}--\r\n".encode()
+    return [body[i : i + chunk] for i in range(0, len(body), chunk)]
+
+
+MULTIPART = "multipart/form-data; boundary=s12boundary"
+
+
+async def test_streamed_body_without_content_length_is_capped(
+    files_client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    _, player, _ = await pair(session)
+    chunks = multipart_chunks(b"\xff\xd8\xff" + b"\x00" * (images.MAX_UPLOAD_BYTES + 200_000))
+    sent = 0
+
+    async def stream() -> AsyncIterator[bytes]:
+        nonlocal sent
+        for c in chunks:
+            sent += 1
+            yield c
+
+    response = await files_client.post(
+        "/api/files", headers=auth(player, **{"Content-Type": MULTIPART}), content=stream()
+    )
+    assert response.status_code == 413
+    assert "content-length" not in response.request.headers
+    assert sent < len(chunks)  # reading stopped at the cap, the rest was never pulled
+
+
+async def test_lying_content_length_is_capped(
+    files_client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    _, player, _ = await pair(session)
+    body = b"".join(
+        multipart_chunks(b"\xff\xd8\xff" + b"\x00" * (images.MAX_UPLOAD_BYTES + 200_000))
+    )
+
+    async def stream() -> AsyncIterator[bytes]:
+        for i in range(0, len(body), 64 * 1024):
+            yield body[i : i + 64 * 1024]
+
+    headers = auth(player, **{"Content-Type": MULTIPART, "Content-Length": "1000"})
+    response = await files_client.post("/api/files", headers=headers, content=stream())
+    assert response.request.headers["content-length"] == "1000"
+    assert response.status_code == 413
+    assert await session.scalar(select(File.id).where(File.owner_id == ident(player))) is None
+
+
+async def test_no_db_connection_is_held_while_the_body_is_read(
+    independent_sessions: async_sessionmaker[AsyncSession], storage: LocalStorage
+) -> None:
+    """``current_user`` opens a transaction; the upload must end it before reading the body, so
+    a slow client holds no pooled connection (idle in transaction) while it trickles bytes."""
+    from app.main import create_app
+
+    async with independent_sessions() as s:
+        _, player, _ = await pair(s)
+        player_id = player.id
+        await s.commit()
+
+    request_sessions: list[AsyncSession] = []
+
+    async def _session() -> AsyncIterator[AsyncSession]:
+        async with independent_sessions() as s:
+            request_sessions.append(s)
+            yield s
+
+    app = create_app()
+    app.dependency_overrides[get_session] = _session
+    app.dependency_overrides[get_storage] = lambda: storage
+
+    async def idle_in_transaction() -> int:
+        async with independent_sessions() as probe:
+            n = await probe.scalar(
+                text(
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND pid <> pg_backend_pid() AND state LIKE 'idle in transaction%'"
+                )
+            )
+            return int(n or 0)
+
+    observed: list[tuple[bool, int]] = []
+    chunks = multipart_chunks(jpeg_with_gps(), chunk=256)
+
+    async def slow_body() -> AsyncIterator[bytes]:
+        for i, c in enumerate(chunks):
+            if i == 1:  # the route has started reading the body
+                await asyncio.sleep(0.05)
+                observed.append((request_sessions[0].in_transaction(), await idle_in_transaction()))
+            yield c
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+        response = await c.post(
+            "/api/files",
+            headers=auth(player_id, **{"Content-Type": MULTIPART}),
+            content=slow_body(),
+        )
+    assert response.status_code == 201, response.text
+    assert observed == [(False, 0)]
+    async with independent_sessions() as s:
+        file = await s.scalar(select(File).where(File.owner_id == player_id))
+        assert file is not None and file.kind == FileKind.QUEST_PHOTO
 
 
 async def test_sixth_upload_in_a_minute_is_429(

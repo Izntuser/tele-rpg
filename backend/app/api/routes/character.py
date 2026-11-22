@@ -68,9 +68,10 @@ async def upload_avatar(
 ) -> FileOut:
     """Upload my avatar (multipart field ``file``; also during onboarding). It replaces the
     previous custom avatar; ``avatar_file_id`` on ``/character`` and ``/me`` points at it."""
-    image = await read_image(request, user.id)
+    user_id = user.id  # read_image ends the transaction and expires ``user``
+    image = await read_image(request, session, user_id)
     try:
-        file = await files.replace_avatar(session, storage, user.id, image)
+        file = await files.replace_avatar(session, storage, user_id, image)
     except files.OwnerGoneError:
         await session.rollback()
         raise owner_gone() from None

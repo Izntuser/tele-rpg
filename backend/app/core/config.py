@@ -69,6 +69,8 @@ class Settings(BaseSettings):
 
     public_base_url: str = "http://localhost:3000"
     storage_dir: str = "./data/files"
+    #: Uploads decoded at once per process (each decode can take ~100-200 MB).
+    image_process_concurrency: int = Field(default=2, ge=1)
     sentry_dsn: str = ""
     frontend_dist: str = ""
 

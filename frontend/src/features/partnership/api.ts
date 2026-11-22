@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api/client';
 import type { components } from '../../lib/api/schema';
 import { useAuth } from '../auth/context';
 import { CHARACTER_QUERY_KEY } from '../character/api';
+import { clearFileCache } from '../files/api';
 
 export type PartnershipState = components['schemas']['PartnershipStateOut'];
 export type InvitationCreated = components['schemas']['InvitationCreated'];
@@ -20,6 +21,7 @@ export const LEAVE_CONFIRM_TEXT = 'LEAVE';
 
 /** Everything that depends on who my companion is. */
 export function invalidatePartnership(queryClient: QueryClient): Promise<unknown> {
+  clearFileCache(queryClient); // read access to photos follows the partnership
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: PARTNERSHIP_QUERY_KEY }),
     queryClient.invalidateQueries({ queryKey: COMPANION_QUERY_KEY }),

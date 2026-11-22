@@ -84,3 +84,8 @@
 - S12: uploaded quest photos that are never attached to a submission stay forever; purge unattached quest_photo files older than a day in the scheduler.
 - S12: GET /files/{id} streams full bodies with Cache-Control: private, no-store; consider ETag/Range if photos get large or are viewed often.
 - S12: invitation preview (CompanionCard.avatar_file_id) exposes the inviter's avatar file id to a not-yet-partner, who gets 404 on read; set it to null there if ids should not leak.
+- S12: routes/account.py (export ~262, delete ~279): the storage parameter falls back to the global get_storage() instead of a FastAPI dependency; inject it like the upload routes.
+- S12: storage/local.py:56: LocalStorage.open() calls the blocking path.open inside an async function; move it to a thread.
+- S12: frontend compressImage uses useWebWorker: false, so compression runs on the main thread; try the worker build.
+- S12: replaced reward images (row and bytes) are kept until account deletion; the cleanup above must respect purchase snapshots.
+- S12: the 5/min upload rate limiter is in-process; with several API workers the effective limit multiplies; move it to a shared store.

@@ -99,9 +99,10 @@ async def upload_reward_image(
 ) -> RewardOut:
     """Creator: set the reward's picture (multipart field ``file``). Only the two members of
     the partnership can read it, and only while the partnership is active."""
-    image = await read_image(request, user.id)
+    user_id = user.id  # read_image ends the transaction and expires ``user``
+    image = await read_image(request, session, user_id)
     try:
-        owner = await files.lock_live_owner(session, user.id)
+        owner = await files.lock_live_owner(session, user_id)
         reward = await service.lock_for_image(session, owner, reward_id)
     except files.OwnerGoneError:
         await session.rollback()
