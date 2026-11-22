@@ -124,6 +124,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       token = null;
       throw new ApiError(response.status, errorDetail(body));
     }
+    if (typeof body === 'string') {
+      token = null;
+      throw new ApiError(response.status, NOT_JSON);
+    }
     const auth = body as AuthResponse;
     token = auth.jwt;
     return auth;

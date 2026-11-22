@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { App } from '../../app/App';
 import { Providers } from '../../app/providers';
-import { ApiError, type ApiClient, type AuthResponse } from '../../lib/api/client';
+import { ApiError, createApiClient, type ApiClient, type AuthResponse } from '../../lib/api/client';
 import { MockAdapter } from '../../lib/telegram';
 import { AuthGate } from './AuthGate';
 
@@ -82,5 +82,16 @@ describe('auth bootstrap', () => {
     expect(await screen.findByTestId('user-greeting')).toHaveTextContent('Alice');
     expect(alert).not.toHaveBeenCalled();
     alert.mockRestore();
+  });
+
+  test('an HTML 200 from the login endpoint lands on the auth error screen, not a crash', async () => {
+    const api = createApiClient({
+      getInitData: () => 'signed',
+      fetch: (async () =>
+        new Response('<html>tunnel page</html>', { status: 200 })) as unknown as typeof fetch,
+    });
+    renderApp(api, new MockAdapter({ initData: 'signed' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });

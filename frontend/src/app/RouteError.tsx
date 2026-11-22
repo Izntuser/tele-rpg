@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRouteError } from 'react-router';
@@ -9,7 +10,9 @@ import { useRouteError } from 'react-router';
 export function RouteError() {
   const { t } = useTranslation();
   const error = useRouteError();
-  console.error(error);
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
   return (
     <section
       role="alert"

@@ -94,6 +94,18 @@ describe('api client', () => {
     await expect(client.get('/empty')).resolves.toBeUndefined();
   });
 
+  test('an HTML 200 on login is a NOT_JSON error and caches no token', async () => {
+    const html = createApiClient({
+      getInitData: () => 'x',
+      fetch: (async () =>
+        new Response('<html>tunnel page</html>', { status: 200 })) as unknown as typeof fetch,
+    });
+    const error = await html.login().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).detail).toBe(NOT_JSON);
+    expect(html.hasToken()).toBe(false);
+  });
+
   test('logs in with initData in the JSON body, then sends the JWT as a Bearer header', async () => {
     await expect(client.get('/thing')).resolves.toEqual({ ok: true, url: '/api/thing' });
     const [login, call] = server.calls;
