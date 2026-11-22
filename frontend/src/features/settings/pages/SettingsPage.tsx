@@ -7,6 +7,7 @@ import { useAuth, useCurrentUser } from '../../auth/context';
 import { AvatarPicker } from '../../character/AvatarPicker';
 import { LEAVE_CONFIRM_TEXT, useLeavePartnership, usePartnership } from '../../partnership/api';
 import { DELETE_CONFIRM_TEXT, useDeleteAccount, useExportData, useUpdatePreferences } from '../api';
+import { NotificationSettings } from '../NotificationSettings';
 
 function timezoneOptions(current: string): string[] {
   let all: string[] = [];
@@ -37,7 +38,8 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 const selectClass = 'rounded-md border border-border bg-surface-2 px-3 py-2';
 const dangerButton = 'rounded-md border border-danger px-4 py-2 text-sm font-semibold text-danger disabled:opacity-50';
 
-/** Avatar, language, timezone, partnership, data export, privacy note and the danger zone. */
+/** Avatar, language, timezone, notifications, partnership, data export, privacy note and the
+ * danger zone. */
 export function SettingsPage() {
   const { t } = useTranslation('settings');
   const user = useCurrentUser();
@@ -116,6 +118,8 @@ export function SettingsPage() {
           {t('saved')}
         </p>
       ) : null}
+
+      <NotificationSettings />
 
       <Card title={t('partnership.title')} testId="settings-partnership">
         {companion ? (

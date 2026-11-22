@@ -23,6 +23,9 @@ def prod_env(monkeypatch: pytest.MonkeyPatch, **overrides: str | None) -> None:
         "JWT_SECRET": STRONG,
         "TG_BOT_TOKEN": REAL_TOKEN,
         "TG_WEBHOOK_SECRET": WEBHOOK_SECRET,
+        "TG_BOT_USERNAME": "telerpg_bot",
+        "TG_APP_SHORT_NAME": "app",
+        "PUBLIC_BASE_URL": "https://telerpg.example.com",
     }
     values.update(overrides)
     for name, value in values.items():
@@ -72,6 +75,25 @@ def test_prod_requires_long_webhook_secret(
 ) -> None:
     prod_env(monkeypatch, TG_WEBHOOK_SECRET=secret)
     with pytest.raises(ValidationError, match="TG_WEBHOOK_SECRET"):
+        Settings()
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("TG_BOT_USERNAME", None),
+        ("TG_BOT_USERNAME", ""),
+        ("TG_APP_SHORT_NAME", None),
+        ("TG_APP_SHORT_NAME", ""),
+        ("PUBLIC_BASE_URL", "http://telerpg.example.com"),
+        ("PUBLIC_BASE_URL", None),
+    ],
+)
+def test_prod_requires_bot_and_app_names_and_https_base_url(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: str | None
+) -> None:
+    prod_env(monkeypatch, **{name: value})
+    with pytest.raises(ValidationError, match=name):
         Settings()
 
 

@@ -1,0 +1,42 @@
+{
+  "start": {
+    "welcome": "Welcome to Modern Life RPG! Turn real life into quests with your companion: offer quests, earn Gold and XP, and spend them in each other's reward shop.",
+    "welcome_back": "Welcome back, adventurer! Your quests are waiting.",
+    "invite": "You have been invited to an adventure. Open the app to accept the invitation.",
+    "quest": "Open the app to see this quest.",
+    "open_app": "Open the app"
+  },
+  "notification": {
+    "open": "Open",
+    "generic": "You have a new notification.",
+    "types": {
+      "quest_offered": "New quest offered: {title} ({gold} Gold)",
+      "quest_offer_updated": "A quest offer was updated: {title}",
+      "quest_accepted": "Your quest was accepted: {title}",
+      "quest_declined": "Your quest was declined: {title}",
+      "quest_cancelled": "A quest was cancelled: {title}",
+      "quest_paused": "A recurring quest was paused: {title}",
+      "quest_resumed": "A recurring quest was resumed: {title}",
+      "quest_revision_proposed": "New terms were proposed for {title}",
+      "quest_revision_accepted": "Your new terms were accepted for {title}",
+      "quest_revision_declined": "Your new terms were declined for {title}",
+      "quest_revision_superseded": "Your proposed terms for {title} were dropped: the quest was submitted first",
+      "quest_submitted": "Quest submitted for your review: {title}",
+      "quest_confirmed": "Quest confirmed: {title}. +{gold} Gold, +{xp} XP",
+      "quest_completed": "Quest completed: {title}",
+      "quest_redo_requested": "A redo was requested: {title}",
+      "quest_expired": "Quest expired: {title}",
+      "deadline_reminder": "Reminder: {title} is due soon",
+      "daily_summary": "Good morning! Active quests: {active}. Offers waiting: {offers}. Waiting for your review: {reviews}.",
+      "reward_created": "New reward in the shop: {title} ({price} Gold)",
+      "reward_purchased": "Your companion bought a reward: {title}",
+      "reward_requested": "A reward was requested: {title}",
+      "reward_scheduled": "Your reward was scheduled: {title}",
+      "reward_fulfilled": "Your reward was fulfilled: {title}",
+      "reward_disputed": "A reward was disputed: {title}",
+      "reward_refunded": "A reward was refunded: {title}",
+      "partnership_accepted": "Your invitation was accepted. Your adventure together begins!",
+      "partnership_ended": "Your partnership has ended."
+    }
+  }
+}

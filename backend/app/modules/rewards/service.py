@@ -44,7 +44,7 @@ from app.modules.common.enums import (
 )
 from app.modules.economy import service as economy
 from app.modules.journal.service import record_event
-from app.modules.notifications.service import enqueue
+from app.modules.notifications.service import enqueue, voucher_deep_link
 from app.modules.partnerships.models import Partnership
 from app.modules.partnerships.service import companion_of, find_active
 from app.modules.rewards import state
@@ -198,6 +198,7 @@ def voucher_event(
         entity_type="reward_purchase",
         entity_id=purchase.id,
         payload=payload,
+        deep_link=voucher_deep_link(purchase.id, provider=recipient_id != purchase.buyer_id),
     )
 
 

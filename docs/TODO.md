@@ -21,7 +21,6 @@
 - Prod frontend build must not set NODE_ENV=development or VITE_MOCK_INIT_DATA (mock initData gate relies on import.meta.env.DEV).
 - Add a CI/smoke check that builds the frontend and greps the bundle to prove mock initData is stripped (unit tests only prove runtime behaviour).
 - BottomSheet/ConfirmSheet: add a focus trap and restore focus on close; consider the shadcn Dialog primitive.
-- ARCHITECTURE.md:281 says notifications use `startapp=inv_<id>`, but lib/deeplink.ts maps inv_ to `/` (deeplink.test.ts:17 pins it); the notifications stage must resolve this.
 - shell.test.tsx "no native dialogs" test only renders a placeholder Settings page; strengthen it once real pages exist.
 - shell.test.tsx safe-area test: move viewport.mockRestore() and CSS var reset into afterEach so a failing assertion can't leak state.
 - Onboarding drops a q_/r_ start param for a not-yet-onboarded user (only invite_ survives); consider resuming it after onboarding.
@@ -29,18 +28,14 @@
 - common/validation.py: bidi blocklist misses U+200E/U+200F/U+061C; reject all Cf/Zl/Zp (except ZWJ) and U+2028/U+2029 in single-line fields.
 - validation.py timezone: legacy aliases (Factory, EST, GMT+0, Cuba) are accepted; consider restricting to canonical Area/City zones.
 - Onboarding is one stepped page, ARCHITECTURE.md:290 describes sub-routes; record in DECISIONS or align.
-- core/config.py: add a prod guard requiring TG_BOT_USERNAME and TG_APP_SHORT_NAME (POST /partnership/invitations answers 503 in prod without them).
 - TelegramAdapter: add openTelegramLink/switchInlineQuery so InvitePanel shares through Telegram natively (today an https://t.me/share/url link).
 - Companion page: add recent shared activity and life balance + suggestions (ARCHITECTURE s6) in the journal/stats stages.
-- Notifications stage: render partnership_accepted / partnership_ended (stored with category quests; consider a dedicated category).
 - partnership_invitation rows past expires_at stay `pending` (accept/preview treat them as expired); a scheduler job could mark them `expired`.
 - InvitePanel/useInvitePreview: preview is a POST (token in the body), so it takes a write rate-limit token per view.
 - Deletion race (minor): a write request already past current_user can insert rows after the delete commits, and create_invitation doesn't re-check deleted_at after its lock.
 - Deletion scrub keeps locale, timezone, reward and quest-template text, and journal payloads; journal/notification payloads must stay free of names and free text (journal.service.check_payload rejects name keys; write every new event through record_event/enqueue).
 - main.py Referrer-Policy is set only on the SPA catch-all; if HTML is ever served another way (StaticFiles, error pages), move it to a global middleware.
 - test_health.py asserts Referrer-Policy only on the fallback; add /invite/<x> and an asset path.
-- partnerships/service._notify writes Notification rows directly; route it through notifications.service.enqueue (payload guard).
-- S14: notifications for recurring-template events (offer/decline/cancel of a template) have deep_link NULL (no occurrence id); add a template deep link (e.g. qt_<id>) in lib/deeplink.ts and the dispatcher.
 - S09: recurring offers have no occurrence until accepted; the Offers tab must merge GET /quests?role=player&status=offered with GET /quest-templates?role=player&status=offered&recurrence=daily|weekly.
 - Account export does not include quest_revision rows (terms, decline_reason) of my quests; add them in a later pass.
 - GET /quests/{occurrence_id} (routes/quests.py:84) will shadow a future GET /quests/estimate unless that route is registered first or the id path is typed as an int.
@@ -49,10 +44,9 @@
 - Product: a redo requested after the deadline returns the occurrence to active past its due_at, so the expiry job expires it (no reward); consider extending due_at or warning the GM in the UI.
 - Level-ups only write journal events (level_up, attribute_level_up); add an optional Telegram notification in the notifications stage.
 - Idempotency replay does not re-check authorization: a former member can replay their own cached quest detail (submit/confirm response) until the key expires (24h).
-- Scheduler: no journal event or notification when an occurrence expires, a template's offer or an invitation expires (partnership_invitation.pending past expires_at); init.sh and docker-compose do not start `python -m app.jobs.runner` yet (run it next to uvicorn).
+- Scheduler: no journal event when an occurrence expires (S14 added the quest_expired notification), and nothing when a template's offer or an invitation expires (partnership_invitation.pending past expires_at); init.sh and docker-compose do not start `python -m app.jobs.runner` (nor `python -m app.bot.polling` for a dev bot) yet.
 - Streaks: a day that was never generated (paused, or the template created mid-day after a skipped day) does not break the streak; a late confirm after a break restarts current at 1 even if the confirmed day was consecutive with the last completed one.
 - Weekly quests have no streak; the Recurring tab shows one only for daily quests.
-- S14/frontend: render the new journal/notification type quest_revision_superseded (GM's pending proposal dropped by the player's submit).
 - user.tg_user_id: add a CHECK (tg_user_id > 0 OR (deleted_at IS NOT NULL AND tg_user_id = -id)) so the partial unique index cannot be bypassed (S08 review).
 - core/idempotency.py claim(): the row-is-None branch retries recursively without bound; cap at one retry or return 409 (S08 review).
 - ARCHITECTURE.md user table: tg_user_id is unique only among live ids (partial index, DECISIONS #16); bot lookups by Telegram id must use it (S08 review).
@@ -63,11 +57,8 @@
 - api/router.py: /quests/estimate only beats /quests/{id} because routes load by file name (presets < quests); make the order explicit (S09 review).
 - S10: when a provider deletes their account (or a partnership ends), requested/scheduled vouchers can be refunded only by the provider, so a deleted provider's vouchers stay open forever; consider auto-refunding open vouchers in end_partnership / account deletion.
 - S10: a reward created from a wishlist item copies the companion's item title/description into reward text, which account deletion keeps (reward text is kept, TODO above); the same goes for reward_purchase.reward_snapshot (title/description frozen at purchase); decide whether the wishlist owner's deletion should scrub both.
-- S10: reward/voucher notifications have deep_link NULL; define r_<id> (reward or purchase?) in lib/deeplink.ts and set it in rewards.service.voucher_event (notifications stage).
 - S10: there is no GET /inventory/{id} or GET /rewards/{id}; the shop UI stage may need them for deep links.
-- S14/frontend: render journal/notification types reward_created, reward_purchased, reward_requested, reward_scheduled, reward_fulfilled, reward_disputed, reward_refunded (category rewards).
 - Idempotency replay of POST /rewards/{id}/purchase returns the stored voucher (24h) even if it was refunded since; clients must refetch /inventory for the current state.
-- Notifications are still enqueued to deleted users (e.g. a buyer's refund notifies the deleted provider with the reward title); skip deleted recipients in enqueue/voucher_event (S10 review).
 - rewards/schemas.py ScheduleIn.scheduled_for has no upper bound (e.g. now + 1 year) (S10 review).
 - S10 tests: forced-interleaving purchase tests call the service and bypass the HTTP Idempotency-Key claim; reward create (lock_user, then partnership) vs leave/account deletion is not pinned by a test (S10 review).
 - ARCHITECTURE.md Purchase step 3 says key purchase:{idempotency_key}; the code uses purchase:{buyer_id}:{key} (S10 review).
@@ -92,3 +83,11 @@
 - storage/images.py:172-175: a second cancel while awaiting the decode thread frees the semaphore slot early; loop `await asyncio.shield(work)` until work.done() and add a double-cancel test (S12 security review).
 - storage/images.py: progressive JPEGs keep full-size coefficient buffers regardless of draft (~120-320 MB at 40 MP) and many-scan files are a CPU DoS; lower the cap for progressive JPEGs or cap scans, and fix the "~100 MB" docstring (S12 security review).
 - test_files.py: add route-level tests for account deletion / partnership end while the upload body is being read; make the semaphore peak assertion `1 <= peak <= limit` (S12 reviews).
+- S14: notification(status, send_after) and notification(recipient_id, id) indexes for the outbox sweep and the inbox (needs a migration; skipped while worktrees share the test DB at head 0006).
+- S14: the API post-commit send runs inside the request (FastAPI yield dependency, after the response is sent); a slow Telegram holds that worker until the 10 s Bot timeout; consider a background task with its own session.
+- S14: level_up / attribute_level_up still have no Telegram notification (journal only); add one if wanted.
+- S14: partnership_accepted / partnership_ended use category quests; consider a dedicated category.
+- S14: the journal UI (later stage) must render the quest_revision_superseded and reward_* journal types; the inbox already does.
+- S14: /start with a payload answers with a t.me direct-link button (startapp needs it) instead of a web_app button; without a payload it is a web_app button.
+- S14: qt_<template> opens /quests (default tab), rq_<purchase> opens /shop/manage and r_<purchase> opens /shop/inventory?item=, which does not scroll to or highlight the item yet.
+- S14: a notification row deferred or skipped for a deleted recipient is deleted by the dispatcher; enqueue itself (sync) still adds the row in the caller's transaction.

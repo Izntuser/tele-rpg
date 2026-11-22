@@ -1,0 +1,42 @@
+{
+  "start": {
+    "welcome": "Вітаємо в Modern Life RPG! Перетворюйте реальне життя на квести разом із компаньйоном: пропонуйте квести, заробляйте золото й досвід і витрачайте їх у крамниці нагород одне одного.",
+    "welcome_back": "З поверненням, шукачу пригод! Твої квести чекають.",
+    "invite": "Тебе запросили до пригоди. Відкрий застосунок, щоб прийняти запрошення.",
+    "quest": "Відкрий застосунок, щоб переглянути цей квест.",
+    "open_app": "Відкрити застосунок"
+  },
+  "notification": {
+    "open": "Відкрити",
+    "generic": "У тебе нове сповіщення.",
+    "types": {
+      "quest_offered": "Новий квест: {title} ({gold} золота)",
+      "quest_offer_updated": "Пропозицію квесту оновлено: {title}",
+      "quest_accepted": "Твій квест прийнято: {title}",
+      "quest_declined": "Твій квест відхилено: {title}",
+      "quest_cancelled": "Квест скасовано: {title}",
+      "quest_paused": "Повторюваний квест призупинено: {title}",
+      "quest_resumed": "Повторюваний квест відновлено: {title}",
+      "quest_revision_proposed": "Запропоновано нові умови для квесту {title}",
+      "quest_revision_accepted": "Твої нові умови прийнято для квесту {title}",
+      "quest_revision_declined": "Твої нові умови відхилено для квесту {title}",
+      "quest_revision_superseded": "Твої запропоновані умови для квесту {title} скасовано: квест уже здано",
+      "quest_submitted": "Квест здано на перевірку: {title}",
+      "quest_confirmed": "Квест підтверджено: {title}. +{gold} золота, +{xp} досвіду",
+      "quest_completed": "Квест виконано: {title}",
+      "quest_redo_requested": "Квест повернуто на доопрацювання: {title}",
+      "quest_expired": "Термін квесту минув: {title}",
+      "deadline_reminder": "Нагадування: термін квесту {title} скоро спливає",
+      "daily_summary": "Доброго ранку! Активні квести: {active}. Пропозиції: {offers}. Чекають на твою перевірку: {reviews}.",
+      "reward_created": "Нова нагорода в крамниці: {title} ({price} золота)",
+      "reward_purchased": "Компаньйон купив нагороду: {title}",
+      "reward_requested": "Нагороду запитано: {title}",
+      "reward_scheduled": "Твою нагороду заплановано: {title}",
+      "reward_fulfilled": "Твою нагороду видано: {title}",
+      "reward_disputed": "Нагороду оскаржено: {title}",
+      "reward_refunded": "За нагороду повернуто золото: {title}",
+      "partnership_accepted": "Твоє запрошення прийнято. Ваша спільна пригода починається!",
+      "partnership_ended": "Ваше партнерство завершено."
+    }
+  }
+}

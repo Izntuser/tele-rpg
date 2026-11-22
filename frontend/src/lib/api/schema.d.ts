@@ -406,6 +406,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Notifications
+         * @description My inbox, newest first; pass ``next_cursor`` back as ``cursor`` for older items.
+         */
+        get: operations["list_notifications_api_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unread Notifications
+         * @description The header bell's badge.
+         */
+        get: operations["unread_notifications_api_notifications_unread_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All Notifications */
+        post: operations["read_all_notifications_api_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read Notification
+         * @description Mark one of my notifications read; someone else's answers 404.
+         */
+        post: operations["read_notification_api_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences */
+        get: operations["get_preferences_api_notifications_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Preferences
+         * @description Categories, quiet hours (both bounds null = off) and the daily summary.
+         */
+        patch: operations["patch_preferences_api_notifications_preferences_patch"];
+        trace?: never;
+    };
+    "/api/notifications/write-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Access
+         * @description Record the result of Telegram ``requestWriteAccess`` (``can_message``).
+         */
+        post: operations["write_access_api_notifications_write_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/partnership/invitations": {
         parameters: {
             query?: never;
@@ -1329,6 +1447,15 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** InboxOut */
+        InboxOut: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Next Cursor */
+            next_cursor: number | null;
+            /** Unread Count */
+            unread_count: number;
+        };
         /**
          * InvitationCreated
          * @description Returned once, on creation: only the sha256 of ``token`` is stored.
@@ -1375,6 +1502,36 @@ export interface components {
             user: components["schemas"]["UserOut"];
             character: components["schemas"]["CharacterSummary"] | null;
             partnership: components["schemas"]["PartnershipSummary"] | null;
+        };
+        /**
+         * NotificationCategory
+         * @enum {string}
+         */
+        NotificationCategory: "quests" | "reviews" | "rewards" | "reminders" | "summary";
+        /** NotificationOut */
+        NotificationOut: {
+            /** Id */
+            id: number;
+            /** Type */
+            type: string;
+            category: components["schemas"]["NotificationCategory"];
+            /** Entity Type */
+            entity_type: string | null;
+            /** Entity Id */
+            entity_id: number | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Deep Link */
+            deep_link: string | null;
+            /** Read At */
+            read_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** OccurrenceDetail */
         OccurrenceDetail: {
@@ -1502,6 +1659,47 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /** PreferencesOut */
+        PreferencesOut: {
+            /** Categories */
+            categories?: {
+                [key: string]: boolean;
+            };
+            /**
+             * Quiet Hours Start
+             * @default 23:00
+             */
+            quiet_hours_start: string | null;
+            /**
+             * Quiet Hours End
+             * @default 08:00
+             */
+            quiet_hours_end: string | null;
+            /**
+             * Daily Summary
+             * @default true
+             */
+            daily_summary: boolean;
+            /** Can Message */
+            can_message: boolean;
+        };
+        /**
+         * PreferencesUpdate
+         * @description PATCH /notifications/preferences: omitted fields keep their value; categories merge.
+         *     Send both quiet-hours fields as null to turn quiet hours off.
+         */
+        PreferencesUpdate: {
+            /** Categories */
+            categories?: {
+                [key: string]: boolean;
+            } | null;
+            /** Quiet Hours Start */
+            quiet_hours_start?: string | null;
+            /** Quiet Hours End */
+            quiet_hours_end?: string | null;
+            /** Daily Summary */
+            daily_summary?: boolean | null;
         };
         /** PresetCreate */
         PresetCreate: {
@@ -1785,6 +1983,11 @@ export interface components {
             confirmation?: components["schemas"]["ConfirmationMode"] | null;
             /** Photo Required */
             photo_required?: boolean | null;
+        };
+        /** ReadAllOut */
+        ReadAllOut: {
+            /** Updated */
+            updated: number;
         };
         /**
          * Recurrence
@@ -2075,6 +2278,11 @@ export interface components {
              */
             created_at: string;
         };
+        /** UnreadCountOut */
+        UnreadCountOut: {
+            /** Count */
+            count: number;
+        };
         /** UserOut */
         UserOut: {
             /** Id */
@@ -2157,6 +2365,11 @@ export interface components {
          * @enum {string}
          */
         WishlistStatus: "open" | "offered" | "archived";
+        /** WriteAccessIn */
+        WriteAccessIn: {
+            /** Allowed */
+            allowed: boolean;
+        };
         /** ConfirmIn */
         app__modules__partnerships__schemas__ConfirmIn: {
             /** Confirm Text */
@@ -2894,6 +3107,195 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PurchaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_notifications_get: {
+        parameters: {
+            query?: {
+                cursor?: number | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unread_notifications_api_notifications_unread_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountOut"];
+                };
+            };
+        };
+    };
+    read_all_notifications_api_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadAllOut"];
+                };
+            };
+        };
+    };
+    read_notification_api_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preferences_api_notifications_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+        };
+    };
+    patch_preferences_api_notifications_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_access_api_notifications_write_access_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteAccessIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
                 };
             };
             /** @description Validation Error */

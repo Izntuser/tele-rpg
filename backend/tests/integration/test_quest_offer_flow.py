@@ -797,10 +797,11 @@ async def test_each_transition_writes_one_journal_event_and_one_notification(
         assert player.display_name not in str(event.payload)
     for note in notes:
         assert note.category == NotificationCategory.QUESTS
-        assert note.status == NotificationStatus.PENDING
+        # Dispatched right after each commit; these users never allowed bot messages.
+        assert note.status == NotificationStatus.SKIPPED
         check_payload(note.payload)
     assert notes[0].deep_link == f"q_{occurrence_id}"
-    assert notes[-1].deep_link is None and notes[-1].entity_id == template_id
+    assert notes[-1].deep_link == f"qt_{template_id}" and notes[-1].entity_id == template_id
     assert events[0].payload["title"] == "Morning run" and events[0].payload["xp"] == 50
 
 
