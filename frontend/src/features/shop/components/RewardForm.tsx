@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '../../../components/ui/BottomSheet';
 import { ApiError } from '../../../lib/api/client';
 import { useRewardMutations, type Reward, type RewardCreate } from '../api';
+import { RewardImageField } from '../RewardImageField';
 
 /** A reward being created (optionally from a wishlist item) or edited. */
 export type RewardDraft =
@@ -77,6 +78,7 @@ function Form({ draft, onClose }: { draft: RewardDraft; onClose: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
+      {reward ? <RewardImageField reward={reward} /> : null}
       <Labeled label={t('form.title')}>
         {(id) => (
           <input

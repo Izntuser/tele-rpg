@@ -119,7 +119,7 @@ type Action =
   | { type: 'accept' }
   | { type: 'decline'; reason?: string }
   | { type: 'cancel' }
-  | { type: 'submit'; comment?: string }
+  | { type: 'submit'; comment?: string; attachmentId?: number | null }
   | { type: 'confirm'; feedback?: string }
   | { type: 'redo'; reason: string };
 
@@ -132,12 +132,16 @@ const ACTION_PATH: Record<Action['type'], string> = {
   redo: 'request-redo',
 };
 
-function actionBody(action: Action): Record<string, string> | undefined {
+function actionBody(action: Action): Record<string, string | number> | undefined {
   switch (action.type) {
     case 'decline':
       return action.reason?.trim() ? { reason: action.reason.trim() } : undefined;
-    case 'submit':
-      return action.comment?.trim() ? { comment: action.comment.trim() } : undefined;
+    case 'submit': {
+      const body: Record<string, string | number> = {};
+      if (action.comment?.trim()) body.comment = action.comment.trim();
+      if (action.attachmentId != null) body.attachment_id = action.attachmentId;
+      return Object.keys(body).length ? body : undefined;
+    }
     case 'confirm':
       return action.feedback?.trim() ? { feedback: action.feedback.trim() } : undefined;
     case 'redo':

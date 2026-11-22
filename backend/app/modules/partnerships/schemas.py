@@ -45,6 +45,8 @@ class CompanionCard(BaseModel):
     user_id: int
     display_name: str
     avatar_url: str | None
+    #: Custom avatar; readable (``GET /files/{id}``) only by an active partner.
+    avatar_file_id: int | None
     character_name: str | None
     nickname: str | None
     level: int

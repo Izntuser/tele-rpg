@@ -438,6 +438,28 @@ async def create(session: AsyncSession, user: User, data: RewardCreate) -> Rewar
     return out
 
 
+async def lock_for_image(session: AsyncSession, user: User, reward_id: int) -> Reward:
+    """Creator of a reward in an active partnership: partnership ``FOR SHARE``, reward ``FOR
+    UPDATE`` (the caller already holds its own user row, as ``create`` does)."""
+    partnership, reward = await _lock_reward(session, user, reward_id)
+    if reward.creator_id != user.id:
+        raise WrongRoleError
+    if partnership.status != PartnershipStatus.ACTIVE:
+        raise PartnershipInactiveError
+    return reward
+
+
+async def set_image(session: AsyncSession, user: User, reward: Reward, file_id: int) -> RewardOut:
+    """Point a reward locked by ``lock_for_image`` at a new image (the previous file is kept:
+    purchase snapshots may still show it). Does not commit."""
+    reward.image_file_id = file_id
+    reward.updated_at = clock.now()
+    await session.flush()
+    await session.refresh(reward)
+    last = await _last_purchase_at(session, user.id, [reward.id])
+    return _reward_out(reward, user.id, last.get(reward.id))
+
+
 async def update(
     session: AsyncSession, user: User, reward_id: int, data: RewardUpdate
 ) -> RewardOut:

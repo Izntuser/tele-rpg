@@ -20,6 +20,8 @@ class UserOut(BaseModel):
     tg_username: str | None
     display_name: str
     avatar_url: str | None
+    #: Custom avatar (``GET /files/{id}``); shown instead of ``avatar_url`` when set.
+    avatar_file_id: int | None
     locale: Locale
     timezone: str
     onboarded_at: datetime | None

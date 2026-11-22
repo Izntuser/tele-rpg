@@ -8,7 +8,8 @@ it) but scrubs it, so the account is gone in every way that matters:
   Telegram fields are cleared: the same Telegram account logging in again gets a brand-new
   user, with nothing linking it to the deleted one (DECISIONS #13);
 - display_name / character name become "Deleted user"; nickname, bio, goals, wishlist, my
-  submission comments, my decline reasons, my review comments and my file rows are removed;
+  submission comments, my decline reasons, my review comments, my file rows and their stored
+  bytes are removed;
 - the active partnership is ended exactly like ``leave`` (quests cancelled, rewards hidden,
   wallets frozen, partner notified);
 - ledger rows (gold and XP) are never touched, so ``wallet.balance == sum(ledger)`` still holds.
@@ -26,6 +27,7 @@ from app.modules.achievements.models import AchievementUnlock
 from app.modules.common.enums import InvitationStatus, JournalVisibility, SubmissionReviewStatus
 from app.modules.common.models import IdempotencyKey
 from app.modules.economy.models import GoldTransaction, Wallet
+from app.modules.files import service as files
 from app.modules.files.models import File
 from app.modules.goals.models import DevelopmentGoal
 from app.modules.journal.models import JournalEvent
@@ -44,6 +46,7 @@ from app.modules.rewards.models import Reward, RewardPurchase
 from app.modules.stats.models import LifeBalanceTarget
 from app.modules.users.models import Character, CharacterAttribute, User
 from app.modules.wishlist.models import WishlistItem
+from app.storage.base import StorageBackend, get_storage
 
 DELETE_CONFIRM_TEXT = "DELETE"
 DELETED_NAME = "Deleted user"
@@ -129,7 +132,8 @@ async def export(session: AsyncSession, user: User) -> dict[str, Any]:
     }
 
 
-async def _scrub(session: AsyncSession, user: User) -> None:
+async def _scrub(session: AsyncSession, user: User) -> list[str]:
+    """Scrub the account; returns the storage keys of the deleted file rows."""
     me = user.id
     now = clock.now()
     my_files = select(File.id).where(File.owner_id == me)
@@ -137,6 +141,21 @@ async def _scrub(session: AsyncSession, user: User) -> None:
     templates_by_me = select(QuestTemplate.id).where(QuestTemplate.creator_id == me)
     occurrences_by_me = select(QuestOccurrence.id).where(
         QuestOccurrence.template_id.in_(templates_by_me)
+    )
+
+    # Reward rows before purchase rows, the order refund uses (reward -> purchase).
+    await session.execute(
+        update(Reward).where(Reward.image_file_id.in_(my_files)).values(image_file_id=None)
+    )
+    await session.execute(
+        update(Reward)
+        .where(Reward.source_wishlist_item_id.in_(my_wishes))
+        .values(source_wishlist_item_id=None)
+    )
+    await session.execute(
+        update(RewardPurchase)
+        .where(RewardPurchase.provider_id == me, RewardPurchase.schedule_note.is_not(None))
+        .values(schedule_note=None)
     )
 
     # Free text I wrote on shared records.
@@ -175,29 +194,19 @@ async def _scrub(session: AsyncSession, user: User) -> None:
         )
         .values(decline_reason=None)
     )
-    await session.execute(
-        update(RewardPurchase).where(RewardPurchase.provider_id == me).values(schedule_note=None)
-    )
 
-    # Files: drop every reference, then the rows. (Stored bytes: see the files stage.)
+    # Files: drop every reference, then the rows; the caller deletes the bytes after commit.
     await session.execute(
         update(QuestSubmission)
         .where(QuestSubmission.attachment_id.in_(my_files))
         .values(attachment_id=None)
     )
-    await session.execute(
-        update(Reward).where(Reward.image_file_id.in_(my_files)).values(image_file_id=None)
-    )
     user.avatar_file_id = None
     await session.flush()
+    storage_keys = list(await session.scalars(select(File.storage_key).where(File.owner_id == me)))
     await session.execute(delete(File).where(File.owner_id == me))
 
     # Personal lists and private data.
-    await session.execute(
-        update(Reward)
-        .where(Reward.source_wishlist_item_id.in_(my_wishes))
-        .values(source_wishlist_item_id=None)
-    )
     await session.execute(delete(WishlistItem).where(WishlistItem.user_id == me))
     await session.execute(delete(DevelopmentGoal).where(DevelopmentGoal.user_id == me))
     await session.execute(delete(SavedQuestTemplate).where(SavedQuestTemplate.owner_id == me))
@@ -243,10 +252,18 @@ async def _scrub(session: AsyncSession, user: User) -> None:
     user.notification_prefs = {}
     user.deleted_at = now
     user.updated_at = now
+    return storage_keys
 
 
-async def delete_account(session: AsyncSession, user: User, confirm_text: str) -> None:
-    """One transaction: end the partnership (as ``leave`` does), then scrub."""
+async def delete_account(
+    session: AsyncSession,
+    user: User,
+    confirm_text: str,
+    storage: StorageBackend | None = None,
+) -> None:
+    """One transaction: end the partnership (as ``leave`` does), then scrub. After the commit
+    the stored bytes of my files are deleted (best effort: a failure leaves an orphan blob that
+    no row points at, never a row without consent)."""
     if confirm_text.strip() != DELETE_CONFIRM_TEXT:
         raise WrongConfirmationError
     partnership, users = await partnerships.lock_active_partnership(session, user)
@@ -257,5 +274,6 @@ async def delete_account(session: AsyncSession, user: User, confirm_text: str) -
         await partnerships.end_partnership(
             session, partnership, me, payload={"reason": "account_deleted"}
         )
-    await _scrub(session, me)
+    storage_keys = await _scrub(session, me)
     await session.commit()
+    await files.discard(storage or get_storage(), storage_keys)

@@ -23,6 +23,7 @@ function auth(locale: 'en' | 'uk' = 'en', startParam: string | null = null, onbo
       tg_username: null,
       display_name: 'Bob',
       avatar_url: null,
+      avatar_file_id: null,
       locale,
       timezone: 'UTC',
       onboarded_at: onboarded ? '2026-01-15T12:00:00Z' : null,

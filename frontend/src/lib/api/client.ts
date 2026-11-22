@@ -26,7 +26,10 @@ export class NoInitDataError extends Error {
 export type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface RequestOptions {
+  /** JSON-encoded, except a `FormData` (multipart upload), which is sent as-is. */
   body?: unknown;
+  /** `blob` returns the response body as a Blob (file downloads); default JSON. */
+  responseType?: 'json' | 'blob';
   /** `true` generates a fresh key; a string is sent as-is. Kept across the re-auth retry. */
   idempotencyKey?: string | true;
   signal?: AbortSignal;
@@ -88,18 +91,21 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     headers: Record<string, string>,
     signal?: AbortSignal,
   ): Promise<Response> {
+    const multipart = body instanceof FormData;
     const init: RequestInit = {
       method,
       headers: {
         Accept: 'application/json',
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        // A multipart body sets its own Content-Type (with the boundary).
+        ...(body === undefined || multipart ? {} : { 'Content-Type': 'application/json' }),
         ...headers,
       },
       credentials: 'omit',
       cache: 'no-store',
       signal,
     };
-    if (body !== undefined) init.body = JSON.stringify(body);
+    if (multipart) init.body = body;
+    else if (body !== undefined) init.body = JSON.stringify(body);
     return doFetch(`${baseUrl}${path}`, init);
   }
 
@@ -150,6 +156,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         opts.signal,
       );
     }
+    if (response.ok && opts.responseType === 'blob') return (await response.blob()) as T;
     const body = await readBody(response);
     if (!response.ok) throw new ApiError(response.status, errorDetail(body));
     return body as T;

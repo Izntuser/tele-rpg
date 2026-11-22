@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ConfirmSheet } from '../../../components/ui/ConfirmSheet';
 import { LOCALES } from '../../../i18n';
 import { useAuth, useCurrentUser } from '../../auth/context';
+import { AvatarPicker } from '../../character/AvatarPicker';
 import { LEAVE_CONFIRM_TEXT, useLeavePartnership, usePartnership } from '../../partnership/api';
 import { DELETE_CONFIRM_TEXT, useDeleteAccount, useExportData, useUpdatePreferences } from '../api';
 
@@ -36,7 +37,7 @@ function Card({ title, children, testId }: { title: string; children: ReactNode;
 const selectClass = 'rounded-md border border-border bg-surface-2 px-3 py-2';
 const dangerButton = 'rounded-md border border-danger px-4 py-2 text-sm font-semibold text-danger disabled:opacity-50';
 
-/** Language, timezone, partnership, data export, privacy note and the danger zone. */
+/** Avatar, language, timezone, partnership, data export, privacy note and the danger zone. */
 export function SettingsPage() {
   const { t } = useTranslation('settings');
   const user = useCurrentUser();
@@ -60,6 +61,10 @@ export function SettingsPage() {
   return (
     <section data-testid="page-settings" className="flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-bold">{t('title')}</h1>
+
+      <Card title={t('files:avatar.label')} testId="settings-avatar">
+        <AvatarPicker name={user.display_name} fileId={user.avatar_file_id} fallbackUrl={user.avatar_url} />
+      </Card>
 
       <Card title={t('language.title')} testId="settings-language">
         <label htmlFor={`${ids}-locale`} className="text-sm font-medium">

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { AuthImage } from '../../files/components';
 import type { QuestView } from '../api';
 
 interface Entry {
@@ -7,6 +8,8 @@ interface Entry {
   label: string;
   at: string | null;
   note?: string | null;
+  /** Photo proof attached to a submission (GET /files/{id}). */
+  photoId?: number | null;
 }
 
 function formatDate(iso: string, locale: string): string {
@@ -21,7 +24,13 @@ export function buildTimeline(view: QuestView, t: (key: string) => string): Entr
     entries.push({ key: 'accepted', label: t('timeline.accepted'), at: occurrence.accepted_at });
   }
   for (const s of submissions) {
-    entries.push({ key: `sub-${s.id}`, label: t('timeline.submitted'), at: s.created_at, note: s.comment });
+    entries.push({
+      key: `sub-${s.id}`,
+      label: t('timeline.submitted'),
+      at: s.created_at,
+      note: s.comment,
+      photoId: s.attachment_id,
+    });
     if (s.review_status === 'redo') {
       entries.push({ key: `redo-${s.id}`, label: t('timeline.redo'), at: s.reviewed_at, note: s.review_comment });
     }
@@ -49,6 +58,7 @@ export function buildTimeline(view: QuestView, t: (key: string) => string): Entr
 
 export function StatusTimeline({ view }: { view: QuestView }) {
   const { t, i18n } = useTranslation('quests');
+  const { t: tf } = useTranslation('files');
   const entries = buildTimeline(view, t);
   return (
     <ol data-testid="quest-timeline" className="flex flex-col gap-3 border-l border-border pl-4">
@@ -58,6 +68,14 @@ export function StatusTimeline({ view }: { view: QuestView }) {
           <p className="font-medium">{e.label}</p>
           {e.at ? <p className="text-xs text-muted">{formatDate(e.at, i18n.language)}</p> : null}
           {e.note ? <p className="mt-1 whitespace-pre-line text-muted">{e.note}</p> : null}
+          {e.photoId != null ? (
+            <AuthImage
+              fileId={e.photoId}
+              alt={tf('photo.alt')}
+              testId="submission-photo"
+              className="mt-2 block max-h-64 w-full max-w-xs rounded-lg"
+            />
+          ) : null}
         </li>
       ))}
     </ol>

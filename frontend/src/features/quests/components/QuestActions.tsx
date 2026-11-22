@@ -6,6 +6,7 @@ import { cn } from '../../../components/ui/cn';
 import { ApiError } from '../../../lib/api/client';
 import { useQuestAction, type Completion, type QuestRef, type QuestView } from '../api';
 import { GmLabel } from './GmLabel';
+import { SubmitForm } from './SubmitForm';
 
 type Mode = 'decline' | 'redo' | null;
 
@@ -124,7 +125,6 @@ export function QuestActions({
   const action = useQuestAction(ref);
   const [mode, setMode] = useState<Mode>(null);
   const [text, setText] = useState('');
-  const [comment, setComment] = useState('');
   const [feedback, setFeedback] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
 
@@ -133,7 +133,6 @@ export function QuestActions({
       onSuccess: (result) => {
         setMode(null);
         setText('');
-        setComment('');
         setFeedback('');
         const completion = (result as { completion?: Completion | null }).completion;
         if (completion) onCompleted(completion);
@@ -175,12 +174,11 @@ export function QuestActions({
       ) : null}
 
       {allowed.submit ? (
-        <>
-          <Field label={t('actions.commentLabel')} value={comment} onChange={setComment} testId="submit-comment" />
-          <Button testId="quest-submit" disabled={busy} onClick={() => run({ type: 'submit', comment })}>
-            {t('actions.submit')}
-          </Button>
-        </>
+        <SubmitForm
+          photoRequired={view.terms.photo_required}
+          busy={busy}
+          onSubmit={({ comment, attachmentId }) => run({ type: 'submit', comment, attachmentId })}
+        />
       ) : null}
 
       {allowed.confirm ? (

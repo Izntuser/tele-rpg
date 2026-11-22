@@ -178,6 +178,7 @@ async def companion_card(session: AsyncSession, user: User) -> CompanionCard:
         user_id=user.id,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
+        avatar_file_id=user.avatar_file_id,
         character_name=character.name if character else None,
         nickname=character.nickname if character else None,
         level=level_for_xp(character.total_xp) if character else 1,

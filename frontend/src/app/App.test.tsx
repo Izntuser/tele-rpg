@@ -24,6 +24,7 @@ test('renders the home with the signed-in, onboarded user', async () => {
           tg_username: null,
           display_name: 'Bob',
           avatar_url: null,
+          avatar_file_id: null,
           locale: 'en' as const,
           timezone: 'UTC',
           onboarded_at: '2026-01-15T12:00:00Z',

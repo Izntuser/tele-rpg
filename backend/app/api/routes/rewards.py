@@ -3,12 +3,21 @@ ever takes a user or partnership id: the caller is the only subject."""
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 
+from app.api.routes.files import (
+    UPLOAD_OPENAPI,
+    UPLOAD_RESPONSES,
+    StorageDep,
+    owner_gone,
+    read_image,
+)
 from app.core import idempotency
 from app.core.deps import CurrentUser, SessionDep
+from app.modules.common.enums import FileKind
 from app.modules.common.validation import IdPath
+from app.modules.files import service as files
 from app.modules.rewards import service
 from app.modules.rewards.schemas import (
     LIST_LIMIT_MAX,
@@ -68,6 +77,54 @@ async def update_reward(
     except service.RewardError as exc:
         await session.rollback()
         raise http_error(exc) from None
+
+
+@router.post(
+    "/rewards/{reward_id}/image",
+    response_model=RewardOut,
+    openapi_extra=UPLOAD_OPENAPI,
+    responses={
+        **UPLOAD_RESPONSES,
+        403: {"description": "Not the reward's creator"},
+        404: {"description": "Not a reward of my partnership"},
+        409: {"description": "Partnership has ended"},
+    },
+)
+async def upload_reward_image(
+    reward_id: IdPath,
+    request: Request,
+    user: CurrentUser,
+    session: SessionDep,
+    storage: StorageDep,
+) -> RewardOut:
+    """Creator: set the reward's picture (multipart field ``file``). Only the two members of
+    the partnership can read it, and only while the partnership is active."""
+    user_id = user.id  # read_image ends the transaction and expires ``user``
+    image = await read_image(request, session, user_id)
+    try:
+        owner = await files.lock_live_owner(session, user_id)
+        reward = await service.lock_for_image(session, owner, reward_id)
+    except files.OwnerGoneError:
+        await session.rollback()
+        raise owner_gone() from None
+    except service.RewardError as exc:
+        await session.rollback()
+        raise http_error(exc) from None
+    file = await files.save_image(
+        session,
+        storage,
+        owner_id=owner.id,
+        kind=FileKind.REWARD_IMAGE,
+        partnership_id=reward.partnership_id,
+        image=image,
+    )
+    try:
+        out = await service.set_image(session, owner, reward, file.id)
+    except BaseException:
+        await files.discard(storage, [file.storage_key])
+        raise
+    await files.commit_or_discard(session, storage, file)
+    return out
 
 
 @router.post(

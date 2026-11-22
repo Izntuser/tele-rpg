@@ -95,6 +95,7 @@ async def character_out(session: AsyncSession, user: User, character: Character)
         nickname=character.nickname,
         bio=character.bio,
         avatar_url=user.avatar_url,
+        avatar_file_id=user.avatar_file_id,
         level=progress.level,
         total_xp=character.total_xp,
         xp_into_level=progress.xp_into_level,
