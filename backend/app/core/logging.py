@@ -8,6 +8,7 @@ WARNING and above on stderr. Safe to call more than once and never removes forei
 
 import json
 import logging
+import re
 import sys
 from datetime import UTC, datetime
 from typing import TextIO
@@ -20,18 +21,48 @@ _UVICORN = ("uvicorn", "uvicorn.error", "uvicorn.access")
 _TEXT_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
 
 
+_LEVELS = {"warning": "warn", "critical": "error"}  # Railway: debug/info/warn/error
+_WEBHOOK_RE = re.compile(r"/tg/webhook/[^?\s\"']*")
+_BOT_TOKEN_RE = re.compile(r"\bbot\d{3,}:[A-Za-z0-9_-]{10,}")
+
+
+def redact(text: str) -> str:
+    """Hide the webhook path secret and Telegram bot tokens (api.telegram.org/bot<TOKEN>/...)."""
+    return _BOT_TOKEN_RE.sub("bot[redacted]", _WEBHOOK_RE.sub("/tg/webhook/[redacted]", text))
+
+
+class RedactFilter(logging.Filter):
+    """Scrub secrets from a record's msg and args. Attach to a logger (handlers get cleared)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = redact(record.msg)
+        args = record.args
+        if isinstance(args, tuple):
+            record.args = tuple(redact(a) if isinstance(a, str) else a for a in args)
+        elif isinstance(args, dict):
+            record.args = {k: redact(v) if isinstance(v, str) else v for k, v in args.items()}
+        return True
+
+
+class _RedactingFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        return redact(super().format(record))
+
+
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
+        level = record.levelname.lower()
         payload: dict[str, str] = {
-            "level": record.levelname.lower(),
-            "message": record.getMessage(),
+            "level": _LEVELS.get(level, level),
+            "message": redact(record.getMessage()),
             "logger": record.name,
             "time": datetime.fromtimestamp(record.created, UTC).isoformat(),
         }
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = redact(self.formatException(record.exc_info))
         elif record.exc_text:
-            payload["exception"] = record.exc_text
+            payload["exception"] = redact(record.exc_text)
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
@@ -62,7 +93,7 @@ def configure_logging(settings: Settings | None = None) -> None:
     if settings.app_env == "prod":
         root.addHandler(_handler(sys.stdout, JsonFormatter()))
     else:
-        fmt = logging.Formatter(_TEXT_FORMAT)
+        fmt = _RedactingFormatter(_TEXT_FORMAT)
         out = _handler(sys.stdout, fmt)
         out.addFilter(_MaxLevel(logging.WARNING))
         err = _handler(sys.stderr, fmt)
@@ -76,3 +107,6 @@ def configure_logging(settings: Settings | None = None) -> None:
         lg = logging.getLogger(name)
         lg.handlers.clear()
         lg.propagate = True
+    access = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, RedactFilter) for f in access.filters):
+        access.addFilter(RedactFilter())

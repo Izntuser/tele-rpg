@@ -175,7 +175,7 @@ curl -s "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"   # url ends with /
 
 Then send `/start` to the prod bot, open the app from the menu button, log in, create a quest. Check the scheduler logs for `leader lock acquired`.
 
-Logs are single-line JSON in prod (INFO to stdout), so Railway colours levels correctly and `@level:"error"` now shows only real errors; successful scheduler job runs are not logged.
+Logs are single-line JSON in prod (INFO to stdout), so Railway colours levels correctly and `@level:"error"` now shows only real errors; successful scheduler job runs are not logged. Errors before the app lifespan (an import error, a port bind) print as plain text on stdout and may appear as info in Railway, so check the deploy logs if a deploy fails.
 
 ## 8. Proxy notes
 

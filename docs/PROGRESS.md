@@ -162,3 +162,8 @@ Storage guard now keys off RAILWAY_VOLUME_MOUNT_PATH == STORAGE_DIR (mismatch / 
 
 ## 2026-11-22 fix(logging)
 Shared app/core/logging.py configure_logging (api lifespan, scheduler, dev bot): JSON to stdout in prod, dev split stdout/stderr, apscheduler at WARNING, uvicorn routed via root; Dockerfile CMD uses backend/uvicorn_log.json (stdout) for pre-lifespan lines. Tests in tests/unit/test_logging.py. Docker image not built; uvicorn CLI run in dev mode verified. Smoke not run.
+
+## 2026-11-22 logging review round 2
+- Added RedactFilter (webhook path secret, bot tokens) on the uvicorn.access logger, installed in configure_logging and uvicorn_log.json; JSON/dev formatters also redact messages and exception text.
+- JSON level now warn/error to match Railway; test fixture restores uvicorn/apscheduler logger state; DEPLOY.md note on pre-lifespan errors; TODO webhook line narrowed to secret_token.
+- Docker check: dev container logged `POST /tg/webhook/[redacted]` for TESTSECRET123.

@@ -10,10 +10,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core.config import Settings
-from app.core.logging import JsonFormatter, configure_logging
+from app.core.logging import JsonFormatter, configure_logging, redact
 from app.jobs.runner import JobSpec, Runner
 
 _NAMES = ["apscheduler", "apscheduler.executors.default", "apscheduler.scheduler", "t.log"]
+_SAVED = ["uvicorn", "uvicorn.error", "uvicorn.access", *_NAMES[:3]]
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +22,22 @@ def restore_logging() -> Iterator[None]:
     root = logging.getLogger()
     handlers, level = list(root.handlers), root.level
     levels = {n: logging.getLogger(n).level for n in _NAMES}
+    saved = {
+        n: (
+            list(logging.getLogger(n).handlers),
+            logging.getLogger(n).propagate,
+            logging.getLogger(n).level,
+            list(logging.getLogger(n).filters),
+        )
+        for n in _SAVED
+    }
     yield
+    for n, (hs, prop, lv, fs) in saved.items():
+        lg = logging.getLogger(n)
+        lg.handlers[:] = hs
+        lg.propagate = prop
+        lg.setLevel(lv)
+        lg.filters[:] = fs
     root.handlers[:] = handlers
     root.setLevel(level)
     for n, lv in levels.items():
@@ -36,9 +52,9 @@ def test_json_formatter_maps_levels_on_one_line() -> None:
     for level, name in [
         (logging.DEBUG, "debug"),
         (logging.INFO, "info"),
-        (logging.WARNING, "warning"),
+        (logging.WARNING, "warn"),
         (logging.ERROR, "error"),
-        (logging.CRITICAL, "critical"),
+        (logging.CRITICAL, "error"),
     ]:
         out = JsonFormatter().format(_record(level, "hello\nworld"))
         assert "\n" not in out
@@ -113,3 +129,45 @@ async def test_failing_job_logs_error_with_job_name(caplog: pytest.LogCaptureFix
     rec = next(r for r in caplog.records if r.levelno == logging.ERROR)
     assert "my_job" in rec.getMessage()
     assert rec.exc_info is not None
+
+
+def _access(path: str) -> None:
+    logging.getLogger("uvicorn.access").info(
+        '%s - "%s %s HTTP/%s" %d', "1.2.3.4:5", "POST", path, "1.1", 200
+    )
+
+
+@pytest.mark.parametrize("env", ["prod", "development"])
+def test_access_log_redacts_webhook_secret(env: str, capsys: pytest.CaptureFixture[str]) -> None:
+    configure_logging(Settings(app_env="test").model_copy(update={"app_env": env}))
+    configure_logging(Settings(app_env="test").model_copy(update={"app_env": env}))
+    assert len([f for f in logging.getLogger("uvicorn.access").filters]) == 1
+    _access("/tg/webhook/SUPERSECRET?x=1")
+    cap = capsys.readouterr()
+    assert "SUPERSECRET" not in cap.out + cap.err
+    assert "[redacted]" in cap.out
+    if env == "prod":
+        assert json.loads(cap.out)["message"].count("/tg/webhook/[redacted]") == 1
+
+
+def test_uvicorn_log_json_applies_filter(capsys: pytest.CaptureFixture[str]) -> None:
+    import logging.config
+    from pathlib import Path
+
+    cfg = json.loads((Path(__file__).parents[2] / "uvicorn_log.json").read_text())
+    logging.config.dictConfig(cfg)
+    _access("/tg/webhook/SUPERSECRET")
+    out = capsys.readouterr().out
+    assert "SUPERSECRET" not in out and "[redacted]" in out
+
+
+def test_bot_token_is_redacted(capsys: pytest.CaptureFixture[str]) -> None:
+    url = "https://api.telegram.org/bot123456789:AAE-abcdefghijklmnop_QRS/sendMessage"
+    assert "AAE" not in redact(url) and "bot[redacted]/sendMessage" in redact(url)
+    configure_logging(Settings(app_env="test").model_copy(update={"app_env": "prod"}))
+    try:
+        raise RuntimeError(url)
+    except RuntimeError:
+        logging.getLogger("t.log").exception("POST %s", url)
+    out = capsys.readouterr().out
+    assert "AAE-abcdef" not in out and "bot[redacted]" in out

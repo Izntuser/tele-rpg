@@ -91,7 +91,7 @@
 - S14: /start with a payload answers with a t.me direct-link button (startapp needs it) instead of a web_app button; without a payload it is a web_app button.
 - S14: qt_<template> opens /quests (default tab), rq_<purchase> opens /shop/manage and r_<purchase> opens /shop/inventory?item=, which does not scroll to or highlight the item yet.
 - S14: a notification row deferred or skipped for a deleted recipient is deleted by the dispatcher; enqueue itself (sync) still adds the row in the caller's transaction.
-- Bot webhook: the secret is in the URL path and lands in the uvicorn access log; pass secret_token= to set_webhook and check X-Telegram-Bot-Api-Secret-Token, or filter /tg/ from access logs (S14 review).
+- Bot webhook: the secret is still a URL path (now redacted in logs; proxies and Telegram-side tooling may still see it); prefer secret_token= in set_webhook with an X-Telegram-Bot-Api-Secret-Token check (S14 review).
 - notifications can_message defaults false and is only set via POST /notifications/write-access; also set it from /start (live user) and from initData allows_write_to_pm (S14 review).
 - notifications/dispatcher.py: post-commit send holds a pooled connection and row lock across each send (up to 10 s); move to a background task with its own session and an overall timeout; add a tg_user_id > 0 guard before send_message (S14 review).
 - tg_webhook.py: read the body with a size cap instead of reading it all before the 1 MB check (S14 review).
