@@ -145,3 +145,4 @@ verbs: DISPATCH, REVIEW, MERGED, PARTIAL, FALLBACK, BLOCKED -->
 2026-11-22T21:01 REVIEW TOOL-db-budget stage-reviewer: REQUEST CHANGES (prod overflow 0 for headroom; healthz NullPool DoS; try_lead crash) -> stage-worker(sonnet) round 2
 2026-11-22T21:09 REVIEW TOOL-db-budget -> stage-reviewer (round 2, @c9f13ba)
 2026-11-22T21:13 REVIEW TOOL-db-budget stage-reviewer round 2: APPROVE except DEPLOY.md:84 prose (14->12), fixed by lead on main (docs only)
+2026-11-22T21:16 MERGED TOOL-railway-deploy + TOOL-db-budget (lint, 1470 pytest, 249 vitest, smoke green on main)
