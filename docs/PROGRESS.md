@@ -131,3 +131,8 @@ verified: pnpm lint, pnpm test (244 vitest, 1415 pytest); 3 new tests fail witho
 done: scripts/live.sh start|stop|status|logs|check (APP_ENV=development, .env or LIVE_ENV_FILE, guards: unset/e2e DB, fake token, non-+asyncpg, port 6543; masked DB password; alembic upgrade; api 8010, vite 3010, bot, scheduler with logs/live-*.pid/log). vite.config.ts reads VITE_DEV_PORT / API_PROXY_TARGET (defaults unchanged). .env.example LIVE_*_PORT, ARCHITECTURE section 8 "Running live from Telegram" (Supabase notes).
 tests: backend/tests/test_live_script.py (check subcommand, temp env file), frontend/src/lib/viteConfig.test.ts; /api/test/reset 404 outside test already covered by test_auth.py.
 not done: live.sh start never run (needs real .env/Supabase).
+
+## 2026-11-22 live.sh hardening round 2 (tooling, not a stage)
+- live.sh: env line parser (no expansion), JWT/port refusals, mask to last '@', xtrace off around secrets, pid verification via ps before kill/trust, rollback of services on failed start. init.sh: dev-DB migration only for local DATABASE_URL, unsets VITE_DEV_PORT/API_PROXY_TARGET. Docs updated.
+- Exercised start/stop against a throwaway local DB on ports 8110/3110 (vite not installed in worktree, so the rollback path ran; all processes gone, DB dropped).
+- Left: init.sh/smoke.sh still source .env as shell (TODO).

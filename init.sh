@@ -22,6 +22,9 @@ done
 DEV_DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://telerpg:telerpg@localhost:5432/telerpg}"
 
 # The stack started here is the e2e/test stack: no real Telegram calls, separate DB.
+# .env may carry live-stack settings (scripts/live.sh); they must not leak into the test stack.
+unset VITE_DEV_PORT API_PROXY_TARGET
+
 export APP_ENV=test
 export DATABASE_URL="$E2E_DATABASE_URL"
 export TG_BOT_TOKEN
@@ -37,7 +40,11 @@ pnpm install --frozen-lockfile
 pnpm exec playwright install chromium >/dev/null
 
 (cd backend && uv run alembic upgrade head)
-(cd backend && DATABASE_URL="$DEV_DATABASE_URL" APP_ENV=development uv run alembic upgrade head)
+case "$DEV_DATABASE_URL" in
+  *@localhost[:/]* | *@127.0.0.1[:/]*)
+    (cd backend && DATABASE_URL="$DEV_DATABASE_URL" APP_ENV=development uv run alembic upgrade head) ;;
+  *) echo "skipped dev-DB migration: DATABASE_URL is not local (scripts/live.sh migrates it)" ;;
+esac
 
 port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
 pid_alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
